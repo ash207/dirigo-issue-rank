@@ -9,12 +9,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 
 const IssueDetail = () => {
   const { id } = useParams();
-  const [rankedPositions, setRankedPositions] = useState<Map<string, number>>(new Map());
+  const [userVotedPosition, setUserVotedPosition] = useState<string | null>(null);
   const { isAuthenticated, user } = useAuth();
   
   // Mock data - would be fetched from backend
@@ -64,125 +63,86 @@ const IssueDetail = () => {
     },
   ];
 
-  // Check for existing user rankings when user is authenticated
+  // Check for existing user vote when user is authenticated
   useEffect(() => {
-    const fetchUserRankings = async () => {
+    const fetchUserVote = async () => {
       if (!isAuthenticated || !user || !id) return;
       
       try {
         const { data, error } = await supabase
-          .from('user_rankings')
-          .select('rankings')
+          .from('user_votes')
+          .select('position_id')
           .eq('user_id', user.id)
           .eq('issue_id', id)
           .single();
         
-        if (error) {
-          console.error("Error fetching rankings:", error);
+        if (error && error.code !== 'PGRST116') { // PGRST116 means no rows returned
+          console.error("Error fetching vote:", error);
           return;
         }
         
-        if (data && data.rankings) {
-          // Create a new Map to store position IDs and their ranks
-          const rankingsMap = new Map<string, number>();
-          
-          // Ensure rankings is treated as an array of position IDs
-          if (Array.isArray(data.rankings)) {
-            // If it's an array, the index + 1 is the rank
-            data.rankings.forEach((posId, index) => {
-              if (typeof posId === 'string') {
-                rankingsMap.set(posId, index + 1);
-              }
-            });
-          } else if (typeof data.rankings === 'object') {
-            // If it's an object, convert values to an array
-            Object.entries(data.rankings).forEach(([key, value]) => {
-              if (typeof value === 'string') {
-                // Try to parse the key as a number (rank) and the value as the position ID
-                const rank = parseInt(key);
-                if (!isNaN(rank)) {
-                  rankingsMap.set(value, rank);
-                }
-              }
-            });
-          }
-
-          setRankedPositions(rankingsMap);
+        if (data) {
+          setUserVotedPosition(data.position_id);
         }
       } catch (error) {
-        console.error("Error in fetchUserRankings:", error);
+        console.error("Error in fetchUserVote:", error);
       }
     };
     
-    fetchUserRankings();
+    fetchUserVote();
   }, [isAuthenticated, user, id]);
 
-  // Handle position ranking change
-  const handleRankChange = (positionId: string, newRank: number) => {
-    // Create a copy of the current rankings map
-    const updatedRankings = new Map(rankedPositions);
-    
-    // If another position already has this rank, we need to swap or shift
-    let positionToSwap = "";
-    for (const [id, rank] of updatedRankings.entries()) {
-      if (rank === newRank) {
-        positionToSwap = id;
-        break;
-      }
-    }
-    
-    // If this position already has a rank and we're changing it
-    const currentRank = updatedRankings.get(positionId);
-    
-    if (positionToSwap) {
-      // If we're swapping with another position
-      if (currentRank !== undefined) {
-        // Simple swap - the other position gets this one's old rank
-        updatedRankings.set(positionToSwap, currentRank);
-      } else {
-        // The other position needs to be pushed down
-        // Find all positions with rank >= newRank and increment their rank
-        for (const [id, rank] of updatedRankings.entries()) {
-          if (rank >= newRank && id !== positionId) {
-            updatedRankings.set(id, rank + 1);
-          }
-        }
-      }
-    }
-    
-    // Set the new rank for this position
-    updatedRankings.set(positionId, newRank);
-    
-    // Update state with new rankings
-    setRankedPositions(updatedRankings);
-    
-    // Save rankings to database
-    saveRankings(updatedRankings);
-  };
-
-  // Save rankings to Supabase
-  const saveRankings = async (rankings: Map<string, number>) => {
+  // Handle position voting
+  const handleVote = async (positionId: string) => {
     if (!isAuthenticated || !user || !id) return;
     
     try {
-      // Convert Map to array sorted by rank
-      const sortedArray = Array.from(rankings.entries())
-        .sort((a, b) => a[1] - b[1])
-        .map(([id]) => id); // Extract just the position IDs in order of rank
-      
-      const { error } = await supabase.from('user_rankings').upsert({
-        user_id: user.id,
-        issue_id: id,
-        rankings: sortedArray,
-        updated_at: new Date().toISOString()
-      });
-      
-      if (error) throw error;
-      
-      toast.success("Your position ranking has been saved!");
+      if (userVotedPosition) {
+        if (userVotedPosition === positionId) {
+          // User is trying to unvote - not allowed in this implementation
+          toast.info("You can't remove your vote once cast");
+          return;
+        } else {
+          // User is changing their vote
+          // First, remove the old vote
+          await supabase
+            .from('user_votes')
+            .delete()
+            .eq('user_id', user.id)
+            .eq('issue_id', id);
+          
+          // Then add the new vote
+          const { error } = await supabase
+            .from('user_votes')
+            .insert({
+              user_id: user.id,
+              issue_id: id,
+              position_id: positionId,
+            });
+          
+          if (error) throw error;
+          
+          setUserVotedPosition(positionId);
+          toast.success("Your vote has been updated!");
+        }
+      } else {
+        // User is voting for the first time
+        const { error } = await supabase
+          .from('user_votes')
+          .insert({
+            user_id: user.id,
+            issue_id: id,
+            position_id: positionId,
+          });
+        
+        if (error) throw error;
+        
+        setUserVotedPosition(positionId);
+        toast.success("Your vote has been recorded!");
+      }
     } catch (error: any) {
-      console.error("Error saving rankings:", error);
-      toast.error("Failed to save your ranking. Please try again.");
+      console.error("Error saving vote:", error);
+      toast.error("Failed to save your vote. Please try again.");
     }
   };
 
@@ -214,16 +174,12 @@ const IssueDetail = () => {
         {/* Positions */}
         <div className="mb-4 flex justify-between items-center">
           <h2 className="text-xl font-bold">Positions</h2>
-          {isAuthenticated ? (
-            <div className="text-sm text-muted-foreground">
-              Click the arrow icon to rank positions
-            </div>
-          ) : (
+          {!isAuthenticated && (
             <Button 
               variant="outline"
               onClick={() => window.location.href = "/sign-in"}
             >
-              Sign in to rank
+              Sign in to vote
             </Button>
           )}
         </div>
@@ -240,9 +196,8 @@ const IssueDetail = () => {
               <PositionCard 
                 key={position.id}
                 {...position}
-                rank={rankedPositions.get(position.id) || null}
-                onRankChange={handleRankChange}
-                totalPositions={positions.length}
+                userVotedPosition={userVotedPosition}
+                onVote={handleVote}
                 isAuthenticated={isAuthenticated}
               />
             ))}
@@ -254,9 +209,8 @@ const IssueDetail = () => {
               <PositionCard 
                 key={position.id}
                 {...position}
-                rank={rankedPositions.get(position.id) || null}
-                onRankChange={handleRankChange}
-                totalPositions={positions.length}
+                userVotedPosition={userVotedPosition}
+                onVote={handleVote}
                 isAuthenticated={isAuthenticated}
               />
             ))}
@@ -269,36 +223,15 @@ const IssueDetail = () => {
                 <PositionCard 
                   key={position.id} 
                   {...position}
-                  rank={rankedPositions.get(position.id) || null}
-                  onRankChange={handleRankChange}
-                  totalPositions={positions.length}
+                  userVotedPosition={userVotedPosition}
+                  onVote={handleVote}
                   isAuthenticated={isAuthenticated}
                 />
               ))}
           </TabsContent>
         </Tabs>
 
-        {/* We would add a ranking results visualization here */}
-        <Card className="mt-8">
-          <CardHeader>
-            <CardTitle className="text-lg">Ranking Results</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {!isAuthenticated ? (
-              <p className="text-sm text-muted-foreground">
-                <Button variant="link" className="p-0 h-auto" onClick={() => window.location.href = "/sign-in"}>
-                  Sign in
-                </Button> to see and submit rankings.
-              </p>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                {rankedPositions.size > 0 
-                  ? `You've ranked ${rankedPositions.size} of ${positions.length} positions.` 
-                  : "Click the arrow icon on positions to rank them."}
-              </p>
-            )}
-          </CardContent>
-        </Card>
+        {/* Remove ranking results card */}
       </div>
     </Layout>
   );
