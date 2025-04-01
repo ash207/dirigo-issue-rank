@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Search, User, LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -12,6 +12,12 @@ import {
 
 const Navbar = () => {
   const { user, signOut, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/sign-in');
+  };
 
   return (
     <nav className="bg-dirigo-blue text-white shadow-md py-2">
@@ -45,11 +51,11 @@ const Navbar = () => {
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="bg-dirigo-white text-dirigo-blue hover:bg-dirigo-white/90">
                   <User size={16} className="mr-2" />
-                  {user?.name || user?.email.split('@')[0]}
+                  {user?.user_metadata?.name || user?.email?.split('@')[0]}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={signOut}>
+                <DropdownMenuItem onClick={handleSignOut}>
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Sign Out</span>
                 </DropdownMenuItem>
