@@ -5,14 +5,6 @@ import PositionCard from "@/components/positions/PositionCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 
 const IssueDetail = () => {
   const { id } = useParams();
@@ -28,13 +20,7 @@ const IssueDetail = () => {
     creator: {
       name: "JaneDoe",
       verificationLevel: "voter" as const
-    },
-    additionalInfo: [
-      { label: "Current minimum wage", value: "$7.25/hour" },
-      { label: "Last increased", value: "2009" },
-      { label: "Proposed increase", value: "$15.00/hour" },
-      { label: "States with $15+ minimum", value: "CA, NY, WA, MA, CT" },
-    ]
+    }
   };
 
   const positions = [
@@ -87,24 +73,6 @@ const IssueDetail = () => {
           <CardContent>
             <p className="text-gray-700 mb-6">{issue.description}</p>
             
-            {/* Issue details table */}
-            <Table className="mb-6">
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Key Facts</TableHead>
-                  <TableHead>Value</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {issue.additionalInfo.map((info, index) => (
-                  <TableRow key={index}>
-                    <TableCell className="font-medium">{info.label}</TableCell>
-                    <TableCell>{info.value}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            
             <div className="flex justify-between items-center">
               <div className="text-sm text-muted-foreground">
                 {issue.votes} people viewed this issue • {positions.length} positions
@@ -125,91 +93,33 @@ const IssueDetail = () => {
           </div>
 
           <TabsContent value="top" className="space-y-4">
-            {/* Positions table */}
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Position</TableHead>
-                  <TableHead>Author</TableHead>
-                  <TableHead className="text-right">Votes</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {positions.sort((a, b) => b.votes - a.votes).map(position => (
-                  <TableRow key={position.id}>
-                    <TableCell className="font-medium">
-                      <PositionCard 
-                        key={position.id}
-                        {...position}
-                      />
-                    </TableCell>
-                    <TableCell className={`text-verification-${position.author.verificationLevel}`}>
-                      @{position.author.name}
-                    </TableCell>
-                    <TableCell className="text-right">{position.votes}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            {positions.sort((a, b) => b.votes - a.votes).map(position => (
+              <PositionCard 
+                key={position.id}
+                {...position}
+              />
+            ))}
           </TabsContent>
 
           <TabsContent value="new" className="space-y-4">
             {/* In real app, would be sorted by date */}
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Position</TableHead>
-                  <TableHead>Author</TableHead>
-                  <TableHead className="text-right">Votes</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {positions.map(position => (
-                  <TableRow key={position.id}>
-                    <TableCell className="font-medium">
-                      <PositionCard 
-                        key={position.id}
-                        {...position} 
-                      />
-                    </TableCell>
-                    <TableCell className={`text-verification-${position.author.verificationLevel}`}>
-                      @{position.author.name}
-                    </TableCell>
-                    <TableCell className="text-right">{position.votes}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            {positions.map(position => (
+              <PositionCard 
+                key={position.id}
+                {...position} 
+              />
+            ))}
           </TabsContent>
 
           <TabsContent value="verified" className="space-y-4">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Position</TableHead>
-                  <TableHead>Author</TableHead>
-                  <TableHead className="text-right">Votes</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {positions
-                  .filter(p => p.author.verificationLevel === "voter" || p.author.verificationLevel === "official")
-                  .map(position => (
-                    <TableRow key={position.id}>
-                      <TableCell className="font-medium">
-                        <PositionCard 
-                          key={position.id} 
-                          {...position}
-                        />
-                      </TableCell>
-                      <TableCell className={`text-verification-${position.author.verificationLevel}`}>
-                        @{position.author.name}
-                      </TableCell>
-                      <TableCell className="text-right">{position.votes}</TableCell>
-                    </TableRow>
-                  ))}
-              </TableBody>
-            </Table>
+            {positions
+              .filter(p => p.author.verificationLevel === "voter" || p.author.verificationLevel === "official")
+              .map(position => (
+                <PositionCard 
+                  key={position.id} 
+                  {...position}
+                />
+              ))}
           </TabsContent>
         </Tabs>
       </div>
