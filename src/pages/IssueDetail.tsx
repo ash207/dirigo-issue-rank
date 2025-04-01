@@ -15,6 +15,10 @@ const IssueDetail = () => {
   const { id } = useParams();
   const [newPosition, setNewPosition] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [userRanks, setUserRanks] = useState<Record<string, number>>({ "1": 1 });
+  
+  // Calculate used ranks from the userRanks object
+  const usedRanks = Object.values(userRanks);
 
   // Mock data - would be fetched from backend
   const issue = {
@@ -39,7 +43,7 @@ const IssueDetail = () => {
         verificationLevel: "official" as const
       },
       votes: 532,
-      userRank: 1
+      userRank: userRanks["1"] || null
     },
     {
       id: "2",
@@ -48,7 +52,8 @@ const IssueDetail = () => {
         name: "EconomistJones", 
         verificationLevel: "voter" as const
       },
-      votes: 421
+      votes: 421,
+      userRank: userRanks["2"] || null
     },
     {
       id: "3",
@@ -57,9 +62,38 @@ const IssueDetail = () => {
         name: "BusinessOwner22", 
         verificationLevel: "basic" as const
       },
-      votes: 287
+      votes: 287,
+      userRank: userRanks["3"] || null
     },
   ];
+
+  // Handle rank changes from PositionCard components
+  const handleRankChange = (positionId: string, rank: number | null) => {
+    setUserRanks(prevRanks => {
+      const newRanks = { ...prevRanks };
+      
+      if (rank === null) {
+        // If removing rank, delete the entry
+        delete newRanks[positionId];
+      } else {
+        // If setting a new rank, first check if that rank is used by another position
+        const positionWithSameRank = Object.entries(newRanks).find(
+          ([id, existingRank]) => existingRank === rank && id !== positionId
+        );
+        
+        // If rank is used elsewhere, clear that other position's rank
+        if (positionWithSameRank) {
+          const [conflictingId] = positionWithSameRank;
+          delete newRanks[conflictingId];
+        }
+        
+        // Set the new rank for this position
+        newRanks[positionId] = rank;
+      }
+      
+      return newRanks;
+    });
+  };
 
   const handleSubmitPosition = () => {
     // In a real app, this would submit to the backend
@@ -135,14 +169,24 @@ const IssueDetail = () => {
 
           <TabsContent value="top" className="space-y-4">
             {positions.sort((a, b) => b.votes - a.votes).map(position => (
-              <PositionCard key={position.id} {...position} />
+              <PositionCard 
+                key={position.id}
+                {...position}
+                usedRanks={usedRanks}
+                onRankChange={handleRankChange}
+              />
             ))}
           </TabsContent>
 
           <TabsContent value="new" className="space-y-4">
             {/* In real app, would be sorted by date */}
             {positions.map(position => (
-              <PositionCard key={position.id} {...position} />
+              <PositionCard 
+                key={position.id}
+                {...position} 
+                usedRanks={usedRanks}
+                onRankChange={handleRankChange}
+              />
             ))}
           </TabsContent>
 
@@ -150,7 +194,12 @@ const IssueDetail = () => {
             {positions
               .filter(p => p.author.verificationLevel === "voter" || p.author.verificationLevel === "official")
               .map(position => (
-                <PositionCard key={position.id} {...position} />
+                <PositionCard 
+                  key={position.id} 
+                  {...position}
+                  usedRanks={usedRanks}
+                  onRankChange={handleRankChange}
+                />
               ))}
           </TabsContent>
         </Tabs>

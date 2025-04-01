@@ -21,6 +21,8 @@ interface PositionCardProps {
   votes: number;
   userVoted?: "up" | null;
   userRank?: number | null;
+  usedRanks?: number[];
+  onRankChange?: (positionId: string, rank: number | null) => void;
 }
 
 const PositionCard = ({ 
@@ -29,7 +31,9 @@ const PositionCard = ({
   author, 
   votes: initialVotes, 
   userVoted: initialUserVoted,
-  userRank: initialUserRank 
+  userRank: initialUserRank,
+  usedRanks = [],
+  onRankChange
 }: PositionCardProps) => {
   const [votes, setVotes] = useState(initialVotes);
   const [userVoted, setUserVoted] = useState<"up" | null>(initialUserVoted || null);
@@ -40,18 +44,40 @@ const PositionCard = ({
       // Removing vote
       setUserVoted(null);
       setVotes(votes - 1);
+      
+      // Clear the rank and notify parent component
+      if (onRankChange) {
+        onRankChange(id, null);
+      }
       setUserRank(null);
     } else {
       // Adding a new vote
       setUserVoted("up");
       setVotes(votes + 1);
-      // If no rank selected yet, default to rank 1
-      if (!userRank) setUserRank(1);
+      
+      // If no rank selected yet, find the first available rank
+      if (!userRank) {
+        const availableRanks = [1, 2, 3, 4, 5].filter(rank => !usedRanks.includes(rank));
+        if (availableRanks.length > 0) {
+          const newRank = availableRanks[0];
+          setUserRank(newRank);
+          if (onRankChange) {
+            onRankChange(id, newRank);
+          }
+        }
+      }
     }
   };
 
   const handleRankSelect = (rank: number) => {
+    // Update our rank state
     setUserRank(rank);
+    
+    // Notify parent component of rank change
+    if (onRankChange) {
+      onRankChange(id, rank);
+    }
+    
     // Ensure vote is added if they're ranking
     if (!userVoted) {
       setUserVoted("up");
@@ -106,9 +132,10 @@ const PositionCard = ({
                 <DropdownMenuItem 
                   key={rank} 
                   onClick={() => handleRankSelect(rank)}
+                  disabled={usedRanks.includes(rank) && userRank !== rank}
                   className={userRank === rank ? "bg-muted" : ""}
                 >
-                  Rank #{rank}
+                  Rank #{rank} {usedRanks.includes(rank) && userRank !== rank && "(Used)"}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
