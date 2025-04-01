@@ -1,4 +1,8 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import Layout from "@/components/layout/Layout";
 import IssueCard from "@/components/issues/IssueCard";
 import IssueFilter from "@/components/issues/IssueFilter";
@@ -10,49 +14,68 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const IssuesPage = () => {
   const { isAuthenticated } = useAuth();
-
-  // Mock issues data
-  const allIssues = [
-    { id: "1", title: "Should the minimum wage be increased to $15/hour nationwide?", category: "federal", votes: 1240, positions: 23 },
-    { id: "2", title: "Is expanding public transportation in our city worth the investment?", category: "local", votes: 864, positions: 15 },
-    { id: "3", title: "Should our state implement stricter water conservation measures?", category: "state", votes: 932, positions: 18 },
-    { id: "4", title: "Should community college be tuition-free?", category: "education", votes: 1105, positions: 27 },
-    { id: "5", title: "Should we increase the budget for road repairs in our county?", category: "local", votes: 543, positions: 8 },
-    { id: "6", title: "Should the electoral college be abolished?", category: "federal", votes: 2105, positions: 42 },
-    { id: "7", title: "Should our state increase funding for renewable energy research?", category: "environment", votes: 876, positions: 19 },
-    { id: "8", title: "Is rent control an effective solution to housing affordability?", category: "economy", votes: 1432, positions: 31 },
-    { id: "9", title: "Should our city implement a plastic bag ban?", category: "environment", votes: 731, positions: 12 },
-  ];
-
-  const [filteredIssues, setFilteredIssues] = useState(allIssues);
   const [searchQuery, setSearchQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [verificationFilter, setVerificationFilter] = useState("all");
+  
+  // Fetch all issues
+  const issuesQuery = useQuery({
+    queryKey: ["issues"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("issues")
+        .select(`
+          *,
+          positions (id),
+          profiles:creator_id (name)
+        `)
+        .order("created_at", { ascending: false });
+      
+      if (error) throw error;
+      
+      return data.map(issue => ({
+        id: issue.id,
+        title: issue.title,
+        category: issue.category,
+        votes: issue.positions?.length || 0,
+        positions: issue.positions?.length || 0,
+        creator: issue.profiles?.name || "Anonymous"
+      }));
+    }
+  });
 
+  // Filter issues based on search query and filters
+  const filteredIssues = issuesQuery.data?.filter(issue => {
+    const matchesSearch = searchQuery ? 
+      issue.title.toLowerCase().includes(searchQuery.toLowerCase()) : true;
+    
+    const matchesCategory = categoryFilter !== "all" ? 
+      issue.category.toLowerCase() === categoryFilter.toLowerCase() : true;
+    
+    // Verification filter would be implemented here if we had that data
+    
+    return matchesSearch && matchesCategory;
+  }) || [];
+
+  // Handle filter changes
   const handleFilterChange = (category: string, verification: string) => {
-    let filtered = [...allIssues];
-    
-    if (category !== "all") {
-      filtered = filtered.filter(issue => issue.category.toLowerCase() === category.toLowerCase());
-    }
-    
-    // For now, we're not filtering by verification since we don't have that data
-    // When we have the backend, we would implement this
-    
-    if (searchQuery) {
-      filtered = filtered.filter(issue => 
-        issue.title.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-    
-    setFilteredIssues(filtered);
+    setCategoryFilter(category);
+    setVerificationFilter(verification);
   };
 
+  // Handle search form submission
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    const filtered = allIssues.filter(issue => 
-      issue.title.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-    setFilteredIssues(filtered);
+    // The filtering happens automatically via the filteredIssues derived state
   };
+
+  // Handle errors
+  useEffect(() => {
+    if (issuesQuery.error) {
+      toast.error("Failed to load issues");
+      console.error("Issues query error:", issuesQuery.error);
+    }
+  }, [issuesQuery.error]);
 
   return (
     <Layout>
@@ -86,14 +109,29 @@ const IssuesPage = () => {
           <IssueFilter onFilterChange={handleFilterChange} />
         </div>
         
-        {/* Issues grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredIssues.map(issue => (
-            <IssueCard key={issue.id} {...issue} />
-          ))}
-        </div>
+        {/* Show loading state */}
+        {issuesQuery.isLoading && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="animate-pulse">
+                <div className="h-40 bg-slate-200 rounded-lg mb-2"></div>
+                <div className="h-6 bg-slate-200 rounded w-3/4 mb-2"></div>
+                <div className="h-4 bg-slate-200 rounded w-1/2"></div>
+              </div>
+            ))}
+          </div>
+        )}
+        
+        {/* Show issues */}
+        {!issuesQuery.isLoading && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredIssues.map(issue => (
+              <IssueCard key={issue.id} {...issue} />
+            ))}
+          </div>
+        )}
 
-        {filteredIssues.length === 0 && (
+        {!issuesQuery.isLoading && filteredIssues.length === 0 && (
           <div className="text-center py-12">
             <h3 className="text-xl font-medium mb-2">No issues found</h3>
             <p className="text-muted-foreground">Try adjusting your filters or search query</p>
