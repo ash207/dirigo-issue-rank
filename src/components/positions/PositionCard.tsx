@@ -2,7 +2,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowUp } from "lucide-react";
+import { ArrowUp, GripVertical } from "lucide-react";
 import { useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -94,11 +94,17 @@ const PositionCard = ({
 
   return (
     <Card 
-      className={`mb-4 ${isDraggable && userVoted ? 'cursor-grab active:cursor-grabbing' : ''}`}
+      className={`mb-4 relative ${isDraggable && userVoted ? 'cursor-grab active:cursor-grabbing' : ''}`}
       ref={setNodeRef}
       style={style}
-      {...(isDraggable && userVoted ? { ...attributes, ...listeners } : {})}
+      {...(isDraggable && userVoted ? attributes : {})}
     >
+      {isDraggable && userVoted && (
+        <div className="absolute right-2 top-2 text-gray-400" {...listeners}>
+          <GripVertical size={16} />
+        </div>
+      )}
+      
       <CardHeader className="pb-2">
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-2">
@@ -109,9 +115,14 @@ const PositionCard = ({
           </div>
         </div>
       </CardHeader>
-      <CardContent>
+      
+      <CardContent 
+        className={isDraggable && userVoted ? 'cursor-grab active:cursor-grabbing' : ''}
+        {...(isDraggable && userVoted ? listeners : {})}
+      >
         <p className="text-gray-700">{content}</p>
       </CardContent>
+      
       <CardFooter className="flex justify-between pt-2">
         <div className="flex items-center space-x-2">
           <Button 
@@ -126,7 +137,7 @@ const PositionCard = ({
           
           {userVoted === "up" && userRank && (
             <Badge variant="outline" className="ml-2">
-              Rank #{userRank} {isDraggable ? "• Drag to reorder" : ""}
+              Rank #{userRank}
             </Badge>
           )}
         </div>
