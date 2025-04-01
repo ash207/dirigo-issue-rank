@@ -1,3 +1,4 @@
+
 name: Deploy to GitHub Pages
 
 on:
@@ -20,6 +21,17 @@ jobs:
       - name: Copy index.html to 404.html
         run: cp dist/index.html dist/404.html
 
+      # Create proper headers file for Netlify/GitHub Pages
+      - name: Create _headers file
+        run: |
+          echo "/*" > dist/_headers
+          echo "  Content-Type: text/javascript" >> dist/_headers
+
+      # Create .nojekyll file to prevent Jekyll processing
+      - name: Create .nojekyll file
+        run: touch dist/.nojekyll
+
+      # Debug build output
       - name: Debug build output
         run: |
           echo "Listing contents of the root directory..."
@@ -32,5 +44,5 @@ jobs:
         with:
           github_token: ${{ secrets.GH_PAT }}
           publish_dir: ./dist
-          cname: mysimpledomain.com
+          cname: dirigovotes.com
           force_orphan: true
