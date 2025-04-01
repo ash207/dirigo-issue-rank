@@ -2,7 +2,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowUp, ArrowDown } from "lucide-react";
+import { ArrowUp } from "lucide-react";
 import { useState } from "react";
 
 interface PositionCardProps {
@@ -13,23 +13,22 @@ interface PositionCardProps {
     verificationLevel: "unverified" | "basic" | "voter" | "official";
   };
   votes: number;
-  userVoted?: "up" | "down" | null;
+  userVoted?: "up" | null;
 }
 
 const PositionCard = ({ id, content, author, votes: initialVotes, userVoted: initialUserVoted }: PositionCardProps) => {
   const [votes, setVotes] = useState(initialVotes);
-  const [userVoted, setUserVoted] = useState<"up" | "down" | null>(initialUserVoted || null);
+  const [userVoted, setUserVoted] = useState<"up" | null>(initialUserVoted || null);
 
-  const handleVote = (voteType: "up" | "down") => {
-    if (userVoted === voteType) {
+  const handleVote = () => {
+    if (userVoted === "up") {
       // Removing vote
       setUserVoted(null);
-      setVotes(voteType === "up" ? votes - 1 : votes + 1);
+      setVotes(votes - 1);
     } else {
-      // Changing vote or voting new
-      const voteChange = userVoted ? 2 : 1;
-      setUserVoted(voteType);
-      setVotes(voteType === "up" ? votes + voteChange : votes - voteChange);
+      // Adding a new vote
+      setUserVoted("up");
+      setVotes(votes + 1);
     }
   };
 
@@ -58,19 +57,11 @@ const PositionCard = ({ id, content, author, votes: initialVotes, userVoted: ini
             variant="ghost" 
             size="sm" 
             className={`p-0 h-8 w-8 rounded-full ${userVoted === "up" ? "text-green-600" : ""}`}
-            onClick={() => handleVote("up")}
+            onClick={handleVote}
           >
             <ArrowUp size={16} />
           </Button>
           <span className="text-sm font-medium">{votes}</span>
-          <Button 
-            variant="ghost" 
-            size="sm"
-            className={`p-0 h-8 w-8 rounded-full ${userVoted === "down" ? "text-red-600" : ""}`}
-            onClick={() => handleVote("down")}
-          >
-            <ArrowDown size={16} />
-          </Button>
         </div>
         <div className="text-xs text-muted-foreground">
           Rank: #{id}
