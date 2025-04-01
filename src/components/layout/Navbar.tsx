@@ -1,9 +1,18 @@
 
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { Search, User } from "lucide-react";
+import { Search, User, LogOut } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Navbar = () => {
+  const { user, signOut, isAuthenticated } = useAuth();
+
   return (
     <nav className="bg-dirigo-blue text-white shadow-md py-2">
       <div className="container mx-auto flex items-center justify-between px-4">
@@ -30,9 +39,29 @@ const Navbar = () => {
           <Button variant="ghost" size="icon" className="text-dirigo-white">
             <Search size={20} />
           </Button>
-          <Button variant="outline" className="bg-dirigo-white text-dirigo-blue hover:bg-dirigo-white/90">
-            <User size={16} className="mr-2" /> Sign In
-          </Button>
+          
+          {isAuthenticated ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="bg-dirigo-white text-dirigo-blue hover:bg-dirigo-white/90">
+                  <User size={16} className="mr-2" />
+                  {user?.name || user?.email.split('@')[0]}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={signOut}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Sign Out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Link to="/sign-in">
+              <Button variant="outline" className="bg-dirigo-white text-dirigo-blue hover:bg-dirigo-white/90">
+                <User size={16} className="mr-2" /> Sign In
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
     </nav>
