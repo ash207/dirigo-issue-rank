@@ -131,7 +131,7 @@ const PositionCard = ({
           )}
         </div>
         <div className="text-xs text-muted-foreground">
-          Rank: #{id}
+          ID: {id}
         </div>
       </CardFooter>
     </Card>
