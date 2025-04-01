@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -75,20 +74,40 @@ const IssueDetail = () => {
       if (rank === null) {
         // If removing rank, delete the entry
         delete newRanks[positionId];
-      } else {
-        // If setting a new rank, first check if that rank is used by another position
-        const positionWithSameRank = Object.entries(newRanks).find(
-          ([id, existingRank]) => existingRank === rank && id !== positionId
-        );
+        return newRanks;
+      }
+      
+      // Find if this rank is already assigned to another position
+      const positionWithSameRank = Object.entries(newRanks).find(
+        ([id, existingRank]) => existingRank === rank && id !== positionId
+      );
+      
+      // If this rank is being used somewhere else
+      if (positionWithSameRank) {
+        const [conflictingId, conflictingRank] = positionWithSameRank;
         
-        // If rank is used elsewhere, clear that other position's rank
-        if (positionWithSameRank) {
-          const [conflictingId] = positionWithSameRank;
+        // Get the previous rank of the current position (if any)
+        const prevRank = newRanks[positionId];
+        
+        // Swap the ranks - move the conflicting position to the previous rank of current position
+        if (prevRank) {
+          newRanks[conflictingId] = prevRank;
+        } else {
+          // If current position wasn't ranked before, just remove rank from conflicting position
           delete newRanks[conflictingId];
         }
-        
-        // Set the new rank for this position
-        newRanks[positionId] = rank;
+      }
+      
+      // Set the new rank for current position
+      newRanks[positionId] = rank;
+      
+      // Show toast notification about the rank change
+      if (positionWithSameRank) {
+        const [conflictingId] = positionWithSameRank;
+        const conflictingPosition = positions.find(p => p.id === conflictingId);
+        if (conflictingPosition) {
+          toast.info(`Rank order updated: "${conflictingPosition.author.name}'s position" was reordered`);
+        }
       }
       
       return newRanks;

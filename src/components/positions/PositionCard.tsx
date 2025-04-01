@@ -132,10 +132,9 @@ const PositionCard = ({
                 <DropdownMenuItem 
                   key={rank} 
                   onClick={() => handleRankSelect(rank)}
-                  disabled={usedRanks.includes(rank) && userRank !== rank}
                   className={userRank === rank ? "bg-muted" : ""}
                 >
-                  Rank #{rank} {usedRanks.includes(rank) && userRank !== rank && "(Used)"}
+                  Rank #{rank} {usedRanks.includes(rank) && userRank !== rank && "(Will reorder)"}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
