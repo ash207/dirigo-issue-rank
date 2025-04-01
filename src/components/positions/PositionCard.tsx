@@ -116,10 +116,7 @@ const PositionCard = ({
         </div>
       </CardHeader>
       
-      <CardContent 
-        className={isDraggable ? 'cursor-grab active:cursor-grabbing' : ''}
-        {...(isDraggable ? listeners : {})}
-      >
+      <CardContent>
         <p className="text-gray-700">{content}</p>
       </CardContent>
       
