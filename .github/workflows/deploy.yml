@@ -25,7 +25,11 @@ jobs:
       - name: Create _headers file
         run: |
           echo "/*" > dist/_headers
+          echo "  Content-Type: text/html" >> dist/_headers
+          echo "*.js" >> dist/_headers
           echo "  Content-Type: text/javascript" >> dist/_headers
+          echo "*.css" >> dist/_headers
+          echo "  Content-Type: text/css" >> dist/_headers
 
       # Create .nojekyll file to prevent Jekyll processing
       - name: Create .nojekyll file
