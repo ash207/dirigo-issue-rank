@@ -230,8 +230,6 @@ const IssueDetail = () => {
               ))}
           </TabsContent>
         </Tabs>
-
-        {/* Remove ranking results card */}
       </div>
     </Layout>
   );
