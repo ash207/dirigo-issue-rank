@@ -2,7 +2,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowUp } from "lucide-react";
 import { useState } from "react";
 import { 
   DropdownMenu,
@@ -39,49 +38,31 @@ const PositionCard = ({
   const [userVoted, setUserVoted] = useState<"up" | null>(initialUserVoted || null);
   const [userRank, setUserRank] = useState<number | null>(initialUserRank || null);
 
-  const handleVote = () => {
-    if (userVoted === "up") {
-      // Removing vote
-      setUserVoted(null);
-      setVotes(votes - 1);
-      
-      // Clear the rank and notify parent component
-      if (onRankChange) {
-        onRankChange(id, null);
-      }
-      setUserRank(null);
-    } else {
-      // Adding a new vote
+  const handleRankSelect = (rank: number) => {
+    // Update rank state
+    setUserRank(rank);
+    
+    // If this is a new vote, increment the vote count
+    if (!userVoted) {
       setUserVoted("up");
       setVotes(votes + 1);
-      
-      // If no rank selected yet, find the first available rank
-      if (!userRank) {
-        const availableRanks = [1, 2, 3, 4, 5].filter(rank => !usedRanks.includes(rank));
-        if (availableRanks.length > 0) {
-          const newRank = availableRanks[0];
-          setUserRank(newRank);
-          if (onRankChange) {
-            onRankChange(id, newRank);
-          }
-        }
-      }
     }
-  };
-
-  const handleRankSelect = (rank: number) => {
-    // Update our rank state
-    setUserRank(rank);
     
     // Notify parent component of rank change
     if (onRankChange) {
       onRankChange(id, rank);
     }
+  };
+
+  const handleRemoveRank = () => {
+    // Clear the rank and remove vote
+    setUserRank(null);
+    setUserVoted(null);
+    setVotes(votes > 0 ? votes - 1 : 0);
     
-    // Ensure vote is added if they're ranking
-    if (!userVoted) {
-      setUserVoted("up");
-      setVotes(votes + 1);
+    // Notify parent component
+    if (onRankChange) {
+      onRankChange(id, null);
     }
   };
 
@@ -106,25 +87,16 @@ const PositionCard = ({
       </CardContent>
       <CardFooter className="flex justify-between pt-2">
         <div className="flex items-center space-x-2">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className={`p-0 h-8 w-8 rounded-full ${userVoted === "up" ? "text-green-600" : ""}`}
-            onClick={handleVote}
-          >
-            <ArrowUp size={16} />
-          </Button>
-          <span className="text-sm font-medium">{votes}</span>
+          <span className="text-sm font-medium">{votes} votes</span>
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button 
-                variant="outline" 
-                size="sm" 
-                disabled={!userVoted}
-                className="ml-2"
+                variant={userRank ? "default" : "outline"}
+                size="sm"
+                className={userRank ? "bg-green-600 hover:bg-green-700" : ""}
               >
-                {userRank ? `Rank #${userRank}` : "Rank"}
+                {userRank ? `Ranked #${userRank}` : "Rank this position"}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
@@ -138,11 +110,19 @@ const PositionCard = ({
                   Rank #{rank} {usedRanks.includes(rank) && userRank !== rank && "(Used)"}
                 </DropdownMenuItem>
               ))}
+              {userRank && (
+                <DropdownMenuItem 
+                  onClick={handleRemoveRank}
+                  className="text-red-500 hover:text-red-700"
+                >
+                  Remove ranking
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
         <div className="text-xs text-muted-foreground">
-          Rank: #{id}
+          ID: {id}
         </div>
       </CardFooter>
     </Card>
