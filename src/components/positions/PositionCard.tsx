@@ -2,14 +2,8 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowUp } from "lucide-react";
+import { ArrowUp, ArrowDown } from "lucide-react";
 import { useState } from "react";
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 interface PositionCardProps {
   id: string;
@@ -69,15 +63,33 @@ const PositionCard = ({
     }
   };
 
-  const handleRankSelect = (rank: number) => {
-    // Update our rank state
-    setUserRank(rank);
+  const handleRankUp = () => {
+    if (!userRank || userRank <= 1) return;
     
-    // Notify parent component of rank change
+    const newRank = userRank - 1;
+    setUserRank(newRank);
+    
     if (onRankChange) {
-      onRankChange(id, rank);
+      onRankChange(id, newRank);
     }
+
+    // Ensure vote is added if they're ranking
+    if (!userVoted) {
+      setUserVoted("up");
+      setVotes(votes + 1);
+    }
+  };
+
+  const handleRankDown = () => {
+    if (!userRank || userRank >= 5) return;
     
+    const newRank = userRank + 1;
+    setUserRank(newRank);
+    
+    if (onRankChange) {
+      onRankChange(id, newRank);
+    }
+
     // Ensure vote is added if they're ranking
     if (!userVoted) {
       setUserVoted("up");
@@ -87,6 +99,29 @@ const PositionCard = ({
 
   const getVerificationColor = () => {
     return `bg-verification-${author.verificationLevel}`;
+  };
+
+  // Calculate sizes for arrows based on current rank
+  const getArrowSizes = (direction: 'up' | 'down') => {
+    if (!userVoted || !userRank) return 16; // Default size
+
+    // For up arrows
+    if (direction === 'up') {
+      if (userRank === 1) return 16; // Can't go higher
+      if (userRank === 2) return 20;
+      if (userRank === 3) return 24;
+      if (userRank === 4) return 28;
+      return 32; // rank 5 (biggest arrow)
+    }
+    
+    // For down arrows
+    else {
+      if (userRank === 5) return 16; // Can't go lower
+      if (userRank === 4) return 20;
+      if (userRank === 3) return 24;
+      if (userRank === 2) return 28;
+      return 32; // rank 1 (biggest arrow)
+    }
   };
 
   return (
@@ -116,29 +151,31 @@ const PositionCard = ({
           </Button>
           <span className="text-sm font-medium">{votes}</span>
           
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+          {userVoted === "up" && (
+            <div className="flex flex-col ml-2 items-center">
               <Button 
-                variant="outline" 
-                size="sm" 
-                disabled={!userVoted}
-                className="ml-2"
+                variant="ghost" 
+                size="sm"
+                className="p-0 h-8 w-8"
+                onClick={handleRankUp}
+                disabled={!userRank || userRank <= 1}
               >
-                {userRank ? `Rank #${userRank}` : "Rank"}
+                <ArrowUp size={getArrowSizes('up')} />
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              {[1, 2, 3, 4, 5].map((rank) => (
-                <DropdownMenuItem 
-                  key={rank} 
-                  onClick={() => handleRankSelect(rank)}
-                  className={userRank === rank ? "bg-muted" : ""}
-                >
-                  Rank #{rank} {usedRanks.includes(rank) && userRank !== rank && "(Will reorder)"}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+              {userRank && (
+                <span className="text-sm font-medium mx-1">Rank #{userRank}</span>
+              )}
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="p-0 h-8 w-8"
+                onClick={handleRankDown}
+                disabled={!userRank || userRank >= 5}
+              >
+                <ArrowDown size={getArrowSizes('down')} />
+              </Button>
+            </div>
+          )}
         </div>
         <div className="text-xs text-muted-foreground">
           Rank: #{id}
