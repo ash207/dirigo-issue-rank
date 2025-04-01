@@ -1,13 +1,20 @@
 
+import { useState } from "react";
 import { useParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import PositionCard from "@/components/positions/PositionCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 const IssueDetail = () => {
   const { id } = useParams();
+  const [rankingMode, setRankingMode] = useState(false);
+  const [rankedPositions, setRankedPositions] = useState<Array<any>>([]);
   
   // Mock data - would be fetched from backend
   const issue = {
@@ -56,6 +63,58 @@ const IssueDetail = () => {
     },
   ];
 
+  // Function to handle position drag and drop for ranking
+  const handleDragStart = (e: React.DragEvent, position: any) => {
+    e.dataTransfer.setData("positionId", position.id);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault();
+    const positionId = e.dataTransfer.getData("positionId");
+    const currentPositions = [...rankedPositions];
+    
+    // Remove the position from its current place
+    const position = currentPositions.find(p => p.id === positionId);
+    if (!position) return;
+    
+    const filteredPositions = currentPositions.filter(p => p.id !== positionId);
+    
+    // Insert at the target index
+    filteredPositions.splice(targetIndex, 0, position);
+    setRankedPositions(filteredPositions);
+  };
+
+  const toggleRankingMode = () => {
+    if (!rankingMode) {
+      // Initialize ranking mode with the current positions
+      setRankedPositions(positions);
+    }
+    setRankingMode(!rankingMode);
+  };
+
+  const submitRankings = async () => {
+    try {
+      // This would connect to the Supabase backend
+      // const { error } = await supabase.from('user_rankings').upsert({
+      //   user_id: 'user-id', // would come from auth context
+      //   issue_id: id,
+      //   rankings: rankedPositions.map(p => p.id)
+      // });
+      
+      // if (error) throw error;
+      
+      toast.success("Your position rankings have been submitted!");
+      setRankingMode(false);
+    } catch (error) {
+      console.error("Error submitting rankings:", error);
+      toast.error("Failed to submit your rankings. Please try again.");
+    }
+  };
+
   return (
     <Layout>
       <div className="container mx-auto max-w-4xl">
@@ -82,46 +141,94 @@ const IssueDetail = () => {
         </Card>
 
         {/* Positions */}
-        <Tabs defaultValue="top">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold">Positions</h2>
+        <div className="mb-4 flex justify-between items-center">
+          <h2 className="text-xl font-bold">Positions</h2>
+          <Button 
+            variant={rankingMode ? "destructive" : "outline"}
+            onClick={toggleRankingMode}
+          >
+            {rankingMode ? "Cancel Ranking" : "Rank Positions"}
+          </Button>
+        </div>
+        
+        {rankingMode ? (
+          <div className="mb-6">
+            <p className="mb-4 text-sm text-muted-foreground">
+              Drag and drop positions to rank them in your order of preference. #1 is your most preferred position.
+            </p>
+            {rankedPositions.map((position, index) => (
+              <div 
+                key={position.id} 
+                draggable
+                onDragStart={(e) => handleDragStart(e, position)}
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, index)}
+                className="relative"
+              >
+                <div className="absolute -left-8 top-1/2 transform -translate-y-1/2 bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center z-10">
+                  {index + 1}
+                </div>
+                <PositionCard {...position} />
+              </div>
+            ))}
+            <div className="mt-4 flex justify-end">
+              <Button onClick={submitRankings} className="bg-dirigo-blue">
+                Submit Rankings
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Tabs defaultValue="top">
             <TabsList>
               <TabsTrigger value="top">Top</TabsTrigger>
               <TabsTrigger value="new">Newest</TabsTrigger>
               <TabsTrigger value="verified">Verified Only</TabsTrigger>
             </TabsList>
-          </div>
 
-          <TabsContent value="top" className="space-y-4">
-            {positions.sort((a, b) => b.votes - a.votes).map(position => (
-              <PositionCard 
-                key={position.id}
-                {...position}
-              />
-            ))}
-          </TabsContent>
-
-          <TabsContent value="new" className="space-y-4">
-            {/* In real app, would be sorted by date */}
-            {positions.map(position => (
-              <PositionCard 
-                key={position.id}
-                {...position} 
-              />
-            ))}
-          </TabsContent>
-
-          <TabsContent value="verified" className="space-y-4">
-            {positions
-              .filter(p => p.author.verificationLevel === "voter" || p.author.verificationLevel === "official")
-              .map(position => (
+            <TabsContent value="top" className="space-y-4">
+              {positions.sort((a, b) => b.votes - a.votes).map(position => (
                 <PositionCard 
-                  key={position.id} 
+                  key={position.id}
                   {...position}
                 />
               ))}
-          </TabsContent>
-        </Tabs>
+            </TabsContent>
+
+            <TabsContent value="new" className="space-y-4">
+              {/* In real app, would be sorted by date */}
+              {positions.map(position => (
+                <PositionCard 
+                  key={position.id}
+                  {...position} 
+                />
+              ))}
+            </TabsContent>
+
+            <TabsContent value="verified" className="space-y-4">
+              {positions
+                .filter(p => p.author.verificationLevel === "voter" || p.author.verificationLevel === "official")
+                .map(position => (
+                  <PositionCard 
+                    key={position.id} 
+                    {...position}
+                  />
+                ))}
+            </TabsContent>
+          </Tabs>
+        )}
+
+        {/* We would add a ranking results visualization here */}
+        {/* This would be populated with data from Supabase */}
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle className="text-lg">Ranking Results</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              Submit your rankings to see how your preferences compare with others.
+            </p>
+          </CardContent>
+        </Card>
       </div>
     </Layout>
   );

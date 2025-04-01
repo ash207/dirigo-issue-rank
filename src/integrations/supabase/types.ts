@@ -9,6 +9,71 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      issues: {
+        Row: {
+          category: string
+          created_at: string
+          creator_id: string
+          description: string
+          id: string
+          title: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          creator_id: string
+          description: string
+          id?: string
+          title: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          creator_id?: string
+          description?: string
+          id?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      positions: {
+        Row: {
+          author_id: string
+          content: string
+          created_at: string
+          id: string
+          issue_id: string
+          title: string
+          votes: number
+        }
+        Insert: {
+          author_id: string
+          content: string
+          created_at?: string
+          id?: string
+          issue_id: string
+          title: string
+          votes?: number
+        }
+        Update: {
+          author_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          issue_id?: string
+          title?: string
+          votes?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "positions_issue_id_fkey"
+            columns: ["issue_id"]
+            isOneToOne: false
+            referencedRelation: "issues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -30,9 +95,59 @@ export type Database = {
         }
         Relationships: []
       }
+      user_rankings: {
+        Row: {
+          created_at: string
+          id: string
+          issue_id: string
+          rankings: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          issue_id: string
+          rankings: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          issue_id?: string
+          rankings?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_rankings_issue_id_fkey"
+            columns: ["issue_id"]
+            isOneToOne: false
+            referencedRelation: "issues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
-      [_ in never]: never
+      ranking_results: {
+        Row: {
+          all_rankings: Json | null
+          issue_id: string | null
+          total_votes: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_rankings_issue_id_fkey"
+            columns: ["issue_id"]
+            isOneToOne: false
+            referencedRelation: "issues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       [_ in never]: never
