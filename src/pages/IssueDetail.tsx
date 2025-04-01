@@ -26,6 +26,7 @@ const IssueDetail = () => {
   const positions = [
     {
       id: "1",
+      title: "Support for $15 Minimum Wage",
       content: "Yes, the minimum wage should be $15/hour nationwide. Workers need a living wage, and studies show minimal impact on overall employment with significant benefits to the economy through increased consumer spending.",
       author: { 
         name: "SenatorSmith", 
@@ -35,6 +36,7 @@ const IssueDetail = () => {
     },
     {
       id: "2",
+      title: "Gradual Phased Implementation",
       content: "I believe we need a minimum wage increase, but it should be phased in gradually and adjusted based on regional cost of living to minimize negative impacts on small businesses in lower-cost areas.",
       author: { 
         name: "EconomistJones", 
@@ -44,6 +46,7 @@ const IssueDetail = () => {
     },
     {
       id: "3",
+      title: "Opposition to Nationwide Increase",
       content: "No, a nationwide $15 minimum wage would harm small businesses and lead to job cuts. We should focus on other ways to support low-wage workers like expanding the EITC and investing in education and job training.",
       author: { 
         name: "BusinessOwner22", 
