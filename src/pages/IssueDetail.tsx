@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 
 const IssueDetail = () => {
   const { id } = useParams();
@@ -37,7 +38,8 @@ const IssueDetail = () => {
         name: "SenatorSmith", 
         verificationLevel: "official" as const
       },
-      votes: 532
+      votes: 532,
+      userRank: 1
     },
     {
       id: "2",
@@ -61,7 +63,7 @@ const IssueDetail = () => {
 
   const handleSubmitPosition = () => {
     // In a real app, this would submit to the backend
-    alert("Position submitted! (This would be saved to the database in the real app)");
+    toast.success("Position submitted successfully!");
     setNewPosition("");
     setDialogOpen(false);
   };

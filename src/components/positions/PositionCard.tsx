@@ -4,6 +4,12 @@ import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
 import { ArrowUp } from "lucide-react";
 import { useState } from "react";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface PositionCardProps {
   id: string;
@@ -14,19 +20,40 @@ interface PositionCardProps {
   };
   votes: number;
   userVoted?: "up" | null;
+  userRank?: number | null;
 }
 
-const PositionCard = ({ id, content, author, votes: initialVotes, userVoted: initialUserVoted }: PositionCardProps) => {
+const PositionCard = ({ 
+  id, 
+  content, 
+  author, 
+  votes: initialVotes, 
+  userVoted: initialUserVoted,
+  userRank: initialUserRank 
+}: PositionCardProps) => {
   const [votes, setVotes] = useState(initialVotes);
   const [userVoted, setUserVoted] = useState<"up" | null>(initialUserVoted || null);
+  const [userRank, setUserRank] = useState<number | null>(initialUserRank || null);
 
   const handleVote = () => {
     if (userVoted === "up") {
       // Removing vote
       setUserVoted(null);
       setVotes(votes - 1);
+      setUserRank(null);
     } else {
       // Adding a new vote
+      setUserVoted("up");
+      setVotes(votes + 1);
+      // If no rank selected yet, default to rank 1
+      if (!userRank) setUserRank(1);
+    }
+  };
+
+  const handleRankSelect = (rank: number) => {
+    setUserRank(rank);
+    // Ensure vote is added if they're ranking
+    if (!userVoted) {
       setUserVoted("up");
       setVotes(votes + 1);
     }
@@ -62,6 +89,30 @@ const PositionCard = ({ id, content, author, votes: initialVotes, userVoted: ini
             <ArrowUp size={16} />
           </Button>
           <span className="text-sm font-medium">{votes}</span>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                disabled={!userVoted}
+                className="ml-2"
+              >
+                {userRank ? `Rank #${userRank}` : "Rank"}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              {[1, 2, 3, 4, 5].map((rank) => (
+                <DropdownMenuItem 
+                  key={rank} 
+                  onClick={() => handleRankSelect(rank)}
+                  className={userRank === rank ? "bg-muted" : ""}
+                >
+                  Rank #{rank}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         <div className="text-xs text-muted-foreground">
           Rank: #{id}
