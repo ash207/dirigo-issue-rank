@@ -51,7 +51,7 @@ const Navbar = () => {
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="bg-dirigo-white text-dirigo-blue hover:bg-dirigo-white/90">
                   <User size={16} className="mr-2" />
-                  {user?.user_metadata?.name || user?.email?.split('@')[0]}
+                  {user?.email?.split('@')[0]}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
