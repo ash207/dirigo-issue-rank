@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -13,8 +14,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const IssueDetail = () => {
   const { id } = useParams();
-  const [rankingMode, setRankingMode] = useState(false);
-  const [rankedPositions, setRankedPositions] = useState<Array<any>>([]);
+  const [rankedPositions, setRankedPositions] = useState<Map<string, number>>(new Map());
   const { isAuthenticated, user } = useAuth();
   
   // Mock data - would be fetched from backend
@@ -83,25 +83,31 @@ const IssueDetail = () => {
         }
         
         if (data && data.rankings) {
-          // If user has existing rankings, load them
-          const positionsWithRankings = [];
+          // Create a new Map to store position IDs and their ranks
+          const rankingsMap = new Map<string, number>();
+          
           // Ensure rankings is treated as an array of position IDs
-          const rankingsArray = Array.isArray(data.rankings) 
-            ? data.rankings 
-            : typeof data.rankings === 'object' 
-              ? Object.values(data.rankings) 
-              : [];
-              
-          // Convert stored position IDs back to full position objects
-          for (const posId of rankingsArray) {
-            if (typeof posId === 'string') {
-              const position = positions.find(p => p.id === posId);
-              if (position) {
-                positionsWithRankings.push(position);
+          if (Array.isArray(data.rankings)) {
+            // If it's an array, the index + 1 is the rank
+            data.rankings.forEach((posId, index) => {
+              if (typeof posId === 'string') {
+                rankingsMap.set(posId, index + 1);
               }
-            }
+            });
+          } else if (typeof data.rankings === 'object') {
+            // If it's an object, convert values to an array
+            Object.entries(data.rankings).forEach(([key, value]) => {
+              if (typeof value === 'string') {
+                // Try to parse the key as a number (rank) and the value as the position ID
+                const rank = parseInt(key);
+                if (!isNaN(rank)) {
+                  rankingsMap.set(value, rank);
+                }
+              }
+            });
           }
-          setRankedPositions(positionsWithRankings);
+
+          setRankedPositions(rankingsMap);
         }
       } catch (error) {
         console.error("Error in fetchUserRankings:", error);
@@ -111,73 +117,72 @@ const IssueDetail = () => {
     fetchUserRankings();
   }, [isAuthenticated, user, id]);
 
-  // Function to handle position drag and drop for ranking
-  const handleDragStart = (e: React.DragEvent, position: any) => {
-    e.dataTransfer.setData("positionId", position.id);
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-  };
-
-  const handleDrop = (e: React.DragEvent, targetIndex: number) => {
-    e.preventDefault();
-    const positionId = e.dataTransfer.getData("positionId");
-    const currentPositions = [...rankedPositions];
+  // Handle position ranking change
+  const handleRankChange = (positionId: string, newRank: number) => {
+    // Create a copy of the current rankings map
+    const updatedRankings = new Map(rankedPositions);
     
-    // Remove the position from its current place
-    const position = currentPositions.find(p => p.id === positionId);
-    if (!position) return;
+    // If another position already has this rank, we need to swap or shift
+    let positionToSwap = "";
+    for (const [id, rank] of updatedRankings.entries()) {
+      if (rank === newRank) {
+        positionToSwap = id;
+        break;
+      }
+    }
     
-    const filteredPositions = currentPositions.filter(p => p.id !== positionId);
+    // If this position already has a rank and we're changing it
+    const currentRank = updatedRankings.get(positionId);
     
-    // Insert at the target index
-    filteredPositions.splice(targetIndex, 0, position);
-    setRankedPositions(filteredPositions);
-  };
-
-  const toggleRankingMode = () => {
-    if (!isAuthenticated) {
-      toast.error("Please sign in to rank positions", {
-        description: "You need to be logged in to rank positions.",
-        action: {
-          label: "Sign In",
-          onClick: () => window.location.href = "/sign-in"
+    if (positionToSwap) {
+      // If we're swapping with another position
+      if (currentRank !== undefined) {
+        // Simple swap - the other position gets this one's old rank
+        updatedRankings.set(positionToSwap, currentRank);
+      } else {
+        // The other position needs to be pushed down
+        // Find all positions with rank >= newRank and increment their rank
+        for (const [id, rank] of updatedRankings.entries()) {
+          if (rank >= newRank && id !== positionId) {
+            updatedRankings.set(id, rank + 1);
+          }
         }
-      });
-      return;
+      }
     }
     
-    if (!rankingMode) {
-      // Initialize ranking mode with the current positions
-      setRankedPositions(positions);
-    }
-    setRankingMode(!rankingMode);
+    // Set the new rank for this position
+    updatedRankings.set(positionId, newRank);
+    
+    // Update state with new rankings
+    setRankedPositions(updatedRankings);
+    
+    // Save rankings to database
+    saveRankings(updatedRankings);
   };
 
-  const submitRankings = async () => {
-    if (!isAuthenticated || !user) {
-      toast.error("Please sign in to submit rankings");
-      return;
-    }
+  // Save rankings to Supabase
+  const saveRankings = async (rankings: Map<string, number>) => {
+    if (!isAuthenticated || !user || !id) return;
     
     try {
-      const positionIds = rankedPositions.map(p => p.id);
+      // Convert Map to array sorted by rank
+      const sortedArray = Array.from(rankings.entries())
+        .sort((a, b) => a[1] - b[1])
+        .map(([id]) => id); // Extract just the position IDs in order of rank
       
       const { error } = await supabase.from('user_rankings').upsert({
         user_id: user.id,
         issue_id: id,
-        rankings: positionIds,
+        rankings: sortedArray,
         updated_at: new Date().toISOString()
       });
       
       if (error) throw error;
       
-      toast.success("Your position rankings have been submitted!");
-      setRankingMode(false);
+      toast.success("Your position ranking has been saved!");
     } catch (error: any) {
-      console.error("Error submitting rankings:", error);
-      toast.error("Failed to submit your rankings. Please try again.");
+      console.error("Error saving rankings:", error);
+      toast.error("Failed to save your ranking. Please try again.");
     }
   };
 
@@ -209,79 +214,69 @@ const IssueDetail = () => {
         {/* Positions */}
         <div className="mb-4 flex justify-between items-center">
           <h2 className="text-xl font-bold">Positions</h2>
-          <Button 
-            variant={rankingMode ? "destructive" : "outline"}
-            onClick={toggleRankingMode}
-          >
-            {rankingMode ? "Cancel Ranking" : "Rank Positions"}
-          </Button>
+          {isAuthenticated ? (
+            <div className="text-sm text-muted-foreground">
+              Click the arrow icon to rank positions
+            </div>
+          ) : (
+            <Button 
+              variant="outline"
+              onClick={() => window.location.href = "/sign-in"}
+            >
+              Sign in to rank
+            </Button>
+          )}
         </div>
         
-        {rankingMode ? (
-          <div className="mb-6">
-            <p className="mb-4 text-sm text-muted-foreground">
-              Drag and drop positions to rank them in your order of preference. #1 is your most preferred position.
-            </p>
-            {rankedPositions.map((position, index) => (
-              <div 
-                key={position.id} 
-                draggable
-                onDragStart={(e) => handleDragStart(e, position)}
-                onDragOver={handleDragOver}
-                onDrop={(e) => handleDrop(e, index)}
-                className="relative"
-              >
-                <div className="absolute -left-8 top-1/2 transform -translate-y-1/2 bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center z-10">
-                  {index + 1}
-                </div>
-                <PositionCard {...position} interactive={false} />
-              </div>
+        <Tabs defaultValue="top">
+          <TabsList>
+            <TabsTrigger value="top">Top</TabsTrigger>
+            <TabsTrigger value="new">Newest</TabsTrigger>
+            <TabsTrigger value="verified">Verified Only</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="top" className="space-y-4">
+            {positions.sort((a, b) => b.votes - a.votes).map(position => (
+              <PositionCard 
+                key={position.id}
+                {...position}
+                rank={rankedPositions.get(position.id) || null}
+                onRankChange={handleRankChange}
+                totalPositions={positions.length}
+                isAuthenticated={isAuthenticated}
+              />
             ))}
-            <div className="mt-4 flex justify-end">
-              <Button onClick={submitRankings} className="bg-dirigo-blue">
-                Submit Rankings
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <Tabs defaultValue="top">
-            <TabsList>
-              <TabsTrigger value="top">Top</TabsTrigger>
-              <TabsTrigger value="new">Newest</TabsTrigger>
-              <TabsTrigger value="verified">Verified Only</TabsTrigger>
-            </TabsList>
+          </TabsContent>
 
-            <TabsContent value="top" className="space-y-4">
-              {positions.sort((a, b) => b.votes - a.votes).map(position => (
+          <TabsContent value="new" className="space-y-4">
+            {/* In real app, would be sorted by date */}
+            {positions.map(position => (
+              <PositionCard 
+                key={position.id}
+                {...position}
+                rank={rankedPositions.get(position.id) || null}
+                onRankChange={handleRankChange}
+                totalPositions={positions.length}
+                isAuthenticated={isAuthenticated}
+              />
+            ))}
+          </TabsContent>
+
+          <TabsContent value="verified" className="space-y-4">
+            {positions
+              .filter(p => p.author.verificationLevel === "voter" || p.author.verificationLevel === "official")
+              .map(position => (
                 <PositionCard 
-                  key={position.id}
+                  key={position.id} 
                   {...position}
+                  rank={rankedPositions.get(position.id) || null}
+                  onRankChange={handleRankChange}
+                  totalPositions={positions.length}
+                  isAuthenticated={isAuthenticated}
                 />
               ))}
-            </TabsContent>
-
-            <TabsContent value="new" className="space-y-4">
-              {/* In real app, would be sorted by date */}
-              {positions.map(position => (
-                <PositionCard 
-                  key={position.id}
-                  {...position} 
-                />
-              ))}
-            </TabsContent>
-
-            <TabsContent value="verified" className="space-y-4">
-              {positions
-                .filter(p => p.author.verificationLevel === "voter" || p.author.verificationLevel === "official")
-                .map(position => (
-                  <PositionCard 
-                    key={position.id} 
-                    {...position}
-                  />
-                ))}
-            </TabsContent>
-          </Tabs>
-        )}
+          </TabsContent>
+        </Tabs>
 
         {/* We would add a ranking results visualization here */}
         <Card className="mt-8">
@@ -297,8 +292,9 @@ const IssueDetail = () => {
               </p>
             ) : (
               <p className="text-sm text-muted-foreground">
-                {rankingMode ? "Submit your rankings to see how your preferences compare with others." : 
-                "Click 'Rank Positions' to submit your preferences and see how they compare with others."}
+                {rankedPositions.size > 0 
+                  ? `You've ranked ${rankedPositions.size} of ${positions.length} positions.` 
+                  : "Click the arrow icon on positions to rank them."}
               </p>
             )}
           </CardContent>
