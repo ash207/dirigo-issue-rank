@@ -1,5 +1,4 @@
 
-import { useState } from "react";
 import { useParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/contexts/AuthContext";
@@ -12,7 +11,7 @@ const IssueDetail = () => {
   const { isAuthenticated, user } = useAuth();
   const { userVotedPosition, handleVote } = usePositionVotes(id, user?.id, isAuthenticated);
   
-  // Mock data - would be fetched from backend
+  // Mock data with UUID-formatted IDs for better Supabase compatibility
   const issue = {
     id,
     title: "Should the minimum wage be increased to $15/hour nationwide?",
@@ -28,7 +27,7 @@ const IssueDetail = () => {
 
   const positions = [
     {
-      id: "1",
+      id: "e7f8a7b6-d2c3-4a5b-9c8d-e7f6a5b4c3d2", // Mock UUID format
       title: "Support for $15 Minimum Wage",
       content: "Yes, the minimum wage should be $15/hour nationwide. Workers need a living wage, and studies show minimal impact on overall employment with significant benefits to the economy through increased consumer spending.",
       author: { 
@@ -38,7 +37,7 @@ const IssueDetail = () => {
       votes: 532,
     },
     {
-      id: "2",
+      id: "a1b2c3d4-e5f6-7a8b-9c0d-e1f2a3b4c5d6", // Mock UUID format
       title: "Gradual Phased Implementation",
       content: "I believe we need a minimum wage increase, but it should be phased in gradually and adjusted based on regional cost of living to minimize negative impacts on small businesses in lower-cost areas.",
       author: { 
@@ -48,7 +47,7 @@ const IssueDetail = () => {
       votes: 421,
     },
     {
-      id: "3",
+      id: "f1e2d3c4-b5a6-7c8d-9e0f-a1b2c3d4e5f6", // Mock UUID format
       title: "Opposition to Nationwide Increase",
       content: "No, a nationwide $15 minimum wage would harm small businesses and lead to job cuts. We should focus on other ways to support low-wage workers like expanding the EITC and investing in education and job training.",
       author: { 

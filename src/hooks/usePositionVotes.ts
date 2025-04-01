@@ -3,12 +3,26 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+// Helper to check if a string is a valid UUID
+const isValidUUID = (str: string | undefined): boolean => {
+  if (!str) return false;
+  // Basic UUID format validation (simplified)
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(str);
+};
+
 export const usePositionVotes = (issueId: string | undefined, userId: string | undefined, isAuthenticated: boolean) => {
   const [userVotedPosition, setUserVotedPosition] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUserVote = async () => {
       if (!isAuthenticated || !userId || !issueId) return;
+      
+      // Skip Supabase query if the issueId is not a valid UUID
+      if (!isValidUUID(issueId)) {
+        console.log("Using mock data for non-UUID issueId:", issueId);
+        return;
+      }
       
       try {
         const { data, error } = await supabase
@@ -36,6 +50,14 @@ export const usePositionVotes = (issueId: string | undefined, userId: string | u
 
   const handleVote = async (positionId: string) => {
     if (!isAuthenticated || !userId || !issueId) return;
+    
+    // For mock data with non-UUID IDs, simulate voting without database calls
+    if (!isValidUUID(issueId) || !isValidUUID(positionId)) {
+      console.log("Using mock voting for non-UUID IDs", { issueId, positionId });
+      setUserVotedPosition(positionId);
+      toast.success("Your vote has been recorded! (Mock)");
+      return;
+    }
     
     try {
       if (userVotedPosition) {
