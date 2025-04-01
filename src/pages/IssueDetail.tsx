@@ -3,18 +3,12 @@ import { useState } from "react";
 import { useParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import PositionCard from "@/components/positions/PositionCard";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
-import { toast } from "sonner";
 
 const IssueDetail = () => {
   const { id } = useParams();
-  const [newPosition, setNewPosition] = useState("");
-  const [dialogOpen, setDialogOpen] = useState(false);
   const [userRanks, setUserRanks] = useState<Record<string, number>>({ "1": 1 });
   
   // Calculate used ranks from the userRanks object
@@ -95,13 +89,6 @@ const IssueDetail = () => {
     });
   };
 
-  const handleSubmitPosition = () => {
-    // In a real app, this would submit to the backend
-    toast.success("Position submitted successfully!");
-    setNewPosition("");
-    setDialogOpen(false);
-  };
-
   return (
     <Layout>
       <div className="container mx-auto max-w-4xl">
@@ -123,35 +110,6 @@ const IssueDetail = () => {
               <div className="text-sm text-muted-foreground">
                 {issue.votes} people ranked this issue • {positions.length} positions
               </div>
-              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button className="bg-dirigo-blue">Add Your Position</Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Share Your Position</DialogTitle>
-                    <DialogDescription>
-                      What's your stance on this issue? Be clear and concise.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <Textarea
-                    placeholder="Write your position here..."
-                    value={newPosition}
-                    onChange={(e) => setNewPosition(e.target.value)}
-                    className="min-h-[150px]"
-                  />
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-                    <Button 
-                      className="bg-dirigo-blue" 
-                      onClick={handleSubmitPosition}
-                      disabled={!newPosition.trim()}
-                    >
-                      Submit Position
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
             </div>
           </CardContent>
         </Card>
