@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import PositionCard from "@/components/positions/PositionCard";
@@ -10,11 +10,13 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/contexts/AuthContext";
 
 const IssueDetail = () => {
   const { id } = useParams();
   const [rankingMode, setRankingMode] = useState(false);
   const [rankedPositions, setRankedPositions] = useState<Array<any>>([]);
+  const { isAuthenticated, user } = useAuth();
   
   // Mock data - would be fetched from backend
   const issue = {
@@ -63,6 +65,44 @@ const IssueDetail = () => {
     },
   ];
 
+  // Check for existing user rankings when user is authenticated
+  useEffect(() => {
+    const fetchUserRankings = async () => {
+      if (!isAuthenticated || !user || !id) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('user_rankings')
+          .select('rankings')
+          .eq('user_id', user.id)
+          .eq('issue_id', id)
+          .single();
+        
+        if (error) {
+          console.error("Error fetching rankings:", error);
+          return;
+        }
+        
+        if (data && data.rankings) {
+          // If user has existing rankings, load them
+          const positionsWithRankings = [];
+          // Convert stored position IDs back to full position objects
+          for (const posId of data.rankings) {
+            const position = positions.find(p => p.id === posId);
+            if (position) {
+              positionsWithRankings.push(position);
+            }
+          }
+          setRankedPositions(positionsWithRankings);
+        }
+      } catch (error) {
+        console.error("Error in fetchUserRankings:", error);
+      }
+    };
+    
+    fetchUserRankings();
+  }, [isAuthenticated, user, id]);
+
   // Function to handle position drag and drop for ranking
   const handleDragStart = (e: React.DragEvent, position: any) => {
     e.dataTransfer.setData("positionId", position.id);
@@ -89,6 +129,17 @@ const IssueDetail = () => {
   };
 
   const toggleRankingMode = () => {
+    if (!isAuthenticated) {
+      toast.error("Please sign in to rank positions", {
+        description: "You need to be logged in to rank positions.",
+        action: {
+          label: "Sign In",
+          onClick: () => window.location.href = "/sign-in"
+        }
+      });
+      return;
+    }
+    
     if (!rankingMode) {
       // Initialize ranking mode with the current positions
       setRankedPositions(positions);
@@ -97,19 +148,26 @@ const IssueDetail = () => {
   };
 
   const submitRankings = async () => {
+    if (!isAuthenticated || !user) {
+      toast.error("Please sign in to submit rankings");
+      return;
+    }
+    
     try {
-      // This would connect to the Supabase backend
-      // const { error } = await supabase.from('user_rankings').upsert({
-      //   user_id: 'user-id', // would come from auth context
-      //   issue_id: id,
-      //   rankings: rankedPositions.map(p => p.id)
-      // });
+      const positionIds = rankedPositions.map(p => p.id);
       
-      // if (error) throw error;
+      const { error } = await supabase.from('user_rankings').upsert({
+        user_id: user.id,
+        issue_id: id,
+        rankings: positionIds,
+        updated_at: new Date().toISOString()
+      });
+      
+      if (error) throw error;
       
       toast.success("Your position rankings have been submitted!");
       setRankingMode(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error submitting rankings:", error);
       toast.error("Failed to submit your rankings. Please try again.");
     }
@@ -168,7 +226,7 @@ const IssueDetail = () => {
                 <div className="absolute -left-8 top-1/2 transform -translate-y-1/2 bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center z-10">
                   {index + 1}
                 </div>
-                <PositionCard {...position} />
+                <PositionCard {...position} interactive={false} />
               </div>
             ))}
             <div className="mt-4 flex justify-end">
@@ -218,15 +276,23 @@ const IssueDetail = () => {
         )}
 
         {/* We would add a ranking results visualization here */}
-        {/* This would be populated with data from Supabase */}
         <Card className="mt-8">
           <CardHeader>
             <CardTitle className="text-lg">Ranking Results</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Submit your rankings to see how your preferences compare with others.
-            </p>
+            {!isAuthenticated ? (
+              <p className="text-sm text-muted-foreground">
+                <Button variant="link" className="p-0 h-auto" onClick={() => window.location.href = "/sign-in"}>
+                  Sign in
+                </Button> to see and submit rankings.
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                {rankingMode ? "Submit your rankings to see how your preferences compare with others." : 
+                "Click 'Rank Positions' to submit your preferences and see how they compare with others."}
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>

@@ -2,6 +2,8 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ThumbsUp } from "lucide-react";
+import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface PositionCardProps {
   id: string;
@@ -12,6 +14,7 @@ interface PositionCardProps {
     verificationLevel: "unverified" | "basic" | "voter" | "official";
   };
   votes: number;
+  interactive?: boolean;
 }
 
 const getVerificationColor = (level: string) => {
@@ -27,15 +30,31 @@ const getVerificationColor = (level: string) => {
   }
 };
 
+const VerificationBadge = ({ level }: { level: string }) => {
+  return (
+    <Badge variant="outline" className="text-xs">
+      {level.charAt(0).toUpperCase() + level.slice(1)}
+    </Badge>
+  );
+};
+
 const PositionCard = ({ 
   id,
   title,
   content,
   author,
-  votes
+  votes,
+  interactive = true
 }: PositionCardProps) => {
+  const { isAuthenticated } = useAuth();
+  const [isHovered, setIsHovered] = useState(false);
+
   return (
-    <Card className="mb-4">
+    <Card 
+      className={`mb-4 ${interactive ? "transition-all duration-150 hover:shadow-md" : ""}`}
+      onMouseEnter={() => interactive && setIsHovered(true)}
+      onMouseLeave={() => interactive && setIsHovered(false)}
+    >
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
           <h3 className="font-bold text-lg">{title}</h3>
@@ -52,9 +71,7 @@ const PositionCard = ({
           <span className="text-sm">
             Posted by <span className={getVerificationColor(author.verificationLevel)}>@{author.name}</span>
           </span>
-          <Badge variant="outline" className="text-xs">
-            {author.verificationLevel.charAt(0).toUpperCase() + author.verificationLevel.slice(1)}
-          </Badge>
+          <VerificationBadge level={author.verificationLevel} />
         </div>
       </CardContent>
     </Card>
