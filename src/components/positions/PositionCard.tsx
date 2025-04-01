@@ -37,7 +37,7 @@ const PositionCard = ({
   const [userVoted, setUserVoted] = useState<"up" | null>(initialUserVoted || null);
   const [userRank, setUserRank] = useState<number | null>(initialUserRank || null);
 
-  // Set up sortable if the card is draggable
+  // Set up sortable - now always enabled when isDraggable is true, regardless of vote status
   const {
     attributes,
     listeners,
@@ -47,7 +47,7 @@ const PositionCard = ({
     isDragging
   } = useSortable({
     id,
-    disabled: !isDraggable || !userVoted
+    disabled: !isDraggable
   });
 
   const style = {
@@ -94,12 +94,12 @@ const PositionCard = ({
 
   return (
     <Card 
-      className={`mb-4 relative ${isDraggable && userVoted ? 'cursor-grab active:cursor-grabbing' : ''}`}
+      className={`mb-4 relative ${isDraggable ? 'cursor-grab active:cursor-grabbing' : ''}`}
       ref={setNodeRef}
       style={style}
-      {...(isDraggable && userVoted ? attributes : {})}
+      {...(isDraggable ? attributes : {})}
     >
-      {isDraggable && userVoted && (
+      {isDraggable && (
         <div className="absolute right-2 top-2 text-gray-400" {...listeners}>
           <GripVertical size={16} />
         </div>
@@ -117,8 +117,8 @@ const PositionCard = ({
       </CardHeader>
       
       <CardContent 
-        className={isDraggable && userVoted ? 'cursor-grab active:cursor-grabbing' : ''}
-        {...(isDraggable && userVoted ? listeners : {})}
+        className={isDraggable ? 'cursor-grab active:cursor-grabbing' : ''}
+        {...(isDraggable ? listeners : {})}
       >
         <p className="text-gray-700">{content}</p>
       </CardContent>

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -105,17 +104,12 @@ const IssueDetail = () => {
         // Rearrange the positions array
         const reorderedPositions = arrayMove(items, oldIndex, newIndex);
         
-        // Update the ranks based on new order
-        const userVotedPositions = reorderedPositions.filter(
-          pos => pos.userRank !== null
-        );
-        
-        // Recalculate ranks
-        const newRanks = {} as Record<string, number>;
-        userVotedPositions.forEach((pos, index) => {
-          const newRank = index + 1;
-          newRanks[pos.id] = newRank;
-        });
+        // Auto-assign ranks to the first 5 positions if they don't already have ranks
+        const newRanks = { ...userRanks };
+        for (let i = 0; i < Math.min(reorderedPositions.length, 5); i++) {
+          const position = reorderedPositions[i];
+          newRanks[position.id] = i + 1;
+        }
         
         // Update the userRanks state
         setUserRanks(newRanks);
@@ -126,7 +120,8 @@ const IssueDetail = () => {
         // Update positions with new ranks
         return reorderedPositions.map(position => ({
           ...position,
-          userRank: newRanks[position.id] || null
+          userRank: newRanks[position.id] || null,
+          userVoted: newRanks[position.id] ? "up" : null // Auto-upvote ranked positions
         }));
       });
     }
@@ -189,7 +184,6 @@ const IssueDetail = () => {
   };
 
   const handleSubmitPosition = () => {
-    // In a real app, this would submit to the backend
     toast.success("Position submitted successfully!");
     setNewPosition("");
     setDialogOpen(false);
@@ -289,7 +283,7 @@ const IssueDetail = () => {
           >
             <TabsContent value="top">
               <SortableContext 
-                items={getSortedPositions("top").filter(p => p.userRank !== null).map(p => p.id)}
+                items={getSortedPositions("top").map(p => p.id)}
                 strategy={verticalListSortingStrategy}
               >
                 {getSortedPositions("top").map(position => (
@@ -298,7 +292,7 @@ const IssueDetail = () => {
                     {...position}
                     usedRanks={usedRanks}
                     onRankChange={handleRankChange}
-                    isDraggable={position.userRank !== null}
+                    isDraggable={true}
                   />
                 ))}
               </SortableContext>
@@ -306,7 +300,7 @@ const IssueDetail = () => {
 
             <TabsContent value="new">
               <SortableContext 
-                items={getSortedPositions("new").filter(p => p.userRank !== null).map(p => p.id)}
+                items={getSortedPositions("new").map(p => p.id)}
                 strategy={verticalListSortingStrategy}
               >
                 {getSortedPositions("new").map(position => (
@@ -315,7 +309,7 @@ const IssueDetail = () => {
                     {...position} 
                     usedRanks={usedRanks}
                     onRankChange={handleRankChange}
-                    isDraggable={position.userRank !== null}
+                    isDraggable={true}
                   />
                 ))}
               </SortableContext>
@@ -323,7 +317,7 @@ const IssueDetail = () => {
 
             <TabsContent value="verified">
               <SortableContext 
-                items={getSortedPositions("verified").filter(p => p.userRank !== null).map(p => p.id)}
+                items={getSortedPositions("verified").map(p => p.id)}
                 strategy={verticalListSortingStrategy}
               >
                 {getSortedPositions("verified").map(position => (
@@ -332,7 +326,7 @@ const IssueDetail = () => {
                     {...position}
                     usedRanks={usedRanks}
                     onRankChange={handleRankChange}
-                    isDraggable={position.userRank !== null}
+                    isDraggable={true}
                   />
                 ))}
               </SortableContext>
