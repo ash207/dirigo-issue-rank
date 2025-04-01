@@ -1,5 +1,4 @@
 
-import { useState } from "react";
 import { useParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import PositionCard from "@/components/positions/PositionCard";
@@ -9,11 +8,7 @@ import { Badge } from "@/components/ui/badge";
 
 const IssueDetail = () => {
   const { id } = useParams();
-  const [userRanks, setUserRanks] = useState<Record<string, number>>({ "1": 1 });
   
-  // Calculate used ranks from the userRanks object
-  const usedRanks = Object.values(userRanks);
-
   // Mock data - would be fetched from backend
   const issue = {
     id,
@@ -37,7 +32,6 @@ const IssueDetail = () => {
         verificationLevel: "official" as const
       },
       votes: 532,
-      userRank: userRanks["1"] || null
     },
     {
       id: "2",
@@ -47,7 +41,6 @@ const IssueDetail = () => {
         verificationLevel: "voter" as const
       },
       votes: 421,
-      userRank: userRanks["2"] || null
     },
     {
       id: "3",
@@ -57,37 +50,8 @@ const IssueDetail = () => {
         verificationLevel: "basic" as const
       },
       votes: 287,
-      userRank: userRanks["3"] || null
     },
   ];
-
-  // Handle rank changes from PositionCard components
-  const handleRankChange = (positionId: string, rank: number | null) => {
-    setUserRanks(prevRanks => {
-      const newRanks = { ...prevRanks };
-      
-      if (rank === null) {
-        // If removing rank, delete the entry
-        delete newRanks[positionId];
-      } else {
-        // If setting a new rank, first check if that rank is used by another position
-        const positionWithSameRank = Object.entries(newRanks).find(
-          ([id, existingRank]) => existingRank === rank && id !== positionId
-        );
-        
-        // If rank is used elsewhere, clear that other position's rank
-        if (positionWithSameRank) {
-          const [conflictingId] = positionWithSameRank;
-          delete newRanks[conflictingId];
-        }
-        
-        // Set the new rank for this position
-        newRanks[positionId] = rank;
-      }
-      
-      return newRanks;
-    });
-  };
 
   return (
     <Layout>
@@ -108,7 +72,7 @@ const IssueDetail = () => {
             
             <div className="flex justify-between items-center">
               <div className="text-sm text-muted-foreground">
-                {issue.votes} people ranked this issue • {positions.length} positions
+                {issue.votes} people viewed this issue • {positions.length} positions
               </div>
             </div>
           </CardContent>
@@ -119,7 +83,7 @@ const IssueDetail = () => {
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold">Positions</h2>
             <TabsList>
-              <TabsTrigger value="top">Top Ranked</TabsTrigger>
+              <TabsTrigger value="top">Top</TabsTrigger>
               <TabsTrigger value="new">Newest</TabsTrigger>
               <TabsTrigger value="verified">Verified Only</TabsTrigger>
             </TabsList>
@@ -130,8 +94,6 @@ const IssueDetail = () => {
               <PositionCard 
                 key={position.id}
                 {...position}
-                usedRanks={usedRanks}
-                onRankChange={handleRankChange}
               />
             ))}
           </TabsContent>
@@ -142,8 +104,6 @@ const IssueDetail = () => {
               <PositionCard 
                 key={position.id}
                 {...position} 
-                usedRanks={usedRanks}
-                onRankChange={handleRankChange}
               />
             ))}
           </TabsContent>
@@ -155,8 +115,6 @@ const IssueDetail = () => {
                 <PositionCard 
                   key={position.id} 
                   {...position}
-                  usedRanks={usedRanks}
-                  onRankChange={handleRankChange}
                 />
               ))}
           </TabsContent>
