@@ -10,20 +10,6 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import {
-  DndContext,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-  KeyboardSensor,
-  closestCenter
-} from '@dnd-kit/core';
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-  arrayMove
-} from '@dnd-kit/sortable';
 
 const IssueDetail = () => {
   const { id } = useParams();
@@ -48,7 +34,7 @@ const IssueDetail = () => {
     }
   };
 
-  const [positions, setPositions] = useState([
+  const positions = [
     {
       id: "1",
       content: "Yes, the minimum wage should be $15/hour nationwide. Workers need a living wage, and studies show minimal impact on overall employment with significant benefits to the economy through increased consumer spending.",
@@ -79,54 +65,7 @@ const IssueDetail = () => {
       votes: 287,
       userRank: userRanks["3"] || null
     },
-  ]);
-
-  // Set up DnD sensors
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 5, // 5px movement before drag starts
-      },
-    }),
-    useSensor(KeyboardSensor)
-  );
-
-  // Handle drag end event
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    
-    if (over && active.id !== over.id) {
-      // Find the positions
-      setPositions((items) => {
-        // Find the indices of the dragged and target items
-        const oldIndex = items.findIndex((item) => item.id === active.id);
-        const newIndex = items.findIndex((item) => item.id === over.id);
-        
-        // Rearrange the positions array
-        const reorderedPositions = arrayMove(items, oldIndex, newIndex);
-        
-        // Auto-assign ranks to the first 5 positions if they don't already have ranks
-        const newRanks = { ...userRanks };
-        for (let i = 0; i < Math.min(reorderedPositions.length, 5); i++) {
-          const position = reorderedPositions[i];
-          newRanks[position.id] = i + 1;
-        }
-        
-        // Update the userRanks state
-        setUserRanks(newRanks);
-        
-        // Show toast notification
-        toast.success("Position ranks updated successfully!");
-        
-        // Update positions with new ranks
-        return reorderedPositions.map(position => ({
-          ...position,
-          userRank: newRanks[position.id] || null,
-          userVoted: newRanks[position.id] ? "up" : null // Auto-upvote ranked positions
-        }));
-      });
-    }
-  };
+  ];
 
   // Handle rank changes from PositionCard components
   const handleRankChange = (positionId: string, rank: number | null) => {
@@ -136,80 +75,31 @@ const IssueDetail = () => {
       if (rank === null) {
         // If removing rank, delete the entry
         delete newRanks[positionId];
-        return newRanks;
-      }
-      
-      // Find if this rank is already assigned to another position
-      const positionWithSameRank = Object.entries(newRanks).find(
-        ([id, existingRank]) => existingRank === rank && id !== positionId
-      );
-      
-      // If this rank is being used somewhere else
-      if (positionWithSameRank) {
-        const [conflictingId, conflictingRank] = positionWithSameRank;
+      } else {
+        // If setting a new rank, first check if that rank is used by another position
+        const positionWithSameRank = Object.entries(newRanks).find(
+          ([id, existingRank]) => existingRank === rank && id !== positionId
+        );
         
-        // Get the previous rank of the current position (if any)
-        const prevRank = newRanks[positionId];
-        
-        // Swap the ranks - move the conflicting position to the previous rank of current position
-        if (prevRank) {
-          newRanks[conflictingId] = prevRank;
-        } else {
-          // If current position wasn't ranked before, just remove rank from conflicting position
+        // If rank is used elsewhere, clear that other position's rank
+        if (positionWithSameRank) {
+          const [conflictingId] = positionWithSameRank;
           delete newRanks[conflictingId];
         }
-      }
-      
-      // Set the new rank for current position
-      newRanks[positionId] = rank;
-      
-      // Show toast notification about the rank change
-      if (positionWithSameRank) {
-        const [conflictingId] = positionWithSameRank;
-        const conflictingPosition = positions.find(p => p.id === conflictingId);
-        if (conflictingPosition) {
-          toast.info(`Rank order updated: "${conflictingPosition.author.name}'s position" was reordered`);
-        }
+        
+        // Set the new rank for this position
+        newRanks[positionId] = rank;
       }
       
       return newRanks;
     });
-
-    // Also update the positions array with the new rank
-    setPositions(positions.map(position => {
-      if (position.id === positionId) {
-        return { ...position, userRank: rank };
-      } 
-      return position;
-    }));
   };
 
   const handleSubmitPosition = () => {
+    // In a real app, this would submit to the backend
     toast.success("Position submitted successfully!");
     setNewPosition("");
     setDialogOpen(false);
-  };
-
-  // Get the sorted positions for the active tab
-  const getSortedPositions = (tabValue: string) => {
-    let filteredPositions = [...positions];
-    
-    if (tabValue === "verified") {
-      filteredPositions = filteredPositions.filter(
-        p => p.author.verificationLevel === "voter" || p.author.verificationLevel === "official"
-      );
-    }
-    
-    // For the top tab, sort by votes
-    if (tabValue === "top") {
-      filteredPositions.sort((a, b) => b.votes - a.votes);
-    }
-    
-    // Update ranks in the position objects
-    return filteredPositions.map(position => ({
-      ...position,
-      userRank: userRanks[position.id] || null
-    }));
   };
 
   return (
@@ -277,62 +167,41 @@ const IssueDetail = () => {
             </TabsList>
           </div>
 
-          <DndContext 
-            sensors={sensors} 
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            <TabsContent value="top">
-              <SortableContext 
-                items={getSortedPositions("top").map(p => p.id)}
-                strategy={verticalListSortingStrategy}
-              >
-                {getSortedPositions("top").map(position => (
-                  <PositionCard 
-                    key={position.id}
-                    {...position}
-                    usedRanks={usedRanks}
-                    onRankChange={handleRankChange}
-                    isDraggable={true}
-                  />
-                ))}
-              </SortableContext>
-            </TabsContent>
+          <TabsContent value="top" className="space-y-4">
+            {positions.sort((a, b) => b.votes - a.votes).map(position => (
+              <PositionCard 
+                key={position.id}
+                {...position}
+                usedRanks={usedRanks}
+                onRankChange={handleRankChange}
+              />
+            ))}
+          </TabsContent>
 
-            <TabsContent value="new">
-              <SortableContext 
-                items={getSortedPositions("new").map(p => p.id)}
-                strategy={verticalListSortingStrategy}
-              >
-                {getSortedPositions("new").map(position => (
-                  <PositionCard 
-                    key={position.id}
-                    {...position} 
-                    usedRanks={usedRanks}
-                    onRankChange={handleRankChange}
-                    isDraggable={true}
-                  />
-                ))}
-              </SortableContext>
-            </TabsContent>
+          <TabsContent value="new" className="space-y-4">
+            {/* In real app, would be sorted by date */}
+            {positions.map(position => (
+              <PositionCard 
+                key={position.id}
+                {...position} 
+                usedRanks={usedRanks}
+                onRankChange={handleRankChange}
+              />
+            ))}
+          </TabsContent>
 
-            <TabsContent value="verified">
-              <SortableContext 
-                items={getSortedPositions("verified").map(p => p.id)}
-                strategy={verticalListSortingStrategy}
-              >
-                {getSortedPositions("verified").map(position => (
-                  <PositionCard 
-                    key={position.id} 
-                    {...position}
-                    usedRanks={usedRanks}
-                    onRankChange={handleRankChange}
-                    isDraggable={true}
-                  />
-                ))}
-              </SortableContext>
-            </TabsContent>
-          </DndContext>
+          <TabsContent value="verified" className="space-y-4">
+            {positions
+              .filter(p => p.author.verificationLevel === "voter" || p.author.verificationLevel === "official")
+              .map(position => (
+                <PositionCard 
+                  key={position.id} 
+                  {...position}
+                  usedRanks={usedRanks}
+                  onRankChange={handleRankChange}
+                />
+              ))}
+          </TabsContent>
         </Tabs>
       </div>
     </Layout>

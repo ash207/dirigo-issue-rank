@@ -2,10 +2,14 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowUp, GripVertical } from "lucide-react";
+import { ArrowUp } from "lucide-react";
 import { useState } from "react";
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface PositionCardProps {
   id: string;
@@ -19,7 +23,6 @@ interface PositionCardProps {
   userRank?: number | null;
   usedRanks?: number[];
   onRankChange?: (positionId: string, rank: number | null) => void;
-  isDraggable?: boolean;
 }
 
 const PositionCard = ({ 
@@ -30,33 +33,11 @@ const PositionCard = ({
   userVoted: initialUserVoted,
   userRank: initialUserRank,
   usedRanks = [],
-  onRankChange,
-  isDraggable = false
+  onRankChange
 }: PositionCardProps) => {
   const [votes, setVotes] = useState(initialVotes);
   const [userVoted, setUserVoted] = useState<"up" | null>(initialUserVoted || null);
   const [userRank, setUserRank] = useState<number | null>(initialUserRank || null);
-
-  // Set up sortable - now always enabled when isDraggable is true, regardless of vote status
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging
-  } = useSortable({
-    id,
-    disabled: !isDraggable
-  });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 1 : 0,
-    position: 'relative' as const
-  };
 
   const handleVote = () => {
     if (userVoted === "up") {
@@ -88,23 +69,28 @@ const PositionCard = ({
     }
   };
 
+  const handleRankSelect = (rank: number) => {
+    // Update our rank state
+    setUserRank(rank);
+    
+    // Notify parent component of rank change
+    if (onRankChange) {
+      onRankChange(id, rank);
+    }
+    
+    // Ensure vote is added if they're ranking
+    if (!userVoted) {
+      setUserVoted("up");
+      setVotes(votes + 1);
+    }
+  };
+
   const getVerificationColor = () => {
     return `bg-verification-${author.verificationLevel}`;
   };
 
   return (
-    <Card 
-      className={`mb-4 relative ${isDraggable ? 'cursor-grab active:cursor-grabbing' : ''}`}
-      ref={setNodeRef}
-      style={style}
-      {...(isDraggable ? attributes : {})}
-    >
-      {isDraggable && (
-        <div className="absolute right-2 top-2 text-gray-400" {...listeners}>
-          <GripVertical size={16} />
-        </div>
-      )}
-      
+    <Card className="mb-4">
       <CardHeader className="pb-2">
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-2">
@@ -115,11 +101,9 @@ const PositionCard = ({
           </div>
         </div>
       </CardHeader>
-      
       <CardContent>
         <p className="text-gray-700">{content}</p>
       </CardContent>
-      
       <CardFooter className="flex justify-between pt-2">
         <div className="flex items-center space-x-2">
           <Button 
@@ -132,14 +116,33 @@ const PositionCard = ({
           </Button>
           <span className="text-sm font-medium">{votes}</span>
           
-          {userVoted === "up" && userRank && (
-            <Badge variant="outline" className="ml-2">
-              Rank #{userRank}
-            </Badge>
-          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                disabled={!userVoted}
+                className="ml-2"
+              >
+                {userRank ? `Rank #${userRank}` : "Rank"}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              {[1, 2, 3, 4, 5].map((rank) => (
+                <DropdownMenuItem 
+                  key={rank} 
+                  onClick={() => handleRankSelect(rank)}
+                  disabled={usedRanks.includes(rank) && userRank !== rank}
+                  className={userRank === rank ? "bg-muted" : ""}
+                >
+                  Rank #{rank} {usedRanks.includes(rank) && userRank !== rank && "(Used)"}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         <div className="text-xs text-muted-foreground">
-          ID: {id}
+          Rank: #{id}
         </div>
       </CardFooter>
     </Card>
