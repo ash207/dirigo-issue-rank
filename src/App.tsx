@@ -8,6 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import IssuesPage from "./pages/IssuesPage";
 import IssueDetail from "./pages/IssueDetail";
+import CreateIssuePage from "./pages/CreateIssuePage";
 import VerificationPage from "./pages/VerificationPage";
 import AboutPage from "./pages/AboutPage";
 import NotFound from "./pages/NotFound";
