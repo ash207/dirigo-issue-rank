@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -86,11 +85,20 @@ const IssueDetail = () => {
         if (data && data.rankings) {
           // If user has existing rankings, load them
           const positionsWithRankings = [];
+          // Ensure rankings is treated as an array of position IDs
+          const rankingsArray = Array.isArray(data.rankings) 
+            ? data.rankings 
+            : typeof data.rankings === 'object' 
+              ? Object.values(data.rankings) 
+              : [];
+              
           // Convert stored position IDs back to full position objects
-          for (const posId of data.rankings) {
-            const position = positions.find(p => p.id === posId);
-            if (position) {
-              positionsWithRankings.push(position);
+          for (const posId of rankingsArray) {
+            if (typeof posId === 'string') {
+              const position = positions.find(p => p.id === posId);
+              if (position) {
+                positionsWithRankings.push(position);
+              }
             }
           }
           setRankedPositions(positionsWithRankings);
