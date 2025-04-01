@@ -1,13 +1,16 @@
-
 import { useState } from "react";
 import Layout from "@/components/layout/Layout";
 import IssueCard from "@/components/issues/IssueCard";
 import IssueFilter from "@/components/issues/IssueFilter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { Search, Plus } from "lucide-react";
+import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 const IssuesPage = () => {
+  const { isAuthenticated } = useAuth();
+
   // Mock issues data
   const allIssues = [
     { id: "1", title: "Should the minimum wage be increased to $15/hour nationwide?", category: "federal", votes: 1240, positions: 23 },
@@ -54,7 +57,17 @@ const IssuesPage = () => {
   return (
     <Layout>
       <div className="container mx-auto">
-        <h1 className="text-3xl font-bold mb-6">Browse Issues</h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold">Browse Issues</h1>
+          
+          {isAuthenticated && (
+            <Link to="/issues/create">
+              <Button className="bg-dirigo-blue">
+                <Plus size={18} className="mr-2" /> Create Issue
+              </Button>
+            </Link>
+          )}
+        </div>
         
         {/* Search and filter section */}
         <div className="mb-8">

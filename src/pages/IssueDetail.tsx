@@ -65,6 +65,7 @@ const IssueDetail = () => {
         
         <PositionsList 
           positions={positions}
+          issueId={id || ""}
           isAuthenticated={isAuthenticated}
           userVotedPosition={userVotedPosition}
           onVote={handleVote}
