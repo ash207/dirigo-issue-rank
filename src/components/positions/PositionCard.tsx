@@ -2,8 +2,10 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowUp, ArrowDown } from "lucide-react";
+import { ArrowUp } from "lucide-react";
 import { useState } from "react";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface PositionCardProps {
   id: string;
@@ -17,6 +19,7 @@ interface PositionCardProps {
   userRank?: number | null;
   usedRanks?: number[];
   onRankChange?: (positionId: string, rank: number | null) => void;
+  isDraggable?: boolean;
 }
 
 const PositionCard = ({ 
@@ -27,11 +30,33 @@ const PositionCard = ({
   userVoted: initialUserVoted,
   userRank: initialUserRank,
   usedRanks = [],
-  onRankChange
+  onRankChange,
+  isDraggable = false
 }: PositionCardProps) => {
   const [votes, setVotes] = useState(initialVotes);
   const [userVoted, setUserVoted] = useState<"up" | null>(initialUserVoted || null);
   const [userRank, setUserRank] = useState<number | null>(initialUserRank || null);
+
+  // Set up sortable if the card is draggable
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({
+    id,
+    disabled: !isDraggable || !userVoted
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 1 : 0,
+    position: 'relative' as const
+  };
 
   const handleVote = () => {
     if (userVoted === "up") {
@@ -63,69 +88,17 @@ const PositionCard = ({
     }
   };
 
-  const handleRankUp = () => {
-    if (!userRank || userRank <= 1) return;
-    
-    const newRank = userRank - 1;
-    setUserRank(newRank);
-    
-    if (onRankChange) {
-      onRankChange(id, newRank);
-    }
-
-    // Ensure vote is added if they're ranking
-    if (!userVoted) {
-      setUserVoted("up");
-      setVotes(votes + 1);
-    }
-  };
-
-  const handleRankDown = () => {
-    if (!userRank || userRank >= 5) return;
-    
-    const newRank = userRank + 1;
-    setUserRank(newRank);
-    
-    if (onRankChange) {
-      onRankChange(id, newRank);
-    }
-
-    // Ensure vote is added if they're ranking
-    if (!userVoted) {
-      setUserVoted("up");
-      setVotes(votes + 1);
-    }
-  };
-
   const getVerificationColor = () => {
     return `bg-verification-${author.verificationLevel}`;
   };
 
-  // Calculate sizes for arrows based on current rank
-  const getArrowSizes = (direction: 'up' | 'down') => {
-    if (!userVoted || !userRank) return 16; // Default size
-
-    // For up arrows
-    if (direction === 'up') {
-      if (userRank === 1) return 16; // Can't go higher
-      if (userRank === 2) return 20;
-      if (userRank === 3) return 24;
-      if (userRank === 4) return 28;
-      return 32; // rank 5 (biggest arrow)
-    }
-    
-    // For down arrows
-    else {
-      if (userRank === 5) return 16; // Can't go lower
-      if (userRank === 4) return 20;
-      if (userRank === 3) return 24;
-      if (userRank === 2) return 28;
-      return 32; // rank 1 (biggest arrow)
-    }
-  };
-
   return (
-    <Card className="mb-4">
+    <Card 
+      className={`mb-4 ${isDraggable && userVoted ? 'cursor-grab active:cursor-grabbing' : ''}`}
+      ref={setNodeRef}
+      style={style}
+      {...(isDraggable && userVoted ? { ...attributes, ...listeners } : {})}
+    >
       <CardHeader className="pb-2">
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-2">
@@ -151,30 +124,10 @@ const PositionCard = ({
           </Button>
           <span className="text-sm font-medium">{votes}</span>
           
-          {userVoted === "up" && (
-            <div className="flex flex-col ml-2 items-center">
-              <Button 
-                variant="ghost" 
-                size="sm"
-                className="p-0 h-8 w-8"
-                onClick={handleRankUp}
-                disabled={!userRank || userRank <= 1}
-              >
-                <ArrowUp size={getArrowSizes('up')} />
-              </Button>
-              {userRank && (
-                <span className="text-sm font-medium mx-1">Rank #{userRank}</span>
-              )}
-              <Button 
-                variant="ghost" 
-                size="sm"
-                className="p-0 h-8 w-8"
-                onClick={handleRankDown}
-                disabled={!userRank || userRank >= 5}
-              >
-                <ArrowDown size={getArrowSizes('down')} />
-              </Button>
-            </div>
+          {userVoted === "up" && userRank && (
+            <Badge variant="outline" className="ml-2">
+              Rank #{userRank} {isDraggable ? "• Drag to reorder" : ""}
+            </Badge>
           )}
         </div>
         <div className="text-xs text-muted-foreground">
