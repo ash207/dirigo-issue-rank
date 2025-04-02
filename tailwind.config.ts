@@ -53,21 +53,25 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
-				// Custom colors for our patriotic theme
-				'dirigo-blue': '#002868',
-				'dirigo-red': '#BF0A30',
+				// Custom colors for our patriotic theme (updated modern variants)
+				'dirigo-blue': '#2563EB',
+				'dirigo-red': '#E11D48',
 				'dirigo-white': '#FFFFFF',
 				verification: {
-					unverified: '#888888',
-					basic: '#5AAAFA',
-					voter: '#00A550',
-					official: '#8A2BE2'
+					unverified: '#6B7280',
+					basic: '#3B82F6',
+					voter: '#10B981',
+					official: '#8B5CF6'
 				}
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',
 				sm: 'calc(var(--radius) - 4px)'
+			},
+			boxShadow: {
+				'card': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+				'card-hover': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
 			},
 			keyframes: {
 				'accordion-down': {
@@ -85,11 +89,16 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'pulse': {
+					'0%, 100%': { opacity: '1' },
+					'50%': { opacity: '0.8' }
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'pulse': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
 			}
 		}
 	},
