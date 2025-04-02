@@ -12,12 +12,15 @@ import { usePositionsData } from "@/hooks/usePositionsData";
 import IssueLoadingState from "@/components/issues/IssueLoadingState";
 import IssueErrorState from "@/components/issues/IssueErrorState";
 import EmptyPositionsState from "@/components/positions/EmptyPositionsState";
+import CreatePositionForm from "@/components/positions/CreatePositionForm";
+import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 
 const IssueDetail = () => {
   const { id } = useParams();
   const { isAuthenticated, user } = useAuth();
   const { userVotedPosition, positionVotes, handleVote } = usePositionVotes(id, user?.id, isAuthenticated);
   const [loading, setLoading] = useState(true);
+  const [showAddPosition, setShowAddPosition] = useState(false);
 
   // Fetch issue and position data using our custom hooks
   const issueQuery = useIssueData(id);
@@ -84,23 +87,46 @@ const IssueDetail = () => {
     }
   };
 
+  const handleRefreshPositions = () => {
+    positionsQuery.refetch();
+    setShowAddPosition(false);
+  };
+
   return (
     <Layout>
       <div className="container mx-auto max-w-4xl">
         <IssueHeader issue={formattedIssue} positionsCount={positions.length} />
         
-        {positions.length === 0 ? (
-          <EmptyPositionsState />
-        ) : (
-          <PositionsList 
-            positions={positions}
-            issueId={id || ""}
-            isAuthenticated={isAuthenticated}
-            userVotedPosition={userVotedPosition}
-            positionVotes={positionVotes}
-            onVote={handleVote}
-          />
-        )}
+        <Dialog open={showAddPosition} onOpenChange={setShowAddPosition}>
+          {positions.length === 0 ? (
+            <EmptyPositionsState 
+              issueId={id || ""} 
+              onAddPosition={() => setShowAddPosition(true)}
+            />
+          ) : (
+            <PositionsList 
+              positions={positions}
+              issueId={id || ""}
+              isAuthenticated={isAuthenticated}
+              userVotedPosition={userVotedPosition}
+              positionVotes={positionVotes}
+              onVote={handleVote}
+            />
+          )}
+          
+          {isAuthenticated && (
+            <DialogTrigger className="hidden">
+              Open Form
+            </DialogTrigger>
+          )}
+          
+          {showAddPosition && (
+            <CreatePositionForm 
+              issueId={id || ""} 
+              onSuccess={handleRefreshPositions}
+            />
+          )}
+        </Dialog>
       </div>
     </Layout>
   );

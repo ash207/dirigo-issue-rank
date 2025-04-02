@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import PositionCard from "./PositionCard";
 import CreatePositionForm from "./CreatePositionForm";
 import { useCallback, useState, useEffect } from "react";
+import { ChevronDown } from "lucide-react";
 
 interface Position {
   id: string;
@@ -34,7 +35,8 @@ const PositionsList = ({
   onVote
 }: PositionsListProps) => {
   const [positions, setPositions] = useState<Position[]>(initialPositions);
-
+  const [visibleCount, setVisibleCount] = useState(3);
+  
   // Update positions when initialPositions changes or vote counts change
   useEffect(() => {
     // Merge current vote counts from positionVotes with positions data
@@ -53,20 +55,54 @@ const PositionsList = ({
     setPositions([...initialPositions]);
   }, [initialPositions]);
 
+  const loadMore = () => {
+    setVisibleCount(prev => prev + 5);
+  };
+
+  const renderPositions = (positionsToRender: Position[]) => {
+    if (positionsToRender.length === 0) {
+      return (
+        <div className="text-center py-4">
+          <p className="text-muted-foreground">No positions to display</p>
+        </div>
+      );
+    }
+
+    const visiblePositions = positionsToRender.slice(0, visibleCount);
+    const hasMore = positionsToRender.length > visibleCount;
+
+    return (
+      <div className="space-y-4">
+        {visiblePositions.map(position => (
+          <PositionCard 
+            key={position.id}
+            {...position}
+            userVotedPosition={userVotedPosition}
+            onVote={onVote}
+            isAuthenticated={isAuthenticated}
+          />
+        ))}
+        
+        {hasMore && (
+          <div className="flex justify-start mt-4">
+            <Button 
+              variant="outline" 
+              onClick={loadMore}
+              className="gap-2"
+            >
+              <ChevronDown size={16} />
+              Load More Positions
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <>
-      <div className="mb-4 flex justify-between items-center">
+      <div className="mb-4">
         <h2 className="text-xl font-bold">Positions</h2>
-        {isAuthenticated ? (
-          <CreatePositionForm issueId={issueId} onSuccess={refreshPositions} />
-        ) : (
-          <Button 
-            variant="outline"
-            onClick={() => window.location.href = "/sign-in"}
-          >
-            Sign in to vote
-          </Button>
-        )}
       </div>
       
       <Tabs defaultValue="top">
@@ -77,61 +113,34 @@ const PositionsList = ({
         </TabsList>
 
         <TabsContent value="top" className="space-y-4">
-          {positions.length > 0 ? (
-            positions.sort((a, b) => b.votes - a.votes).map(position => (
-              <PositionCard 
-                key={position.id}
-                {...position}
-                userVotedPosition={userVotedPosition}
-                onVote={onVote}
-                isAuthenticated={isAuthenticated}
-              />
-            ))
-          ) : (
-            <div className="text-center py-4">
-              <p className="text-muted-foreground">No positions to display</p>
-            </div>
-          )}
+          {renderPositions(positions.sort((a, b) => b.votes - a.votes))}
         </TabsContent>
 
         <TabsContent value="new" className="space-y-4">
-          {positions.length > 0 ? (
-            positions.map(position => (
-              <PositionCard 
-                key={position.id}
-                {...position}
-                userVotedPosition={userVotedPosition}
-                onVote={onVote}
-                isAuthenticated={isAuthenticated}
-              />
-            ))
-          ) : (
-            <div className="text-center py-4">
-              <p className="text-muted-foreground">No positions to display</p>
-            </div>
-          )}
+          {renderPositions(positions)}
         </TabsContent>
 
         <TabsContent value="verified" className="space-y-4">
-          {positions.filter(p => p.author.verificationLevel === "voter" || p.author.verificationLevel === "official").length > 0 ? (
-            positions
-              .filter(p => p.author.verificationLevel === "voter" || p.author.verificationLevel === "official")
-              .map(position => (
-                <PositionCard 
-                  key={position.id} 
-                  {...position}
-                  userVotedPosition={userVotedPosition}
-                  onVote={onVote}
-                  isAuthenticated={isAuthenticated}
-                />
-              ))
-          ) : (
-            <div className="text-center py-4">
-              <p className="text-muted-foreground">No verified positions to display</p>
-            </div>
-          )}
+          {renderPositions(positions.filter(p => 
+            p.author.verificationLevel === "voter" || 
+            p.author.verificationLevel === "official"
+          ))}
         </TabsContent>
       </Tabs>
+
+      <div className="mt-6">
+        {isAuthenticated ? (
+          <CreatePositionForm issueId={issueId} onSuccess={refreshPositions} />
+        ) : (
+          <Button 
+            variant="outline"
+            onClick={() => window.location.href = "/sign-in"}
+            className="w-full sm:w-auto"
+          >
+            Sign in to add your position
+          </Button>
+        )}
+      </div>
     </>
   );
 };
