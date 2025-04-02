@@ -13,7 +13,7 @@ import usePositionVotes from "@/hooks/usePositionVotes";
 const IssueDetail = () => {
   const { id } = useParams();
   const { isAuthenticated, user } = useAuth();
-  const { userVotedPosition, handleVote } = usePositionVotes(id, user?.id, isAuthenticated);
+  const { userVotedPosition, positionVotes, handleVote } = usePositionVotes(id, user?.id, isAuthenticated);
   const [loading, setLoading] = useState(true);
 
   // Fetch issue details
@@ -194,6 +194,7 @@ const IssueDetail = () => {
             issueId={id || ""}
             isAuthenticated={isAuthenticated}
             userVotedPosition={userVotedPosition}
+            positionVotes={positionVotes}
             onVote={handleVote}
           />
         )}

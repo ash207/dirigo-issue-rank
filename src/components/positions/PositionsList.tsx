@@ -21,6 +21,7 @@ interface PositionsListProps {
   issueId: string;
   isAuthenticated: boolean;
   userVotedPosition: string | null;
+  positionVotes?: Record<string, number>;
   onVote: (positionId: string) => void;
 }
 
@@ -29,15 +30,22 @@ const PositionsList = ({
   issueId,
   isAuthenticated,
   userVotedPosition,
+  positionVotes = {},
   onVote
 }: PositionsListProps) => {
   const [positions, setPositions] = useState<Position[]>(initialPositions);
 
-  // Update positions when initialPositions changes
+  // Update positions when initialPositions changes or vote counts change
   useEffect(() => {
-    setPositions(initialPositions);
-    console.log("PositionsList received positions:", initialPositions);
-  }, [initialPositions]);
+    // Merge current vote counts from positionVotes with positions data
+    const updatedPositions = initialPositions.map(position => ({
+      ...position,
+      votes: positionVotes[position.id] !== undefined ? positionVotes[position.id] : position.votes
+    }));
+    
+    setPositions(updatedPositions);
+    console.log("PositionsList updated with votes:", positionVotes, updatedPositions);
+  }, [initialPositions, positionVotes]);
 
   const refreshPositions = useCallback(() => {
     // In a real app, this would fetch updated positions from the API

@@ -13,10 +13,12 @@ const isValidUUID = (str: string | undefined): boolean => {
 
 export const usePositionVotes = (issueId: string | undefined, userId: string | undefined, isAuthenticated: boolean) => {
   const [userVotedPosition, setUserVotedPosition] = useState<string | null>(null);
+  const [positionVotes, setPositionVotes] = useState<Record<string, number>>({});
 
+  // Fetch the user's vote and all position votes
   useEffect(() => {
-    const fetchUserVote = async () => {
-      if (!isAuthenticated || !userId || !issueId) return;
+    const fetchVotes = async () => {
+      if (!issueId) return;
       
       // Skip Supabase query if the issueId is not a valid UUID
       if (!isValidUUID(issueId)) {
@@ -25,28 +27,56 @@ export const usePositionVotes = (issueId: string | undefined, userId: string | u
       }
       
       try {
-        const { data, error } = await supabase
-          .from('user_votes')
-          .select('position_id')
-          .eq('user_id', userId)
-          .eq('issue_id', issueId)
-          .single();
-        
-        if (error && error.code !== 'PGRST116') { // PGRST116 means no rows returned
-          console.error("Error fetching vote:", error);
+        // Fetch positions with vote counts
+        const { data: positions, error: positionsError } = await supabase
+          .from('positions')
+          .select('id, votes')
+          .eq('issue_id', issueId);
+          
+        if (positionsError) {
+          console.error("Error fetching position votes:", positionsError);
           return;
         }
         
-        if (data) {
-          setUserVotedPosition(data.position_id);
+        // Build position votes map
+        const votesMap: Record<string, number> = {};
+        positions.forEach(position => {
+          votesMap[position.id] = position.votes;
+        });
+        setPositionVotes(votesMap);
+        
+        // Only fetch user vote if authenticated
+        if (isAuthenticated && userId) {
+          const { data: userVote, error: userVoteError } = await supabase
+            .from('user_votes')
+            .select('position_id')
+            .eq('user_id', userId)
+            .eq('issue_id', issueId)
+            .single();
+          
+          if (userVoteError && userVoteError.code !== 'PGRST116') { // PGRST116 means no rows returned
+            console.error("Error fetching user vote:", userVoteError);
+            return;
+          }
+          
+          if (userVote) {
+            setUserVotedPosition(userVote.position_id);
+          }
         }
       } catch (error) {
-        console.error("Error in fetchUserVote:", error);
+        console.error("Error in fetchVotes:", error);
       }
     };
     
-    fetchUserVote();
+    fetchVotes();
   }, [isAuthenticated, userId, issueId]);
+
+  const updatePositionVote = (positionId: string, newCount: number) => {
+    setPositionVotes(prev => ({
+      ...prev,
+      [positionId]: newCount
+    }));
+  };
 
   const handleVote = async (positionId: string) => {
     if (!isAuthenticated || !userId || !issueId) return;
@@ -80,6 +110,9 @@ export const usePositionVotes = (issueId: string | undefined, userId: string | u
               .from('positions')
               .update({ votes: newCount })
               .eq('id', userVotedPosition);
+            
+            // Update local state for the old position
+            updatePositionVote(userVotedPosition, newCount);
           }
           
           // Delete the old vote record
@@ -113,6 +146,9 @@ export const usePositionVotes = (issueId: string | undefined, userId: string | u
               .from('positions')
               .update({ votes: newCount })
               .eq('id', positionId);
+            
+            // Update local state for the new position
+            updatePositionVote(positionId, newCount);
           }
           
           setUserVotedPosition(positionId);
@@ -143,6 +179,9 @@ export const usePositionVotes = (issueId: string | undefined, userId: string | u
             .from('positions')
             .update({ votes: newCount })
             .eq('id', positionId);
+          
+          // Update local state
+          updatePositionVote(positionId, newCount);
         }
         
         setUserVotedPosition(positionId);
@@ -154,7 +193,7 @@ export const usePositionVotes = (issueId: string | undefined, userId: string | u
     }
   };
 
-  return { userVotedPosition, handleVote };
+  return { userVotedPosition, positionVotes, handleVote };
 };
 
 export default usePositionVotes;
