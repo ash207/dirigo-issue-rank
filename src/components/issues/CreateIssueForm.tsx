@@ -19,14 +19,37 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Globe, Landmark, Flag } from "lucide-react";
 
 const formSchema = z.object({
   title: z.string().min(10, "Title must be at least 10 characters"),
   description: z.string().min(20, "Description must be at least 20 characters"),
   category: z.string().min(1, "Category is required"),
+  scope: z.enum(["local", "county", "state", "federal", "international"], {
+    required_error: "Please select an issue scope",
+  }),
 });
 
 type FormValues = z.infer<typeof formSchema>;
+
+const CATEGORIES = [
+  "Economy",
+  "Environment",
+  "Education",
+  "Healthcare",
+  "Infrastructure",
+  "Social Issues",
+  "Technology",
+  "Transportation",
+  "Other"
+];
 
 const CreateIssueForm = () => {
   const { user } = useAuth();
@@ -39,6 +62,7 @@ const CreateIssueForm = () => {
       title: "",
       description: "",
       category: "",
+      scope: "state", // Default to state level
     },
   });
 
@@ -58,6 +82,7 @@ const CreateIssueForm = () => {
           description: values.description,
           category: values.category,
           creator_id: user.id,
+          scope: values.scope,
         })
         .select("id")
         .single();
@@ -71,6 +96,17 @@ const CreateIssueForm = () => {
       toast.error("Failed to create issue. Please try again.");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const getScopeIcon = (scope: string) => {
+    switch (scope) {
+      case "local":
+        return <Landmark className="h-4 w-4 mr-2" />;
+      case "international":
+        return <Globe className="h-4 w-4 mr-2" />;
+      default:
+        return <Flag className="h-4 w-4 mr-2" />;
     }
   };
 
@@ -94,22 +130,88 @@ const CreateIssueForm = () => {
           )}
         />
         
-        <FormField
-          control={form.control}
-          name="category"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Category</FormLabel>
-              <FormControl>
-                <Input 
-                  placeholder="e.g., Federal, State, Economy, Environment"
-                  {...field} 
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <FormField
+            control={form.control}
+            name="category"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Category</FormLabel>
+                <Select 
+                  onValueChange={field.onChange} 
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a category" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {CATEGORIES.map((category) => (
+                      <SelectItem key={category} value={category.toLowerCase()}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="scope"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Scope</FormLabel>
+                <Select 
+                  onValueChange={field.onChange} 
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a scope" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="local" className="flex items-center">
+                      <div className="flex items-center">
+                        <Landmark className="h-4 w-4 mr-2" />
+                        Local
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="county" className="flex items-center">
+                      <div className="flex items-center">
+                        <Flag className="h-4 w-4 mr-2" />
+                        County
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="state" className="flex items-center">
+                      <div className="flex items-center">
+                        <Flag className="h-4 w-4 mr-2" />
+                        State
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="federal" className="flex items-center">
+                      <div className="flex items-center">
+                        <Flag className="h-4 w-4 mr-2" />
+                        Federal
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="international" className="flex items-center">
+                      <div className="flex items-center">
+                        <Globe className="h-4 w-4 mr-2" />
+                        International
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
         
         <FormField
           control={form.control}

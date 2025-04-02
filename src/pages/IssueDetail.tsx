@@ -64,6 +64,7 @@ const IssueDetail = () => {
     id,
     title: "Issue not found",
     category: "Unknown",
+    scope: "state", // Default to state level
     description: "This issue could not be loaded. It may have been deleted or you may not have permission to view it.",
     created_at: new Date().toISOString(),
     creatorName: "Unknown"
@@ -78,6 +79,7 @@ const IssueDetail = () => {
     id: issue.id,
     title: issue.title,
     category: issue.category,
+    scope: issue.scope || "state", // Default to state if not specified
     description: issue.description,
     createdAt: issue.created_at,
     votes: positions.reduce((sum, pos) => sum + pos.votes, 0),

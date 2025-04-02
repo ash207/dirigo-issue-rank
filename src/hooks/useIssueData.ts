@@ -32,7 +32,8 @@ export const useIssueData = (id: string | undefined) => {
       
       return {
         ...data,
-        creatorName
+        creatorName,
+        scope: data.scope || "state" // Default to state level if not specified
       };
     },
     enabled: !!id,

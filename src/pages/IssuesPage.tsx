@@ -17,6 +17,7 @@ const IssuesPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [verificationFilter, setVerificationFilter] = useState("all");
+  const [scopeFilter, setScopeFilter] = useState("all");
   
   // Fetch all issues
   const issuesQuery = useQuery({
@@ -51,6 +52,7 @@ const IssuesPage = () => {
             id: issue.id,
             title: issue.title,
             category: issue.category,
+            scope: issue.scope || "state", // Default to state if not specified
             votes: issue.positions?.length || 0,
             positions: issue.positions?.length || 0,
             creator: creatorName
@@ -73,15 +75,19 @@ const IssuesPage = () => {
     const matchesCategory = categoryFilter !== "all" ? 
       issue.category.toLowerCase() === categoryFilter.toLowerCase() : true;
     
+    const matchesScope = scopeFilter !== "all" ?
+      issue.scope === scopeFilter : true;
+    
     // Verification filter would be implemented here if we had that data
     
-    return matchesSearch && matchesCategory;
+    return matchesSearch && matchesCategory && matchesScope;
   }) || [];
 
   // Handle filter changes
-  const handleFilterChange = (category: string, verification: string) => {
+  const handleFilterChange = (category: string, verification: string, scope: string) => {
     setCategoryFilter(category);
     setVerificationFilter(verification);
+    setScopeFilter(scope);
   };
 
   // Handle search form submission
