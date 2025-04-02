@@ -1,14 +1,17 @@
 
-import { useParams, Navigate } from "react-router-dom";
-import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/contexts/AuthContext";
 import IssueHeader from "@/components/issues/IssueHeader";
 import PositionsList from "@/components/positions/PositionsList";
 import usePositionVotes from "@/hooks/usePositionVotes";
+import { useIssueData } from "@/hooks/useIssueData";
+import { usePositionsData } from "@/hooks/usePositionsData";
+import IssueLoadingState from "@/components/issues/IssueLoadingState";
+import IssueErrorState from "@/components/issues/IssueErrorState";
+import EmptyPositionsState from "@/components/positions/EmptyPositionsState";
 
 const IssueDetail = () => {
   const { id } = useParams();
@@ -16,97 +19,9 @@ const IssueDetail = () => {
   const { userVotedPosition, positionVotes, handleVote } = usePositionVotes(id, user?.id, isAuthenticated);
   const [loading, setLoading] = useState(true);
 
-  // Fetch issue details
-  const issueQuery = useQuery({
-    queryKey: ["issue", id],
-    queryFn: async () => {
-      if (!id) throw new Error("Issue ID is required");
-      
-      const { data, error } = await supabase
-        .from("issues")
-        .select("*")
-        .eq("id", id)
-        .single();
-      
-      if (error) throw error;
-
-      // Fetch creator name if available
-      let creatorName = "Anonymous";
-      if (data.creator_id) {
-        const { data: creatorData, error: creatorError } = await supabase
-          .from("profiles")
-          .select("name")
-          .eq("id", data.creator_id)
-          .single();
-        
-        if (!creatorError && creatorData) {
-          creatorName = creatorData.name || "Anonymous";
-        }
-      }
-      
-      return {
-        ...data,
-        creatorName
-      };
-    },
-    enabled: !!id,
-  });
-
-  // Fetch positions for this issue
-  const positionsQuery = useQuery({
-    queryKey: ["positions", id],
-    queryFn: async () => {
-      if (!id) throw new Error("Issue ID is required");
-      
-      console.log("Fetching positions for issue:", id);
-      
-      const { data, error } = await supabase
-        .from("positions")
-        .select("*")
-        .eq("issue_id", id)
-        .order("votes", { ascending: false });
-      
-      if (error) {
-        console.error("Error fetching positions:", error);
-        throw error;
-      }
-      
-      console.log("Positions raw data:", data);
-
-      // Transform the data to match the expected format
-      const transformedData = await Promise.all(data.map(async position => {
-        // Fetch author name if available
-        let authorName = "Anonymous";
-        if (position.author_id) {
-          const { data: authorData, error: authorError } = await supabase
-            .from("profiles")
-            .select("name")
-            .eq("id", position.author_id)
-            .single();
-          
-          if (!authorError && authorData) {
-            authorName = authorData.name || "Anonymous";
-          }
-        }
-
-        return {
-          id: position.id,
-          title: position.title,
-          content: position.content,
-          author: {
-            name: authorName,
-            // Default to basic verification level
-            verificationLevel: "basic" as const
-          },
-          votes: position.votes || 0
-        };
-      }));
-      
-      console.log("Transformed positions data:", transformedData);
-      return transformedData;
-    },
-    enabled: !!id
-  });
+  // Fetch issue and position data using our custom hooks
+  const issueQuery = useIssueData(id);
+  const positionsQuery = usePositionsData(id);
 
   // Handle errors
   useEffect(() => {
@@ -127,13 +42,7 @@ const IssueDetail = () => {
   if (loading && (issueQuery.isLoading || positionsQuery.isLoading)) {
     return (
       <Layout>
-        <div className="container mx-auto max-w-4xl py-8">
-          <div className="animate-pulse">
-            <div className="h-8 bg-slate-200 rounded w-3/4 mb-4"></div>
-            <div className="h-4 bg-slate-200 rounded w-1/2 mb-2"></div>
-            <div className="h-24 bg-slate-200 rounded mb-4"></div>
-          </div>
-        </div>
+        <IssueLoadingState />
       </Layout>
     );
   }
@@ -142,10 +51,7 @@ const IssueDetail = () => {
   if (issueQuery.error && positionsQuery.error) {
     return (
       <Layout>
-        <div className="container mx-auto max-w-4xl py-8 text-center">
-          <h2 className="text-2xl font-bold mb-4">Issue not found</h2>
-          <p className="mb-4">The issue you're looking for doesn't exist or you don't have permission to view it.</p>
-        </div>
+        <IssueErrorState />
       </Layout>
     );
   }
@@ -184,10 +90,7 @@ const IssueDetail = () => {
         <IssueHeader issue={formattedIssue} positionsCount={positions.length} />
         
         {positions.length === 0 ? (
-          <div className="text-center py-6 bg-slate-50 rounded-lg mt-4 mb-6">
-            <h3 className="text-lg font-medium mb-2">No positions yet</h3>
-            <p className="text-muted-foreground">Be the first to add your position on this issue!</p>
-          </div>
+          <EmptyPositionsState />
         ) : (
           <PositionsList 
             positions={positions}
