@@ -67,7 +67,13 @@ export const usePositionVotes = (issueId: string | undefined, userId: string | u
           return;
         } else {
           // User is changing their vote
-          // First, remove the old vote
+          // First, remove the old vote by decrementing the count
+          await supabase
+            .from('positions')
+            .update({ votes: supabase.rpc('decrement_counter', { x: 1 }) })
+            .eq('id', userVotedPosition);
+          
+          // Delete the old vote record
           await supabase
             .from('user_votes')
             .delete()
@@ -85,6 +91,12 @@ export const usePositionVotes = (issueId: string | undefined, userId: string | u
           
           if (error) throw error;
           
+          // Increment the vote count on the new position
+          await supabase
+            .from('positions')
+            .update({ votes: supabase.rpc('increment_counter', { x: 1 }) })
+            .eq('id', positionId);
+          
           setUserVotedPosition(positionId);
           toast.success("Your vote has been updated!");
         }
@@ -99,6 +111,12 @@ export const usePositionVotes = (issueId: string | undefined, userId: string | u
           });
         
         if (error) throw error;
+        
+        // Increment the vote count
+        await supabase
+          .from('positions')
+          .update({ votes: supabase.rpc('increment_counter', { x: 1 }) })
+          .eq('id', positionId);
         
         setUserVotedPosition(positionId);
         toast.success("Your vote has been recorded!");
