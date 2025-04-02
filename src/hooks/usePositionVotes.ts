@@ -68,10 +68,19 @@ export const usePositionVotes = (issueId: string | undefined, userId: string | u
         } else {
           // User is changing their vote
           // First, remove the old vote by decrementing the count
-          await supabase
+          const { data: oldPosition } = await supabase
             .from('positions')
-            .update({ votes: supabase.rpc('decrement_counter', { x: 1 }) })
-            .eq('id', userVotedPosition);
+            .select('votes')
+            .eq('id', userVotedPosition)
+            .single();
+            
+          if (oldPosition) {
+            const newCount = Math.max(0, oldPosition.votes - 1);
+            await supabase
+              .from('positions')
+              .update({ votes: newCount })
+              .eq('id', userVotedPosition);
+          }
           
           // Delete the old vote record
           await supabase
@@ -92,10 +101,19 @@ export const usePositionVotes = (issueId: string | undefined, userId: string | u
           if (error) throw error;
           
           // Increment the vote count on the new position
-          await supabase
+          const { data: newPosition } = await supabase
             .from('positions')
-            .update({ votes: supabase.rpc('increment_counter', { x: 1 }) })
-            .eq('id', positionId);
+            .select('votes')
+            .eq('id', positionId)
+            .single();
+            
+          if (newPosition) {
+            const newCount = newPosition.votes + 1;
+            await supabase
+              .from('positions')
+              .update({ votes: newCount })
+              .eq('id', positionId);
+          }
           
           setUserVotedPosition(positionId);
           toast.success("Your vote has been updated!");
@@ -113,10 +131,19 @@ export const usePositionVotes = (issueId: string | undefined, userId: string | u
         if (error) throw error;
         
         // Increment the vote count
-        await supabase
+        const { data: position } = await supabase
           .from('positions')
-          .update({ votes: supabase.rpc('increment_counter', { x: 1 }) })
-          .eq('id', positionId);
+          .select('votes')
+          .eq('id', positionId)
+          .single();
+          
+        if (position) {
+          const newCount = position.votes + 1;
+          await supabase
+            .from('positions')
+            .update({ votes: newCount })
+            .eq('id', positionId);
+        }
         
         setUserVotedPosition(positionId);
         toast.success("Your vote has been recorded!");
