@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import PositionCard from "./PositionCard";
 import CreatePositionForm from "./CreatePositionForm";
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect } from "react";
 
 interface Position {
   id: string;
@@ -32,6 +32,12 @@ const PositionsList = ({
   onVote
 }: PositionsListProps) => {
   const [positions, setPositions] = useState<Position[]>(initialPositions);
+
+  // Update positions when initialPositions changes
+  useEffect(() => {
+    setPositions(initialPositions);
+    console.log("PositionsList received positions:", initialPositions);
+  }, [initialPositions]);
 
   const refreshPositions = useCallback(() => {
     // In a real app, this would fetch updated positions from the API
@@ -63,42 +69,59 @@ const PositionsList = ({
         </TabsList>
 
         <TabsContent value="top" className="space-y-4">
-          {positions.sort((a, b) => b.votes - a.votes).map(position => (
-            <PositionCard 
-              key={position.id}
-              {...position}
-              userVotedPosition={userVotedPosition}
-              onVote={onVote}
-              isAuthenticated={isAuthenticated}
-            />
-          ))}
-        </TabsContent>
-
-        <TabsContent value="new" className="space-y-4">
-          {/* In real app, would be sorted by date */}
-          {positions.map(position => (
-            <PositionCard 
-              key={position.id}
-              {...position}
-              userVotedPosition={userVotedPosition}
-              onVote={onVote}
-              isAuthenticated={isAuthenticated}
-            />
-          ))}
-        </TabsContent>
-
-        <TabsContent value="verified" className="space-y-4">
-          {positions
-            .filter(p => p.author.verificationLevel === "voter" || p.author.verificationLevel === "official")
-            .map(position => (
+          {positions.length > 0 ? (
+            positions.sort((a, b) => b.votes - a.votes).map(position => (
               <PositionCard 
-                key={position.id} 
+                key={position.id}
                 {...position}
                 userVotedPosition={userVotedPosition}
                 onVote={onVote}
                 isAuthenticated={isAuthenticated}
               />
-            ))}
+            ))
+          ) : (
+            <div className="text-center py-4">
+              <p className="text-muted-foreground">No positions to display</p>
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="new" className="space-y-4">
+          {positions.length > 0 ? (
+            positions.map(position => (
+              <PositionCard 
+                key={position.id}
+                {...position}
+                userVotedPosition={userVotedPosition}
+                onVote={onVote}
+                isAuthenticated={isAuthenticated}
+              />
+            ))
+          ) : (
+            <div className="text-center py-4">
+              <p className="text-muted-foreground">No positions to display</p>
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="verified" className="space-y-4">
+          {positions.filter(p => p.author.verificationLevel === "voter" || p.author.verificationLevel === "official").length > 0 ? (
+            positions
+              .filter(p => p.author.verificationLevel === "voter" || p.author.verificationLevel === "official")
+              .map(position => (
+                <PositionCard 
+                  key={position.id} 
+                  {...position}
+                  userVotedPosition={userVotedPosition}
+                  onVote={onVote}
+                  isAuthenticated={isAuthenticated}
+                />
+              ))
+          ) : (
+            <div className="text-center py-4">
+              <p className="text-muted-foreground">No verified positions to display</p>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
     </>

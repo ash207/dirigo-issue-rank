@@ -58,13 +58,20 @@ const IssueDetail = () => {
     queryFn: async () => {
       if (!id) throw new Error("Issue ID is required");
       
+      console.log("Fetching positions for issue:", id);
+      
       const { data, error } = await supabase
         .from("positions")
         .select("*")
         .eq("issue_id", id)
         .order("votes", { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching positions:", error);
+        throw error;
+      }
+      
+      console.log("Positions raw data:", data);
 
       // Transform the data to match the expected format
       const transformedData = await Promise.all(data.map(async position => {
@@ -94,7 +101,8 @@ const IssueDetail = () => {
           votes: position.votes || 0
         };
       }));
-
+      
+      console.log("Transformed positions data:", transformedData);
       return transformedData;
     },
     enabled: !!id
@@ -153,6 +161,8 @@ const IssueDetail = () => {
   };
 
   const positions = positionsQuery.data || [];
+  
+  console.log("Positions to be displayed:", positions, "Count:", positions.length);
 
   // Format the issue for IssueHeader component
   const formattedIssue = {
@@ -173,13 +183,20 @@ const IssueDetail = () => {
       <div className="container mx-auto max-w-4xl">
         <IssueHeader issue={formattedIssue} positionsCount={positions.length} />
         
-        <PositionsList 
-          positions={positions}
-          issueId={id || ""}
-          isAuthenticated={isAuthenticated}
-          userVotedPosition={userVotedPosition}
-          onVote={handleVote}
-        />
+        {positions.length === 0 ? (
+          <div className="text-center py-6 bg-slate-50 rounded-lg mt-4 mb-6">
+            <h3 className="text-lg font-medium mb-2">No positions yet</h3>
+            <p className="text-muted-foreground">Be the first to add your position on this issue!</p>
+          </div>
+        ) : (
+          <PositionsList 
+            positions={positions}
+            issueId={id || ""}
+            isAuthenticated={isAuthenticated}
+            userVotedPosition={userVotedPosition}
+            onVote={handleVote}
+          />
+        )}
       </div>
     </Layout>
   );
