@@ -24,15 +24,30 @@ const IssueDetail = () => {
       
       const { data, error } = await supabase
         .from("issues")
-        .select(`
-          *,
-          profiles:creator_id (name)
-        `)
+        .select("*")
         .eq("id", id)
         .single();
       
       if (error) throw error;
-      return data;
+
+      // Fetch creator name if available
+      let creatorName = "Anonymous";
+      if (data.creator_id) {
+        const { data: creatorData, error: creatorError } = await supabase
+          .from("profiles")
+          .select("name")
+          .eq("id", data.creator_id)
+          .single();
+        
+        if (!creatorError && creatorData) {
+          creatorName = creatorData.name || "Anonymous";
+        }
+      }
+      
+      return {
+        ...data,
+        creatorName
+      };
     },
     enabled: !!id,
   });
@@ -45,27 +60,42 @@ const IssueDetail = () => {
       
       const { data, error } = await supabase
         .from("positions")
-        .select(`
-          *,
-          author:profiles!positions_author_id_fkey (name)
-        `)
+        .select("*")
         .eq("issue_id", id)
         .order("votes", { ascending: false });
       
       if (error) throw error;
 
-      // Transform the data to match the expected format by PositionsList
-      return data.map(position => ({
-        id: position.id,
-        title: position.title,
-        content: position.content,
-        author: {
-          name: position.author?.name || "Anonymous",
-          // Default to basic verification level - in a real app you would store this in the profiles table
-          verificationLevel: "basic" as const
-        },
-        votes: position.votes || 0
+      // Transform the data to match the expected format
+      const transformedData = await Promise.all(data.map(async position => {
+        // Fetch author name if available
+        let authorName = "Anonymous";
+        if (position.author_id) {
+          const { data: authorData, error: authorError } = await supabase
+            .from("profiles")
+            .select("name")
+            .eq("id", position.author_id)
+            .single();
+          
+          if (!authorError && authorData) {
+            authorName = authorData.name || "Anonymous";
+          }
+        }
+
+        return {
+          id: position.id,
+          title: position.title,
+          content: position.content,
+          author: {
+            name: authorName,
+            // Default to basic verification level
+            verificationLevel: "basic" as const
+          },
+          votes: position.votes || 0
+        };
       }));
+
+      return transformedData;
     },
     enabled: !!id
   });
@@ -119,10 +149,7 @@ const IssueDetail = () => {
     category: "Unknown",
     description: "This issue could not be loaded. It may have been deleted or you may not have permission to view it.",
     created_at: new Date().toISOString(),
-    creator: {
-      name: "Unknown",
-      verificationLevel: "basic" as const
-    }
+    creatorName: "Unknown"
   };
 
   const positions = positionsQuery.data || [];
@@ -136,7 +163,7 @@ const IssueDetail = () => {
     createdAt: issue.created_at,
     votes: positions.reduce((sum, pos) => sum + pos.votes, 0),
     creator: {
-      name: issue.profiles?.name || "Anonymous",
+      name: issue.creatorName || "Anonymous",
       verificationLevel: "basic" as const
     }
   };

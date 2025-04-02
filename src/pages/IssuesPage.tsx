@@ -22,25 +22,46 @@ const IssuesPage = () => {
   const issuesQuery = useQuery({
     queryKey: ["issues"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("issues")
-        .select(`
-          *,
-          positions (id),
-          profiles:creator_id (name)
-        `)
-        .order("created_at", { ascending: false });
-      
-      if (error) throw error;
-      
-      return data.map(issue => ({
-        id: issue.id,
-        title: issue.title,
-        category: issue.category,
-        votes: issue.positions?.length || 0,
-        positions: issue.positions?.length || 0,
-        creator: issue.profiles?.name || "Anonymous"
-      }));
+      try {
+        // First, get all issues
+        const { data: issuesData, error: issuesError } = await supabase
+          .from("issues")
+          .select("*, positions(id)")
+          .order("created_at", { ascending: false });
+        
+        if (issuesError) throw issuesError;
+        
+        // For each issue, fetch the creator's name
+        const issuesWithCreators = await Promise.all(issuesData.map(async (issue) => {
+          let creatorName = "Anonymous";
+          
+          if (issue.creator_id) {
+            const { data: creatorData, error: creatorError } = await supabase
+              .from("profiles")
+              .select("name")
+              .eq("id", issue.creator_id)
+              .single();
+              
+            if (!creatorError && creatorData) {
+              creatorName = creatorData.name || "Anonymous";
+            }
+          }
+          
+          return {
+            id: issue.id,
+            title: issue.title,
+            category: issue.category,
+            votes: issue.positions?.length || 0,
+            positions: issue.positions?.length || 0,
+            creator: creatorName
+          };
+        }));
+        
+        return issuesWithCreators;
+      } catch (error) {
+        console.error("Error fetching issues:", error);
+        throw error;
+      }
     }
   });
 
