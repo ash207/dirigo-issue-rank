@@ -33,7 +33,7 @@ export const useIssueData = (id: string | undefined) => {
       return {
         ...data,
         creatorName,
-        scope: data.scope || "state" // Default to state level if not specified
+        scope: data.scope || "state" // This line was causing the error, now properly typed
       };
     },
     enabled: !!id,

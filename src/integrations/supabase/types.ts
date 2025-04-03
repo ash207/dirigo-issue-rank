@@ -16,6 +16,7 @@ export type Database = {
           creator_id: string
           description: string
           id: string
+          scope: string
           title: string
         }
         Insert: {
@@ -24,6 +25,7 @@ export type Database = {
           creator_id: string
           description: string
           id?: string
+          scope?: string
           title: string
         }
         Update: {
@@ -32,6 +34,7 @@ export type Database = {
           creator_id?: string
           description?: string
           id?: string
+          scope?: string
           title?: string
         }
         Relationships: []
