@@ -9,11 +9,13 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-  DialogDescription,
   DialogClose
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { AtSign, Lock } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface ReportPositionDialogProps {
   positionId: string;
@@ -37,11 +39,17 @@ const ReportPositionDialog = ({
   const { isAuthenticated, signIn } = useAuth();
   const [reportReason, setReportReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Sign in form state
+  const [isSigningIn, setIsSigningIn] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [authError, setAuthError] = useState("");
+  const [showAuthSuccess, setShowAuthSuccess] = useState(false);
 
   const handleReport = async () => {
     if (!isAuthenticated) {
-      // Redirect to sign in page
-      window.location.href = "/sign-in";
+      setIsSigningIn(true);
       return;
     }
     
@@ -77,14 +85,110 @@ const ReportPositionDialog = ({
     }
   };
 
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setAuthError("");
+    
+    try {
+      await signIn(email, password);
+      setShowAuthSuccess(true);
+      
+      // Reset auth form fields
+      setEmail("");
+      setPassword("");
+      
+      // Show success message briefly then return to report form
+      setTimeout(() => {
+        setShowAuthSuccess(false);
+        setIsSigningIn(false);
+      }, 2000);
+    } catch (error: any) {
+      setAuthError(error.message || "Failed to sign in");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  const handleBackToReport = () => {
+    setIsSigningIn(false);
+    setAuthError("");
+  };
+
+  // Render sign-in form
+  if (isSigningIn && !isAuthenticated) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Sign in to submit report</DialogTitle>
+          </DialogHeader>
+          
+          {showAuthSuccess ? (
+            <div className="py-6 text-center">
+              <p className="text-green-600 font-medium mb-2">Successfully signed in!</p>
+              <p>Returning to your report...</p>
+            </div>
+          ) : (
+            <form onSubmit={handleSignIn} className="space-y-4 pt-2">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <div className="relative">
+                  <AtSign className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="youremail@example.com"
+                    className="pl-9"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type="password" 
+                    className="pl-9"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+              {authError && (
+                <p className="text-destructive text-sm">{authError}</p>
+              )}
+              <DialogFooter className="sm:justify-between">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={handleBackToReport}
+                  disabled={isSubmitting}
+                >
+                  Back
+                </Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? "Signing in..." : "Sign in"}
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  // Render report form
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Report Position</DialogTitle>
-          <DialogDescription>
-            Please explain why you're reporting this position. Our team will review your report.
-          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 pt-2">
           <Textarea 
@@ -92,7 +196,13 @@ const ReportPositionDialog = ({
             value={reportReason}
             onChange={(e) => setReportReason(e.target.value)}
             className="min-h-[100px]"
+            disabled={!isAuthenticated}
           />
+          {!isAuthenticated && (
+            <p className="text-sm text-muted-foreground">
+              You must sign in to submit a report
+            </p>
+          )}
         </div>
         <DialogFooter className="sm:justify-between">
           <DialogClose asChild>
