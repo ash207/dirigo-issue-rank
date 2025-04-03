@@ -30,10 +30,11 @@ export const useIssueData = (id: string | undefined) => {
         }
       }
       
+      // Ensure we have a scope value
       return {
         ...data,
         creatorName,
-        scope: data.scope || "state" // This line was causing the error, now properly typed
+        scope: data.scope || "state" // Default to state if not specified
       };
     },
     enabled: !!id,

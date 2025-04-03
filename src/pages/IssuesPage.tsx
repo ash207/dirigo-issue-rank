@@ -48,6 +48,7 @@ const IssuesPage = () => {
             }
           }
           
+          // Make sure to include the scope property with a default value
           return {
             id: issue.id,
             title: issue.title,
