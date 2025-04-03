@@ -1,22 +1,10 @@
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import PositionCard from "./PositionCard";
-import CreatePositionForm from "./CreatePositionForm";
 import { useCallback, useState, useEffect } from "react";
-import { ChevronDown } from "lucide-react";
-
-interface Position {
-  id: string;
-  title: string;
-  content: string;
-  author: {
-    name: string;
-    verificationLevel: "unverified" | "basic" | "voter" | "official";
-  };
-  votes: number;
-  author_id?: string;
-}
+import CreatePositionForm from "./CreatePositionForm";
+import CreatePositionButton from "./CreatePositionButton";
+import PositionTabs from "./PositionTabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Position } from "@/types/positions";
 
 interface PositionsListProps {
   positions: Position[];
@@ -41,6 +29,7 @@ const PositionsList = ({
 }: PositionsListProps) => {
   const [positions, setPositions] = useState<Position[]>(initialPositions);
   const [visibleCount, setVisibleCount] = useState(3);
+  const [isOpen, setIsOpen] = useState(false);
   
   // Update positions when initialPositions changes or vote counts change
   useEffect(() => {
@@ -67,52 +56,9 @@ const PositionsList = ({
     setVisibleCount(prev => prev + 5);
   };
 
-  const renderPositions = (positionsToRender: Position[]) => {
-    if (positionsToRender.length === 0) {
-      return (
-        <div className="text-center py-4">
-          <p className="text-muted-foreground">No positions to display</p>
-        </div>
-      );
-    }
-
-    const visiblePositions = positionsToRender.slice(0, visibleCount);
-    const hasMore = positionsToRender.length > visibleCount;
-
-    return (
-      <div className="space-y-4">
-        {visiblePositions.map(position => (
-          <PositionCard 
-            key={position.id}
-            id={position.id}
-            title={position.title}
-            content={position.content}
-            author={position.author}
-            votes={position.votes}
-            userVotedPosition={userVotedPosition}
-            onVote={onVote}
-            isAuthenticated={isAuthenticated}
-            author_id={position.author_id}
-            currentUserId={currentUserId}
-            onPositionUpdated={refreshPositions}
-            issueId={issueId}
-          />
-        ))}
-        
-        {hasMore && (
-          <div className="flex justify-start mt-4">
-            <Button 
-              variant="outline" 
-              onClick={loadMore}
-              className="gap-2"
-            >
-              <ChevronDown size={16} />
-              Load More Positions
-            </Button>
-          </div>
-        )}
-      </div>
-    );
+  const handlePositionCreated = () => {
+    refreshPositions();
+    setIsOpen(false);
   };
 
   return (
@@ -121,41 +67,41 @@ const PositionsList = ({
         <h2 className="text-xl font-bold">Positions</h2>
       </div>
       
-      <Tabs defaultValue="top">
-        <TabsList>
-          <TabsTrigger value="top">Top</TabsTrigger>
-          <TabsTrigger value="new">Newest</TabsTrigger>
-          <TabsTrigger value="verified">Verified Only</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="top" className="space-y-4">
-          {renderPositions(positions.sort((a, b) => b.votes - a.votes))}
-        </TabsContent>
-
-        <TabsContent value="new" className="space-y-4">
-          {renderPositions(positions)}
-        </TabsContent>
-
-        <TabsContent value="verified" className="space-y-4">
-          {renderPositions(positions.filter(p => 
-            p.author.verificationLevel === "voter" || 
-            p.author.verificationLevel === "official"
-          ))}
-        </TabsContent>
-      </Tabs>
+      <PositionTabs
+        positions={positions}
+        visibleCount={visibleCount}
+        userVotedPosition={userVotedPosition}
+        positionVotes={positionVotes}
+        onVote={onVote}
+        isAuthenticated={isAuthenticated}
+        currentUserId={currentUserId}
+        onPositionUpdated={refreshPositions}
+        loadMore={loadMore}
+        issueId={issueId}
+      />
 
       <div className="mt-6">
-        {isAuthenticated ? (
-          <CreatePositionForm issueId={issueId} onSuccess={refreshPositions} />
-        ) : (
-          <Button 
-            variant="outline"
-            onClick={() => window.location.href = "/sign-in"}
-            className="w-full sm:w-auto"
-          >
-            Sign in to add your position
-          </Button>
-        )}
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+          <DialogTrigger asChild>
+            <div>
+              <CreatePositionButton 
+                isAuthenticated={isAuthenticated} 
+                onClick={() => setIsOpen(true)} 
+              />
+            </div>
+          </DialogTrigger>
+          {isOpen && (
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Add Your Position on This Issue</DialogTitle>
+              </DialogHeader>
+              <CreatePositionForm 
+                issueId={issueId} 
+                onSuccess={handlePositionCreated} 
+              />
+            </DialogContent>
+          )}
+        </Dialog>
       </div>
     </>
   );
