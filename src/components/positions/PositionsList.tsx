@@ -15,6 +15,7 @@ interface Position {
     verificationLevel: "unverified" | "basic" | "voter" | "official";
   };
   votes: number;
+  author_id?: string;
 }
 
 interface PositionsListProps {
@@ -24,6 +25,8 @@ interface PositionsListProps {
   userVotedPosition: string | null;
   positionVotes?: Record<string, number>;
   onVote: (positionId: string) => void;
+  currentUserId?: string;
+  onPositionUpdated?: () => void;
 }
 
 const PositionsList = ({ 
@@ -32,7 +35,9 @@ const PositionsList = ({
   isAuthenticated,
   userVotedPosition,
   positionVotes = {},
-  onVote
+  onVote,
+  currentUserId,
+  onPositionUpdated
 }: PositionsListProps) => {
   const [positions, setPositions] = useState<Position[]>(initialPositions);
   const [visibleCount, setVisibleCount] = useState(3);
@@ -53,7 +58,10 @@ const PositionsList = ({
     // In a real app, this would fetch updated positions from the API
     // For now, we just update the local state with the initial positions
     setPositions([...initialPositions]);
-  }, [initialPositions]);
+    if (onPositionUpdated) {
+      onPositionUpdated();
+    }
+  }, [initialPositions, onPositionUpdated]);
 
   const loadMore = () => {
     setVisibleCount(prev => prev + 5);
@@ -80,6 +88,9 @@ const PositionsList = ({
             userVotedPosition={userVotedPosition}
             onVote={onVote}
             isAuthenticated={isAuthenticated}
+            authorId={position.author_id}
+            currentUserId={currentUserId}
+            onPositionUpdated={refreshPositions}
           />
         ))}
         
