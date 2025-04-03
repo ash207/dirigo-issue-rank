@@ -1,3 +1,4 @@
+
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -15,13 +16,6 @@ import CreatePositionForm from "@/components/positions/CreatePositionForm";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useIssueActions } from "@/hooks/useIssueActions";
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -124,33 +118,6 @@ const IssueDetail = () => {
     navigate(`/issues/edit/${issue.id}`);
   };
 
-  const renderEditDeleteMenu = () => {
-    if (!isOwner) return null;
-    
-    return (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <MoreHorizontal className="h-4 w-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={handleEditIssue} className="cursor-pointer">
-            <Pencil className="mr-2 h-4 w-4" />
-            Edit
-          </DropdownMenuItem>
-          <DropdownMenuItem 
-            onClick={() => setIsDeleteDialogOpen(true)}
-            className="text-destructive cursor-pointer"
-          >
-            <Trash2 className="mr-2 h-4 w-4" />
-            Delete
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    );
-  };
-
   return (
     <Layout>
       <div className="container mx-auto max-w-4xl">
@@ -158,7 +125,9 @@ const IssueDetail = () => {
           <IssueHeader 
             issue={formattedIssue} 
             positionsCount={positions.length} 
-            editDeleteMenu={renderEditDeleteMenu()}
+            isOwner={isOwner}
+            onEdit={handleEditIssue}
+            onDelete={() => setIsDeleteDialogOpen(true)}
           />
         </div>
         

@@ -1,18 +1,15 @@
 
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { ThumbsUp, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { ThumbsUp, ThumbsDown, MoreHorizontal, Pencil, Trash2, Flag } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
-import { toast } from "sonner";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { 
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -22,251 +19,255 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
-import { usePositionActions } from "@/hooks/usePositionActions";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
-interface PositionCardProps {
+interface Position {
   id: string;
   title: string;
   content: string;
-  author: {
-    name: string;
-    verificationLevel: "unverified" | "basic" | "voter" | "official";
-  };
+  created_at: string;
+  user_id: string;
   votes: number;
-  interactive?: boolean;
-  isAuthenticated?: boolean;
-  userVotedPosition?: string | null;
-  onVote?: (id: string) => void;
-  authorId?: string;
-  currentUserId?: string;
-  onPositionUpdated?: () => void;
+  username?: string;
 }
 
-const getVerificationColor = (level: string) => {
-  switch (level) {
-    case "official":
-      return "text-verification-official font-bold";
-    case "voter":
-      return "text-verification-voter";
-    case "basic":
-      return "text-verification-basic";
-    default:
-      return "text-verification-unverified";
-  }
-};
-
-const VerificationBadge = ({ level }: { level: string }) => {
-  return (
-    <Badge variant="outline" className="text-xs">
-      {level.charAt(0).toUpperCase() + level.slice(1)}
-    </Badge>
-  );
-};
+interface PositionCardProps {
+  position: Position;
+  userVoted: boolean;
+  onVote: (positionId: string) => void;
+  isOwner: boolean;
+  onPositionUpdated?: () => void;
+  issueId: string;
+  issueTitle?: string;
+}
 
 const PositionCard = ({ 
-  id,
-  title,
-  content,
-  author,
-  votes,
-  interactive = true,
-  isAuthenticated = false,
-  userVotedPosition,
-  onVote,
-  authorId,
-  currentUserId,
-  onPositionUpdated
+  position, 
+  userVoted, 
+  onVote, 
+  isOwner,
+  onPositionUpdated,
+  issueId,
+  issueTitle = "this issue"
 }: PositionCardProps) => {
-  const [isHovered, setIsHovered] = useState(false);
-  const hasVoted = userVotedPosition === id;
-  const isOwner = currentUserId && authorId && currentUserId === authorId;
-  
+  const { isAuthenticated } = useAuth();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editTitle, setEditTitle] = useState(title);
-  const [editContent, setEditContent] = useState(content);
+  const [editContent, setEditContent] = useState(position.content);
+  const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleDelete = async () => {
+    try {
+      const { error } = await supabase
+        .from("positions")
+        .delete()
+        .eq("id", position.id)
+        .eq("user_id", position.user_id);
+        
+      if (error) throw error;
+      
+      toast.success("Position deleted successfully");
+      if (onPositionUpdated) onPositionUpdated();
+    } catch (error) {
+      console.error("Error deleting position:", error);
+      toast.error("Failed to delete position");
+    } finally {
+      setIsDeleteDialogOpen(false);
+    }
+  };
   
-  const { deletePosition, updatePosition, isDeleting, isEditing } = usePositionActions(currentUserId);
-  
-  const handleVote = () => {
-    if (!isAuthenticated) {
-      toast.error("Please sign in to vote", {
-        description: "You need to be logged in to vote on positions.",
-        action: {
-          label: "Sign In",
-          onClick: () => window.location.href = "/sign-in"
-        }
-      });
+  const handleEdit = async () => {
+    if (!editContent.trim()) {
+      toast.error("Position content cannot be empty");
       return;
     }
     
-    if (onVote) {
-      onVote(id);
+    try {
+      const { error } = await supabase
+        .from("positions")
+        .update({ content: editContent })
+        .eq("id", position.id)
+        .eq("user_id", position.user_id);
+        
+      if (error) throw error;
+      
+      toast.success("Position updated successfully");
+      if (onPositionUpdated) onPositionUpdated();
+      setIsEditDialogOpen(false);
+    } catch (error) {
+      console.error("Error updating position:", error);
+      toast.error("Failed to update position");
     }
   };
-
-  const handleDelete = async () => {
-    if (!authorId) return;
-    
-    const success = await deletePosition(id, authorId);
-    if (success && onPositionUpdated) {
-      onPositionUpdated();
+  
+  const handleReport = async () => {
+    if (!reportReason.trim()) {
+      toast.error("Please provide a reason for reporting this position");
+      return;
     }
-    setIsDeleteDialogOpen(false);
-  };
 
-  const handleEdit = async () => {
-    if (!authorId) return;
-    
-    const success = await updatePosition(id, authorId, {
-      title: editTitle,
-      content: editContent
-    });
-    
-    if (success && onPositionUpdated) {
-      onPositionUpdated();
+    setIsSubmitting(true);
+
+    try {
+      const { error } = await supabase.functions.invoke("send-position-report", {
+        body: {
+          positionId: position.id,
+          positionTitle: position.title,
+          positionContent: position.content,
+          issueId,
+          issueTitle,
+          reportReason,
+        },
+      });
+
+      if (error) throw error;
+
+      toast.success("Report submitted successfully");
+      setReportReason("");
+      setIsReportDialogOpen(false);
+    } catch (error) {
+      console.error("Error submitting report:", error);
+      toast.error("Failed to submit report. Please try again later.");
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsEditDialogOpen(false);
   };
 
   return (
-    <>
-      <Card 
-        className={`mb-4 ${interactive ? "transition-all duration-150 hover:shadow-md" : ""}`}
-        onMouseEnter={() => interactive && setIsHovered(true)}
-        onMouseLeave={() => interactive && setIsHovered(false)}
-      >
-        <CardHeader className="pb-2">
-          <div className="flex justify-between items-start">
-            <h3 className="font-bold text-lg">{title}</h3>
-            <div className="flex items-center gap-2">
-              {interactive ? (
-                <>
-                  <HoverCard openDelay={300}>
-                    <HoverCardTrigger asChild>
-                      <Button 
-                        variant={hasVoted ? "default" : "outline"}
-                        size="sm"
-                        onClick={handleVote}
-                        className="flex items-center gap-1"
-                      >
-                        <ThumbsUp size={16} /> 
-                        <span>{votes}</span>
-                      </Button>
-                    </HoverCardTrigger>
-                    <HoverCardContent className="w-auto">
-                      <p className="text-sm">{hasVoted ? "You voted for this position" : "Vote for this position"}</p>
-                    </HoverCardContent>
-                  </HoverCard>
-                  
-                  {isOwner && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
-                          <MoreHorizontal size={16} />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)} className="cursor-pointer">
-                          <Pencil className="mr-2 h-4 w-4" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          className="text-destructive focus:text-destructive cursor-pointer" 
-                          onClick={() => setIsDeleteDialogOpen(true)}
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
-                </>
-              ) : (
-                <span className="text-sm text-muted-foreground flex items-center">
-                  <ThumbsUp size={14} className="mr-1" /> {votes}
-                </span>
-              )}
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <p className="text-gray-700 mb-4">{content}</p>
-          <div className="flex justify-between items-center">
-            <span className="text-sm">
-              Posted by <span className={getVerificationColor(author.verificationLevel)}>@{author.name}</span>
-            </span>
-            <VerificationBadge level={author.verificationLevel} />
-          </div>
-        </CardContent>
-      </Card>
-
+    <Card className="mb-4">
+      <CardHeader className="pb-2 flex flex-row justify-between items-start">
+        <CardTitle className="text-lg">{position.title}</CardTitle>
+        
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {isOwner && (
+              <>
+                <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)} className="cursor-pointer">
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => setIsDeleteDialogOpen(true)}
+                  className="text-destructive cursor-pointer"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete
+                </DropdownMenuItem>
+              </>
+            )}
+            
+            {isAuthenticated && (
+              <DropdownMenuItem 
+                onClick={() => setIsReportDialogOpen(true)}
+                className="cursor-pointer"
+              >
+                <Flag className="mr-2 h-4 w-4" />
+                Report
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </CardHeader>
+      <CardContent>
+        <p className="text-gray-700 mb-4">{position.content}</p>
+        
+        <div className="flex justify-between items-center">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className={`flex items-center gap-1 ${userVoted ? 'text-primary' : ''}`}
+            onClick={() => onVote(position.id)}
+          >
+            {userVoted ? <ThumbsUp className="h-4 w-4 fill-primary" /> : <ThumbsUp className="h-4 w-4" />}
+            <span>{position.votes}</span>
+          </Button>
+        </div>
+      </CardContent>
+      
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure you want to delete this position?</AlertDialogTitle>
+            <AlertDialogTitle>Delete Position</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete your position and remove all votes associated with it.
+              Are you sure you want to delete this position? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleDelete} 
-              disabled={isDeleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {isDeleting ? "Deleting..." : "Delete"}
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Edit Position Dialog */}
+      
+      {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Position</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 pt-4">
-            <div className="space-y-2">
-              <Input 
-                placeholder="Position title" 
-                value={editTitle}
-                onChange={(e) => setEditTitle(e.target.value)}
-                className="w-full"
-              />
-            </div>
-            <div className="space-y-2">
-              <Textarea 
-                placeholder="Position content" 
-                value={editContent}
-                onChange={(e) => setEditContent(e.target.value)}
-                className="min-h-[100px]"
-              />
-            </div>
+          <div className="space-y-4 pt-2">
+            <Textarea 
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              placeholder="Update your position..."
+              className="min-h-[100px]"
+            />
           </div>
-          <DialogFooter>
-            <Button type="button" variant="secondary" onClick={() => setIsEditDialogOpen(false)} disabled={isEditing}>
+          <DialogFooter className="sm:justify-between">
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
               Cancel
             </Button>
-            <Button type="button" onClick={handleEdit} disabled={isEditing || !editTitle || !editContent}>
-              {isEditing ? "Saving..." : "Save Changes"}
+            <Button onClick={handleEdit}>
+              Save Changes
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </>
+      
+      {/* Report Dialog */}
+      <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Report Position</DialogTitle>
+            <DialogDescription>
+              Please explain why you're reporting this position. Our team will review your report.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <Textarea 
+              placeholder="Please describe why you're reporting this position..."
+              value={reportReason}
+              onChange={(e) => setReportReason(e.target.value)}
+              className="min-h-[100px]"
+            />
+          </div>
+          <DialogFooter className="sm:justify-between">
+            <DialogClose asChild>
+              <Button type="button" variant="outline" disabled={isSubmitting}>
+                Cancel
+              </Button>
+            </DialogClose>
+            <Button onClick={handleReport} disabled={isSubmitting}>
+              {isSubmitting ? "Submitting..." : "Submit Report"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </Card>
   );
 };
 
