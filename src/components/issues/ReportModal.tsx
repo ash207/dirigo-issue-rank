@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Dialog,
   DialogContent,
@@ -24,8 +25,15 @@ interface ReportModalProps {
 const ReportModal = ({ open, onOpenChange, issueId, issueTitle }: ReportModalProps) => {
   const [reason, setReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { isAuthenticated } = useAuth();
 
   const handleSubmit = async () => {
+    if (!isAuthenticated) {
+      // Redirect to sign in page
+      window.location.href = "/sign-in";
+      return;
+    }
+    
     if (!reason.trim()) {
       toast.error("Please provide a reason for reporting this issue");
       return;
@@ -79,7 +87,9 @@ const ReportModal = ({ open, onOpenChange, issueId, issueTitle }: ReportModalPro
             </Button>
           </DialogClose>
           <Button onClick={handleSubmit} disabled={isSubmitting}>
-            {isSubmitting ? "Submitting..." : "Submit Report"}
+            {isAuthenticated 
+              ? (isSubmitting ? "Submitting..." : "Submit Report") 
+              : "Sign in to Submit"}
           </Button>
         </DialogFooter>
       </DialogContent>

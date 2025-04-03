@@ -48,14 +48,6 @@ const PositionCard = ({
   // Check if current user is the author of this position
   const isOwner = author_id && currentUserId && author_id === currentUserId;
 
-  const handleReportClick = () => {
-    if (isAuthenticated) {
-      setIsReportDialogOpen(true);
-    } else {
-      window.location.href = "/sign-in";
-    }
-  };
-
   return (
     <Card className="mb-4">
       <CardHeader className="pb-2 flex flex-row justify-between items-start">
@@ -66,7 +58,7 @@ const PositionCard = ({
           isAuthenticated={isAuthenticated}
           onEdit={() => setIsEditDialogOpen(true)}
           onDelete={() => setIsDeleteDialogOpen(true)}
-          onReport={handleReportClick}
+          onReport={() => setIsReportDialogOpen(true)}
         />
       </CardHeader>
       <CardContent>
@@ -99,17 +91,15 @@ const PositionCard = ({
         onPositionUpdated={onPositionUpdated}
       />
       
-      {isAuthenticated && (
-        <ReportPositionDialog
-          positionId={id}
-          positionTitle={title}
-          positionContent={content}
-          issueId={issueId}
-          issueTitle={issueTitle}
-          open={isReportDialogOpen}
-          onOpenChange={setIsReportDialogOpen}
-        />
-      )}
+      <ReportPositionDialog
+        positionId={id}
+        positionTitle={title}
+        positionContent={content}
+        issueId={issueId}
+        issueTitle={issueTitle}
+        open={isReportDialogOpen}
+        onOpenChange={setIsReportDialogOpen}
+      />
     </Card>
   );
 };

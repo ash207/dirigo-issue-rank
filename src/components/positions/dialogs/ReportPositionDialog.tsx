@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Dialog,
   DialogContent,
@@ -33,10 +34,17 @@ const ReportPositionDialog = ({
   open,
   onOpenChange
 }: ReportPositionDialogProps) => {
+  const { isAuthenticated, signIn } = useAuth();
   const [reportReason, setReportReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleReport = async () => {
+    if (!isAuthenticated) {
+      // Redirect to sign in page
+      window.location.href = "/sign-in";
+      return;
+    }
+    
     if (!reportReason.trim()) {
       toast.error("Please provide a reason for reporting this position");
       return;
@@ -93,7 +101,9 @@ const ReportPositionDialog = ({
             </Button>
           </DialogClose>
           <Button onClick={handleReport} disabled={isSubmitting}>
-            {isSubmitting ? "Submitting..." : "Submit Report"}
+            {isAuthenticated 
+              ? (isSubmitting ? "Submitting..." : "Submit Report") 
+              : "Sign in to Submit"}
           </Button>
         </DialogFooter>
       </DialogContent>
