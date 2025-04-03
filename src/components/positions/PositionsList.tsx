@@ -84,13 +84,18 @@ const PositionsList = ({
         {visiblePositions.map(position => (
           <PositionCard 
             key={position.id}
-            {...position}
+            id={position.id}
+            title={position.title}
+            content={position.content}
+            author={position.author}
+            votes={position.votes}
             userVotedPosition={userVotedPosition}
             onVote={onVote}
             isAuthenticated={isAuthenticated}
-            authorId={position.author_id}
+            author_id={position.author_id}
             currentUserId={currentUserId}
             onPositionUpdated={refreshPositions}
+            issueId={issueId}
           />
         ))}
         

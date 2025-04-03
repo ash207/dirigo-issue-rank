@@ -26,14 +26,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { 
-      positionId,
-      positionTitle,
-      positionContent,
-      issueId,
-      issueTitle,
-      reportReason 
-    }: ReportRequest = await req.json();
+    const { positionId, positionTitle, positionContent, issueId, issueTitle, reportReason }: ReportRequest = await req.json();
 
     const emailResponse = await resend.emails.send({
       from: "Position Reports <onboarding@resend.dev>",
@@ -41,10 +34,10 @@ const handler = async (req: Request): Promise<Response> => {
       subject: `Position Report: ${positionTitle}`,
       html: `
         <h1>Position Report</h1>
-        <p><strong>Issue ID:</strong> ${issueId}</p>
-        <p><strong>Issue Title:</strong> ${issueTitle}</p>
         <p><strong>Position ID:</strong> ${positionId}</p>
         <p><strong>Position Title:</strong> ${positionTitle}</p>
+        <p><strong>Issue ID:</strong> ${issueId}</p>
+        <p><strong>Issue Title:</strong> ${issueTitle}</p>
         <h2>Position Content:</h2>
         <p>${positionContent}</p>
         <h2>Report Reason:</h2>
