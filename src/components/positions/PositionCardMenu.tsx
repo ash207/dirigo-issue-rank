@@ -47,15 +47,13 @@ const PositionCardMenu = ({
           </>
         )}
         
-        {isAuthenticated && (
-          <DropdownMenuItem 
-            onClick={onReport}
-            className="cursor-pointer"
-          >
-            <Flag className="mr-2 h-4 w-4" />
-            Report
-          </DropdownMenuItem>
-        )}
+        <DropdownMenuItem 
+          onClick={onReport}
+          className="cursor-pointer"
+        >
+          <Flag className="mr-2 h-4 w-4" />
+          Report
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

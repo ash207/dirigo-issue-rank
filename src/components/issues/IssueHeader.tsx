@@ -48,6 +48,14 @@ const IssueHeader = ({ issue, positionsCount, isOwner, onEdit, onDelete }: Issue
     }
   };
 
+  const handleReportClick = () => {
+    if (isAuthenticated) {
+      setReportModalOpen(true);
+    } else {
+      window.location.href = "/sign-in";
+    }
+  };
+
   return (
     <Card className="mb-8">
       <CardHeader>
@@ -83,15 +91,13 @@ const IssueHeader = ({ issue, positionsCount, isOwner, onEdit, onDelete }: Issue
                 </>
               )}
               
-              {isAuthenticated && (
-                <DropdownMenuItem 
-                  onClick={() => setReportModalOpen(true)}
-                  className="cursor-pointer"
-                >
-                  <FlagIcon className="mr-2 h-4 w-4" />
-                  Report
-                </DropdownMenuItem>
-              )}
+              <DropdownMenuItem 
+                onClick={handleReportClick}
+                className="cursor-pointer"
+              >
+                <FlagIcon className="mr-2 h-4 w-4" />
+                Report
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -107,12 +113,14 @@ const IssueHeader = ({ issue, positionsCount, isOwner, onEdit, onDelete }: Issue
         </div>
       </CardContent>
       
-      <ReportModal 
-        open={reportModalOpen} 
-        onOpenChange={setReportModalOpen} 
-        issueId={issue.id}
-        issueTitle={issue.title}
-      />
+      {isAuthenticated && (
+        <ReportModal 
+          open={reportModalOpen} 
+          onOpenChange={setReportModalOpen} 
+          issueId={issue.id}
+          issueTitle={issue.title}
+        />
+      )}
     </Card>
   );
 };
