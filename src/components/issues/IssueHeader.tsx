@@ -18,9 +18,10 @@ interface IssueHeaderProps {
     };
   };
   positionsCount: number;
+  editDeleteMenu?: React.ReactNode;
 }
 
-const IssueHeader = ({ issue, positionsCount }: IssueHeaderProps) => {
+const IssueHeader = ({ issue, positionsCount, editDeleteMenu }: IssueHeaderProps) => {
   const getScopeIcon = (scope: string = "state") => {
     switch (scope) {
       case "local":
@@ -43,9 +44,7 @@ const IssueHeader = ({ issue, positionsCount }: IssueHeaderProps) => {
               <span className="capitalize">{issue.scope || "state"}</span>
             </Badge>
           </div>
-          <span className="text-sm text-muted-foreground">
-            Posted by <span className="text-verification-voter">@{issue.creator.name}</span>
-          </span>
+          {editDeleteMenu}
         </div>
         <CardTitle className="text-2xl">{issue.title}</CardTitle>
       </CardHeader>
