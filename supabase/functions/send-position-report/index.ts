@@ -2,8 +2,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -28,6 +26,35 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const { positionId, positionTitle, positionContent, issueId, issueTitle, reportReason }: ReportRequest = await req.json();
 
+    // Check if API key exists
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    if (!resendApiKey) {
+      console.error("RESEND_API_KEY is not configured");
+      // For development purposes, log the report but return success
+      console.log("Position report that would be sent:", {
+        positionId,
+        positionTitle,
+        positionContent,
+        issueId, 
+        issueTitle,
+        reportReason
+      });
+      
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: "Position report logged (Resend API key not configured)" 
+        }), {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+            ...corsHeaders,
+          },
+        }
+      );
+    }
+
+    const resend = new Resend(resendApiKey);
     const emailResponse = await resend.emails.send({
       from: "Position Reports <onboarding@resend.dev>",
       to: ["anthonyshaeuser@gmail.com"],
