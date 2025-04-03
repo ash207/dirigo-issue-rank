@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ThumbsUp, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { ThumbsUp, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
@@ -171,17 +171,17 @@ const PositionCard = ({
                   {isOwner && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <MoreVertical size={16} />
+                        <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
+                          <MoreHorizontal size={16} />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)}>
+                        <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)} className="cursor-pointer">
                           <Pencil className="mr-2 h-4 w-4" />
                           Edit
                         </DropdownMenuItem>
                         <DropdownMenuItem 
-                          className="text-destructive focus:text-destructive" 
+                          className="text-destructive focus:text-destructive cursor-pointer" 
                           onClick={() => setIsDeleteDialogOpen(true)}
                         >
                           <Trash2 className="mr-2 h-4 w-4" />

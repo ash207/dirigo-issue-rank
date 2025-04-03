@@ -15,8 +15,14 @@ import EmptyPositionsState from "@/components/positions/EmptyPositionsState";
 import CreatePositionForm from "@/components/positions/CreatePositionForm";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2 } from "lucide-react";
 import { useIssueActions } from "@/hooks/useIssueActions";
+import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -132,25 +138,27 @@ const IssueDetail = () => {
           <IssueHeader issue={formattedIssue} positionsCount={positions.length} />
           
           {isOwner && (
-            <div className="flex gap-2 mt-4">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={handleEditIssue}
-                className="flex items-center gap-1"
-              >
-                <Pencil size={16} />
-                Edit
-              </Button>
-              <Button 
-                variant="destructive" 
-                size="sm" 
-                onClick={() => setIsDeleteDialogOpen(true)}
-                className="flex items-center gap-1"
-              >
-                <Trash2 size={16} />
-                Delete
-              </Button>
+            <div className="mt-4">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={handleEditIssue} className="cursor-pointer">
+                    <Pencil className="mr-2 h-4 w-4" />
+                    Edit
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => setIsDeleteDialogOpen(true)}
+                    className="text-destructive cursor-pointer"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           )}
         </div>
