@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import IssuesPage from "./pages/IssuesPage";
 import IssueDetail from "./pages/IssueDetail";
 import CreateIssuePage from "./pages/CreateIssuePage";
+import ProfilePage from "./pages/ProfilePage";
 import VerificationPage from "./pages/VerificationPage";
 import AboutPage from "./pages/AboutPage";
 import NotFound from "./pages/NotFound";
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="/issues" element={<IssuesPage />} />
             <Route path="/issues/:id" element={<IssueDetail />} />
             <Route path="/issues/create" element={<CreateIssuePage />} />
+            <Route path="/profile" element={<ProfilePage />} />
             <Route path="/verify" element={<VerificationPage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/sign-in" element={<SignInPage />} />
