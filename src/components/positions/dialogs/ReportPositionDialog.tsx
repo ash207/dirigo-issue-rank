@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import PositionAuthForm from "./auth/PositionAuthForm";
 import PositionReportForm from "./report/PositionReportForm";
@@ -53,6 +54,9 @@ const ReportPositionDialog = ({
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Sign in to submit report</DialogTitle>
+            <DialogDescription>
+              Authentication is required to submit reports to prevent abuse.
+            </DialogDescription>
           </DialogHeader>
           
           <PositionAuthForm
@@ -73,6 +77,9 @@ const ReportPositionDialog = ({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Report Position</DialogTitle>
+          <DialogDescription>
+            Please provide details about why you're reporting this position.
+          </DialogDescription>
         </DialogHeader>
         <PositionReportForm
           onSubmit={handleSubmitReport}

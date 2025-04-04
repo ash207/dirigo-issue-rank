@@ -29,7 +29,7 @@ const PositionReportForm = ({ onSubmit, isSubmitting, isAuthenticated }: Positio
         value={reason}
         onChange={(e) => setReason(e.target.value)}
         className="min-h-[100px]"
-        disabled={!isAuthenticated}
+        disabled={!isAuthenticated && isSubmitting}
       />
       {!isAuthenticated && (
         <p className="text-sm text-muted-foreground">
@@ -42,7 +42,10 @@ const PositionReportForm = ({ onSubmit, isSubmitting, isAuthenticated }: Positio
             Cancel
           </Button>
         </DialogClose>
-        <Button onClick={handleSubmit} disabled={isSubmitting || !reason.trim()}>
+        <Button 
+          onClick={handleSubmit} 
+          disabled={isAuthenticated ? (!reason.trim() || isSubmitting) : isSubmitting}
+        >
           {isAuthenticated 
             ? (isSubmitting ? "Submitting..." : "Submit Report") 
             : "Sign in to Submit"}
