@@ -53,6 +53,7 @@ export const useReport = (
       if (error) throw error;
 
       toast.success("Report submitted successfully");
+      // Call onComplete to close the modal
       onComplete();
     } catch (error) {
       console.error("Error submitting report:", error);

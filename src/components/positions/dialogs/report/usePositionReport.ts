@@ -59,6 +59,7 @@ export const usePositionReport = (
       if (error) throw error;
 
       toast.success("Report submitted successfully");
+      // Ensure we call onComplete to close the modal
       if (onComplete) onComplete();
     } catch (error) {
       console.error("Error submitting report:", error);

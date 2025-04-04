@@ -31,6 +31,7 @@ const ReportModal = ({ open, onOpenChange, issueId, issueTitle }: ReportModalPro
     setIsSigningIn,
     resetState
   } = useReport(issueId, issueTitle, () => {
+    // Ensure the modal closes after submission
     onOpenChange(false);
   });
 

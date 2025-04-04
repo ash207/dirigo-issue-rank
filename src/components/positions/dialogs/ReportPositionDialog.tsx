@@ -47,6 +47,7 @@ const ReportPositionDialog = ({
     positionContent,
     issueId,
     issueTitle,
+    // Ensure this callback closes the modal
     () => onOpenChange(false)
   );
 
