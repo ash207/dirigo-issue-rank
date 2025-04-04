@@ -53,35 +53,37 @@ export const useReports = () => {
           
         if (positionError) throw positionError;
         
-        // Fetch reporter emails (in a real app, this would require admin privileges)
+        // Fetch reporter emails
         const userIds = [
           ...new Set([
             ...issueReportsData.map(report => report.reporter_id),
             ...positionReportsData.map(report => report.reporter_id)
           ])
-        ];
+        ].filter(Boolean); // Filter out any null/undefined values
         
         if (userIds.length > 0) {
+          // Get user profiles directly from the auth.users table via Supabase functions
           const { data: users, error: usersError } = await supabase
             .from("profiles")
             .select("id, name")
             .in("id", userIds);
             
           if (!usersError && users) {
+            // Create a map of user IDs to emails
             const userMap = users.reduce((acc, user) => {
-              acc[user.id] = user.name || 'Unknown';
+              acc[user.id] = user.name || user.id;
               return acc;
             }, {} as Record<string, string>);
             
-            // Add reporter names to reports
+            // Add reporter emails to reports
             setIssueReports(issueReportsData.map(report => ({
               ...report,
-              reporter_email: userMap[report.reporter_id] || 'Unknown'
+              reporter_email: userMap[report.reporter_id] || 'Anonymous'
             })));
             
             setPositionReports(positionReportsData.map(report => ({
               ...report,
-              reporter_email: userMap[report.reporter_id] || 'Unknown'
+              reporter_email: userMap[report.reporter_id] || 'Anonymous'
             })));
           } else {
             setIssueReports(issueReportsData);
@@ -93,6 +95,8 @@ export const useReports = () => {
         }
       } catch (error) {
         console.error("Error fetching reports:", error);
+        setIssueReports([]);
+        setPositionReports([]);
       } finally {
         setIsLoading(false);
       }

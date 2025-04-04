@@ -63,7 +63,9 @@ export const PositionReportsTable = ({ reports, isLoading }: PositionReportsTabl
             <TableCell className="max-w-sm truncate">
               {report.report_reason}
             </TableCell>
-            <TableCell>{report.reporter_email || 'Unknown'}</TableCell>
+            <TableCell>
+              {report.reporter_email || 'Anonymous'}
+            </TableCell>
             <TableCell><StatusBadge status={report.status} /></TableCell>
           </TableRow>
         ))}
