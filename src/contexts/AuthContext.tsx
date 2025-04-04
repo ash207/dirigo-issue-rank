@@ -168,7 +168,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw error;
       }
       
-      // Even on successful sign out, still clear the local state
+      // Even on successful sign out, explicitly clear the local state
       setUser(null);
       setSession(null);
       setUserRole(null);
