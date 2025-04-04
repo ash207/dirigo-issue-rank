@@ -24,8 +24,13 @@ const Navbar = () => {
     try {
       setIsSigningOut(true);
       console.log("Signing out...");
+      
+      // Explicitly await signOut to ensure it completes
       await signOut();
+      
+      // Only navigate after signOut completes successfully
       navigate('/sign-in');
+      
       toast({
         title: "Signed out successfully",
         description: "You have been signed out of your account",

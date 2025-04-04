@@ -162,7 +162,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log("Signing out...");
       
-      // First call supabase signOut and wait for it to complete
+      // Call supabase signOut and wait for it to complete
+      // Using explicit await to ensure we wait for the operation to finish
       const { error } = await supabase.auth.signOut();
       
       if (error) {
@@ -170,12 +171,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw error;
       }
       
-      // Only after successful sign out, update the local state
+      console.log("Sign out successful from Supabase");
+      
+      // Only after successful sign out from Supabase, update the local state
       setUser(null);
       setSession(null);
       setUserRole(null);
-      
-      console.log("Sign out successful");
     } catch (error: any) {
       console.error("Error in signOut function:", error);
       toast({
