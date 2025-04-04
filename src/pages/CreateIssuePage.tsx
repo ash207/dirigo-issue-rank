@@ -1,7 +1,7 @@
 
 import Layout from "@/components/layout/Layout";
 import CreateIssueForm from "@/components/issues/CreateIssueForm";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/auth";
 import { Navigate } from "react-router-dom";
 
 const CreateIssuePage = () => {

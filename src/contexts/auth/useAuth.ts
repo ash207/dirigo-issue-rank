@@ -1,68 +1,16 @@
 
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { Session, User } from '@supabase/supabase-js';
 import { useToast } from "@/hooks/use-toast";
-
-type UserRole = 'basic' | 'moderator' | 'politician_admin' | 'dirigo_admin';
-
-type AuthContextType = {
-  user: User | null;
-  session: Session | null;
-  loading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string) => Promise<void>;
-  signOut: () => Promise<void>;
-  isAuthenticated: boolean;
-  userRole: UserRole | null;
-  isAdmin: boolean;
-  isModerator: boolean;
-};
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+import { useUserRole } from './useUserRole';
 
 export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
-
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [userRole, setUserRole] = useState<UserRole | null>(null);
+  const { userRole, setUserRole, fetchUserRole } = useUserRole();
   const { toast } = useToast();
-
-  const fetchUserRole = async (userId: string) => {
-    try {
-      console.log("Fetching user role for user:", userId);
-      
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', userId)
-        .single();
-      
-      if (error) {
-        console.error('Error fetching user role:', error);
-        throw error;
-      }
-      
-      if (data?.role) {
-        console.log("User role:", data.role);
-        setUserRole(data.role as UserRole);
-      } else {
-        console.log("No role found, setting to basic");
-        setUserRole('basic');
-      }
-    } catch (error) {
-      console.error('Error fetching user role:', error);
-      setUserRole('basic');
-    }
-  };
 
   useEffect(() => {
     // Set up auth state listener first
@@ -194,22 +142,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Compute moderator status (includes admins as well)
   const isModerator = isAdmin || userRole === 'moderator';
 
-  return (
-    <AuthContext.Provider 
-      value={{ 
-        user, 
-        session,
-        loading, 
-        signIn, 
-        signUp, 
-        signOut,
-        isAuthenticated: !!user,
-        userRole,
-        isAdmin,
-        isModerator
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
+  return {
+    user,
+    session,
+    loading,
+    signIn,
+    signUp,
+    signOut,
+    isAuthenticated: !!user,
+    userRole,
+    isAdmin,
+    isModerator
+  };
 };
