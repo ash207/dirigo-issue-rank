@@ -1,81 +1,22 @@
 
-import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { isValidUUID } from "./useVoteValidation";
 
-// Helper to check if a string is a valid UUID
-const isValidUUID = (str: string | undefined): boolean => {
-  if (!str) return false;
-  // Basic UUID format validation (simplified)
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  return uuidRegex.test(str);
-};
-
-export const usePositionVotes = (issueId: string | undefined, userId: string | undefined, isAuthenticated: boolean) => {
-  const [userVotedPosition, setUserVotedPosition] = useState<string | null>(null);
-  const [positionVotes, setPositionVotes] = useState<Record<string, number>>({});
-
-  // Fetch the user's vote and all position votes
-  useEffect(() => {
-    const fetchVotes = async () => {
-      if (!issueId) return;
-      
-      // Skip Supabase query if the issueId is not a valid UUID
-      if (!isValidUUID(issueId)) {
-        console.log("Using mock data for non-UUID issueId:", issueId);
-        return;
-      }
-      
-      try {
-        // Fetch positions with vote counts
-        const { data: positions, error: positionsError } = await supabase
-          .from('positions')
-          .select('id, votes')
-          .eq('issue_id', issueId);
-          
-        if (positionsError) {
-          console.error("Error fetching position votes:", positionsError);
-          return;
-        }
-        
-        // Build position votes map
-        const votesMap: Record<string, number> = {};
-        positions.forEach(position => {
-          votesMap[position.id] = position.votes;
-        });
-        setPositionVotes(votesMap);
-        
-        // Only fetch user vote if authenticated
-        if (isAuthenticated && userId) {
-          const { data: userVote, error: userVoteError } = await supabase
-            .from('user_votes')
-            .select('position_id')
-            .eq('user_id', userId)
-            .eq('issue_id', issueId)
-            .single();
-          
-          if (userVoteError && userVoteError.code !== 'PGRST116') { // PGRST116 means no rows returned
-            console.error("Error fetching user vote:", userVoteError);
-            return;
-          }
-          
-          if (userVote) {
-            setUserVotedPosition(userVote.position_id);
-          }
-        }
-      } catch (error) {
-        console.error("Error in fetchVotes:", error);
-      }
-    };
-    
-    fetchVotes();
-  }, [isAuthenticated, userId, issueId]);
-
+export const useVoteHandler = (
+  issueId: string | undefined, 
+  userId: string | undefined, 
+  isAuthenticated: boolean, 
+  userVotedPosition: string | null,
+  setUserVotedPosition: (positionId: string | null) => void,
+  positionVotes: Record<string, number>,
+  setPositionVotes: (votes: Record<string, number>) => void
+) => {
   const updatePositionVote = (positionId: string, newCount: number) => {
-    setPositionVotes(prev => ({
-      ...prev,
+    setPositionVotes({
+      ...positionVotes,
       [positionId]: newCount
-    }));
+    });
   };
 
   const handleVote = async (positionId: string) => {
@@ -193,7 +134,7 @@ export const usePositionVotes = (issueId: string | undefined, userId: string | u
     }
   };
 
-  return { userVotedPosition, positionVotes, handleVote };
+  return {
+    handleVote
+  };
 };
-
-export default usePositionVotes;
