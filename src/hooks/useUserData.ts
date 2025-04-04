@@ -53,7 +53,7 @@ export const useUserData = () => {
       
       const { data, error } = await supabase
         .from("profiles")
-        .select("*")
+        .select("*, role")
         .eq("id", userId)
         .single();
       
