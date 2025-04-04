@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Position } from "@/types/position";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type PositionsTabProps = {
   positions: Position[];
@@ -28,11 +29,10 @@ export const PositionsTab = ({ positions, isLoading }: PositionsTabProps) => {
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="flex justify-center py-8">
-            <div className="animate-pulse space-y-2">
-              <div className="h-6 w-64 bg-slate-200 rounded"></div>
-              <div className="h-6 w-48 bg-slate-200 rounded"></div>
-            </div>
+          <div className="space-y-2">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
           </div>
         ) : positions.length > 0 ? (
           <Table>

@@ -1,9 +1,11 @@
 
+import { useState } from "react";
 import { User, Pencil, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 type ProfileData = {
   name?: string;
@@ -43,6 +45,19 @@ const getRoleDisplayName = (role: string) => {
 
 export const ProfileHeader = ({ profileData }: ProfileHeaderProps) => {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const [isEditing, setIsEditing] = useState(false);
+  
+  const handleEditProfile = () => {
+    // For now, just show a toast since the edit profile functionality is not implemented
+    toast({
+      title: "Edit Profile",
+      description: "Profile editing functionality is coming soon!",
+    });
+    setIsEditing(true);
+    // In a real implementation, this would open a form or modal
+    setTimeout(() => setIsEditing(false), 1500);
+  };
   
   return (
     <Card className="mb-6">
@@ -66,8 +81,13 @@ export const ProfileHeader = ({ profileData }: ProfileHeaderProps) => {
             <CardDescription>{user?.email}</CardDescription>
           </div>
         </div>
-        <Button variant="outline">
-          <Pencil className="h-4 w-4 mr-2" /> Edit Profile
+        <Button 
+          variant="outline" 
+          onClick={handleEditProfile}
+          disabled={isEditing}
+        >
+          <Pencil className="h-4 w-4 mr-2" /> 
+          {isEditing ? "Editing..." : "Edit Profile"}
         </Button>
       </CardHeader>
     </Card>

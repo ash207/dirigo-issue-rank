@@ -1,12 +1,11 @@
 
-import { useState } from "react";
 import { format } from "date-fns";
-import { Book } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Issue } from "@/types/issue";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type IssuesTabProps = {
   issues: Issue[];
@@ -30,11 +29,10 @@ export const IssuesTab = ({ issues, isLoading }: IssuesTabProps) => {
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="flex justify-center py-8">
-            <div className="animate-pulse space-y-2">
-              <div className="h-6 w-64 bg-slate-200 rounded"></div>
-              <div className="h-6 w-48 bg-slate-200 rounded"></div>
-            </div>
+          <div className="space-y-2">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
           </div>
         ) : issues.length > 0 ? (
           <Table>
