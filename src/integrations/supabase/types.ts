@@ -9,6 +9,44 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      issue_reports: {
+        Row: {
+          created_at: string
+          id: string
+          issue_id: string
+          issue_title: string
+          report_reason: string
+          reporter_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          issue_id: string
+          issue_title: string
+          report_reason: string
+          reporter_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          issue_id?: string
+          issue_title?: string
+          report_reason?: string
+          reporter_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "issue_reports_issue_id_fkey"
+            columns: ["issue_id"]
+            isOneToOne: false
+            referencedRelation: "issues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       issues: {
         Row: {
           category: string
@@ -38,6 +76,60 @@ export type Database = {
           title?: string
         }
         Relationships: []
+      }
+      position_reports: {
+        Row: {
+          created_at: string
+          id: string
+          issue_id: string | null
+          issue_title: string
+          position_content: string
+          position_id: string
+          position_title: string
+          report_reason: string
+          reporter_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          issue_id?: string | null
+          issue_title: string
+          position_content: string
+          position_id: string
+          position_title: string
+          report_reason: string
+          reporter_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          issue_id?: string | null
+          issue_title?: string
+          position_content?: string
+          position_id?: string
+          position_title?: string
+          report_reason?: string
+          reporter_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "position_reports_issue_id_fkey"
+            columns: ["issue_id"]
+            isOneToOne: false
+            referencedRelation: "issues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "position_reports_position_id_fkey"
+            columns: ["position_id"]
+            isOneToOne: false
+            referencedRelation: "positions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       positions: {
         Row: {

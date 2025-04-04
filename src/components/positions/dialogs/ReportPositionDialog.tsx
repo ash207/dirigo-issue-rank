@@ -36,7 +36,7 @@ const ReportPositionDialog = ({
   open,
   onOpenChange
 }: ReportPositionDialogProps) => {
-  const { isAuthenticated, signIn } = useAuth();
+  const { isAuthenticated, signIn, session } = useAuth();
   const [reportReason, setReportReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -61,6 +61,7 @@ const ReportPositionDialog = ({
     setIsSubmitting(true);
 
     try {
+      // We need to pass the auth token for the edge function to identify the user
       const { error } = await supabase.functions.invoke("send-position-report", {
         body: {
           positionId,
@@ -70,6 +71,9 @@ const ReportPositionDialog = ({
           issueTitle,
           reportReason,
         },
+        headers: session?.access_token
+          ? { Authorization: `Bearer ${session.access_token}` }
+          : undefined,
       });
 
       if (error) throw error;

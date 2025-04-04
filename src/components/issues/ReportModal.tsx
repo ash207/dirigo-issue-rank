@@ -16,7 +16,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { AtSign, Lock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
 
 interface ReportModalProps {
   open: boolean;
@@ -28,7 +27,7 @@ interface ReportModalProps {
 const ReportModal = ({ open, onOpenChange, issueId, issueTitle }: ReportModalProps) => {
   const [reason, setReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { isAuthenticated, signIn } = useAuth();
+  const { isAuthenticated, signIn, session } = useAuth();
   
   // Sign in form state
   const [isSigningIn, setIsSigningIn] = useState(false);
@@ -51,12 +50,16 @@ const ReportModal = ({ open, onOpenChange, issueId, issueTitle }: ReportModalPro
     setIsSubmitting(true);
 
     try {
+      // We need to pass the auth token for the edge function to identify the user
       const { error } = await supabase.functions.invoke("send-report", {
         body: {
           issueId,
           issueTitle,
           reportReason: reason,
         },
+        headers: session?.access_token
+          ? { Authorization: `Bearer ${session.access_token}` }
+          : undefined,
       });
 
       if (error) throw error;

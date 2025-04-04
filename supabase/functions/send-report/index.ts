@@ -1,6 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { Resend } from "npm:resend@2.0.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.36.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -22,55 +22,57 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     const { issueId, issueTitle, reportReason }: ReportRequest = await req.json();
-
-    // Check if API key exists
-    const resendApiKey = Deno.env.get("RESEND_API_KEY");
-    if (!resendApiKey) {
-      console.error("RESEND_API_KEY is not configured");
-      // For development purposes, log the report but return success
-      console.log("Report that would be sent:", {
-        issueId,
-        issueTitle,
-        reportReason
-      });
-      
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: "Report logged (Resend API key not configured)" 
-        }), {
-          status: 200,
-          headers: {
-            "Content-Type": "application/json",
-            ...corsHeaders,
-          },
-        }
-      );
+    const authHeader = req.headers.get('Authorization');
+    
+    if (!authHeader) {
+      throw new Error('Missing Authorization header');
     }
-
-    const resend = new Resend(resendApiKey);
-    const emailResponse = await resend.emails.send({
-      from: "Issue Reports <onboarding@resend.dev>",
-      to: ["anthonyshaeuser@gmail.com"],
-      subject: `Issue Report: ${issueTitle}`,
-      html: `
-        <h1>Issue Report</h1>
-        <p><strong>Issue ID:</strong> ${issueId}</p>
-        <p><strong>Issue Title:</strong> ${issueTitle}</p>
-        <h2>Report Reason:</h2>
-        <p>${reportReason}</p>
-      `,
+    
+    // Create a Supabase client with the auth header from the request
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
     });
-
-    console.log("Report email sent successfully:", emailResponse);
-
-    return new Response(JSON.stringify(emailResponse), {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        ...corsHeaders,
-      },
-    });
+    
+    // Extract user ID from auth context
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    
+    if (!user) {
+      throw new Error('Unable to get user from auth context');
+    }
+    
+    // Insert the report into the database
+    const { data, error } = await supabase
+      .from('issue_reports')
+      .insert({
+        issue_id: issueId,
+        issue_title: issueTitle,
+        report_reason: reportReason,
+        reporter_id: user.id
+      });
+    
+    if (error) {
+      console.error("Error saving issue report:", error);
+      throw error;
+    }
+    
+    console.log("Issue report saved successfully");
+    
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        message: "Report submitted successfully" 
+      }), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          ...corsHeaders,
+        },
+      }
+    );
   } catch (error: any) {
     console.error("Error in send-report function:", error);
     return new Response(
