@@ -47,7 +47,7 @@ serve(async (req) => {
       .single();
 
     // Only allow access to admin users (for security)
-    if (!profile || profile.role !== "admin") {
+    if (!profile || profile.role !== "dirigo_admin") {
       return new Response(
         JSON.stringify({ error: "Unauthorized - Admin access required" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
