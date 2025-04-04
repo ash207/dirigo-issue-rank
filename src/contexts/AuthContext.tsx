@@ -3,6 +3,7 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { Session, User } from '@supabase/supabase-js';
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from 'react-router-dom';
 
 type UserRole = 'basic' | 'moderator' | 'politician_admin' | 'dirigo_admin';
 
@@ -38,24 +39,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchUserRole = async (userId: string) => {
     try {
-      console.log("Fetching user role for user:", userId);
-      
       const { data, error } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', userId)
         .single();
       
-      if (error) {
-        console.error('Error fetching user role:', error);
-        throw error;
-      }
+      if (error) throw error;
       
       if (data?.role) {
-        console.log("User role:", data.role);
         setUserRole(data.role as UserRole);
       } else {
-        console.log("No role found, setting to basic");
         setUserRole('basic');
       }
     } catch (error) {
@@ -68,8 +62,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
-        console.log("Auth state changed:", event);
-        
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         
@@ -85,8 +77,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Then check for existing session
     supabase.auth.getSession().then(async ({ data: { session: currentSession } }) => {
-      console.log("Existing session check:", currentSession ? "Found session" : "No session");
-      
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
       
@@ -160,28 +150,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = async () => {
     try {
-      console.log("Signing out...");
-      const { error } = await supabase.auth.signOut();
-      
-      if (error) {
-        console.error("Error signing out:", error);
-        throw error;
-      }
-      
-      // Even on successful sign out, still clear the local state
-      setUser(null);
-      setSession(null);
+      await supabase.auth.signOut();
       setUserRole(null);
-      
-      console.log("Sign out successful");
+      toast({
+        title: "Signed out",
+        description: "You have been signed out successfully",
+      });
     } catch (error: any) {
-      console.error("Error in signOut function:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to sign out",
         variant: "destructive",
       });
-      throw error;
     }
   };
 

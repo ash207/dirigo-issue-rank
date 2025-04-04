@@ -2,8 +2,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Issue } from "@/types/issue";
-import { Position } from "@/types/position";
 
 export const useUserData = () => {
   const { user } = useAuth();
@@ -15,21 +13,15 @@ export const useUserData = () => {
     queryFn: async () => {
       if (!userId) return [];
       
-      console.log("Fetching issues for user:", userId);
-      
       const { data: issuesData, error: issuesError } = await supabase
         .from("issues")
         .select("*")
         .eq("creator_id", userId)
         .order("created_at", { ascending: false });
       
-      if (issuesError) {
-        console.error("Error fetching issues:", issuesError);
-        throw issuesError;
-      }
+      if (issuesError) throw issuesError;
       
-      console.log("Issues data:", issuesData);
-      return issuesData as Issue[];
+      return issuesData;
     },
     enabled: !!userId,
   });
@@ -40,21 +32,15 @@ export const useUserData = () => {
     queryFn: async () => {
       if (!userId) return [];
       
-      console.log("Fetching positions for user:", userId);
-      
       const { data: positionsData, error: positionsError } = await supabase
         .from("positions")
         .select("*, issues(title)")
         .eq("author_id", userId)
         .order("created_at", { ascending: false });
       
-      if (positionsError) {
-        console.error("Error fetching positions:", positionsError);
-        throw positionsError;
-      }
+      if (positionsError) throw positionsError;
       
-      console.log("Positions data:", positionsData);
-      return positionsData as Position[];
+      return positionsData;
     },
     enabled: !!userId,
   });
@@ -65,20 +51,14 @@ export const useUserData = () => {
     queryFn: async () => {
       if (!userId) return null;
       
-      console.log("Fetching profile for user:", userId);
-      
       const { data, error } = await supabase
         .from("profiles")
         .select("*, role")
         .eq("id", userId)
         .single();
       
-      if (error) {
-        console.error("Error fetching profile:", error);
-        throw error;
-      }
+      if (error) throw error;
       
-      console.log("Profile data:", data);
       return data;
     },
     enabled: !!userId,

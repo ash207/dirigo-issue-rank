@@ -9,29 +9,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useToast } from "@/hooks/use-toast";
 
 const Navbar = () => {
   const { user, signOut, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
 
   const handleSignOut = async () => {
-    try {
-      await signOut();
-      navigate('/sign-in');
-      toast({
-        title: "Signed out successfully",
-        description: "You have been signed out of your account",
-      });
-    } catch (error) {
-      console.error("Sign out error:", error);
-      toast({
-        title: "Error signing out",
-        description: "There was a problem signing out of your account",
-        variant: "destructive",
-      });
-    }
+    await signOut();
+    navigate('/sign-in');
   };
 
   return (
