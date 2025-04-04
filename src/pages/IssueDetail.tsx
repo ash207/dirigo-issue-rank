@@ -1,8 +1,9 @@
+
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import Layout from "@/components/layout/Layout";
-import { useAuth } from "@/contexts/auth";
+import { useAuth } from "@/contexts/AuthContext";
 import IssueHeader from "@/components/issues/IssueHeader";
 import PositionsList from "@/components/positions/PositionsList";
 import usePositionVotes from "@/hooks/position/usePositionVotes";

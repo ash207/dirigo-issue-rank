@@ -2,52 +2,21 @@
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { Search, User, LogOut } from "lucide-react";
-import { useAuthContext } from "@/contexts/auth";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
 
 const Navbar = () => {
-  const { user, signOut, isAuthenticated } = useAuthContext();
+  const { user, signOut, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const [isSigningOut, setIsSigningOut] = useState(false);
 
   const handleSignOut = async () => {
-    if (isSigningOut) return; // Prevent multiple clicks
-    
-    try {
-      setIsSigningOut(true);
-      console.log("Signing out...");
-      
-      // Call signOut but don't wait for the result since we're forcing navigation anyway
-      signOut().catch(error => console.error("Sign out error:", error));
-      
-      // Force navigation to sign-in page immediately
-      navigate('/sign-in');
-      
-      toast({
-        title: "Signed out successfully",
-        description: "You have been signed out of your account",
-      });
-    } catch (error) {
-      console.error("Sign out error:", error);
-      toast({
-        title: "Error signing out",
-        description: "There was a problem signing out of your account",
-        variant: "destructive",
-      });
-      
-      // Still navigate away to sign-in page on error
-      navigate('/sign-in');
-    } finally {
-      setIsSigningOut(false);
-    }
+    await signOut();
+    navigate('/sign-in');
   };
 
   return (
@@ -90,12 +59,9 @@ const Navbar = () => {
                   <User className="mr-2 h-4 w-4" />
                   <span>My Profile</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem 
-                  onClick={handleSignOut}
-                  disabled={isSigningOut}
-                >
+                <DropdownMenuItem onClick={handleSignOut}>
                   <LogOut className="mr-2 h-4 w-4" />
-                  <span>{isSigningOut ? 'Signing out...' : 'Sign Out'}</span>
+                  <span>Sign Out</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

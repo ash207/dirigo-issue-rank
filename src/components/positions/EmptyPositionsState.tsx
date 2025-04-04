@@ -1,7 +1,8 @@
+
 import React from "react";
 import { MessageSquareOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/contexts/auth";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface EmptyPositionsStateProps {
   issueId: string;
