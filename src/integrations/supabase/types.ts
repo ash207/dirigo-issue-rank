@@ -175,6 +175,7 @@ export type Database = {
           id: string
           name: string | null
           role: Database["public"]["Enums"]["user_role"]
+          status: string
           updated_at: string
         }
         Insert: {
@@ -182,6 +183,7 @@ export type Database = {
           id: string
           name?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          status?: string
           updated_at?: string
         }
         Update: {
@@ -189,6 +191,7 @@ export type Database = {
           id?: string
           name?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          status?: string
           updated_at?: string
         }
         Relationships: []
