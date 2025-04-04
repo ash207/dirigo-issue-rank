@@ -9,6 +9,7 @@ import {
 import PositionAuthForm from "./auth/PositionAuthForm";
 import PositionReportForm from "./report/PositionReportForm";
 import { usePositionReport } from "./report/usePositionReport";
+import { useEffect } from "react";
 
 interface ReportPositionDialogProps {
   positionId: string;
@@ -38,7 +39,8 @@ const ReportPositionDialog = ({
     handleSubmitReport,
     handleSignIn,
     handleBackToReport,
-    setIsSigningIn
+    setIsSigningIn,
+    resetState
   } = usePositionReport(
     positionId,
     positionTitle,
@@ -47,6 +49,13 @@ const ReportPositionDialog = ({
     issueTitle,
     () => onOpenChange(false)
   );
+
+  // Reset internal state when modal is closed
+  useEffect(() => {
+    if (!open) {
+      resetState();
+    }
+  }, [open, resetState]);
 
   // Render sign-in form
   if (isSigningIn && !isAuthenticated) {

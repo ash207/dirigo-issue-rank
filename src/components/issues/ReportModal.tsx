@@ -9,6 +9,7 @@ import {
 import AuthForm from "./auth/AuthForm";
 import ReportForm from "./report/ReportForm";
 import { useReport } from "./report/useReport";
+import { useEffect } from "react";
 
 interface ReportModalProps {
   open: boolean;
@@ -27,10 +28,18 @@ const ReportModal = ({ open, onOpenChange, issueId, issueTitle }: ReportModalPro
     handleSubmitReport,
     handleSignIn,
     handleBackToReport,
-    setIsSigningIn
+    setIsSigningIn,
+    resetState
   } = useReport(issueId, issueTitle, () => {
     onOpenChange(false);
   });
+
+  // Reset internal state when modal is closed
+  useEffect(() => {
+    if (!open) {
+      resetState();
+    }
+  }, [open, resetState]);
 
   // Render sign-in form
   if (isSigningIn && !isAuthenticated) {

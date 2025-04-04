@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -16,6 +16,13 @@ export const useReport = (
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [authError, setAuthError] = useState("");
   const [showAuthSuccess, setShowAuthSuccess] = useState(false);
+
+  const resetState = useCallback(() => {
+    setIsSigningIn(false);
+    setAuthError("");
+    setShowAuthSuccess(false);
+    setIsSubmitting(false);
+  }, []);
 
   const handleSubmitReport = async (reason: string) => {
     if (!isAuthenticated) {
@@ -89,6 +96,7 @@ export const useReport = (
     showAuthSuccess,
     handleSubmitReport,
     handleSignIn,
-    handleBackToReport
+    handleBackToReport,
+    resetState
   };
 };
