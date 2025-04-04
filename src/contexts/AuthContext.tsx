@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { Session, User } from '@supabase/supabase-js';
@@ -71,8 +70,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         
-        // If the event is a user sign-in, check email verification
-        if (event === 'SIGNED_IN' && currentSession?.user) {
+        // Check email verification for any auth state change that has a user
+        if (currentSession?.user) {
           updateUserStatusIfVerified(currentSession.user);
         }
         
@@ -84,12 +83,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
-      
-      // Check email verification for existing session
-      if (currentSession?.user) {
-        updateUserStatusIfVerified(currentSession.user);
-      }
-      
       setLoading(false);
     });
 
