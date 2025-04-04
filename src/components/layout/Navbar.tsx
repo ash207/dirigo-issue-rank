@@ -25,10 +25,10 @@ const Navbar = () => {
       setIsSigningOut(true);
       console.log("Signing out...");
       
-      // Explicitly await signOut to ensure it completes
+      // Call signOut and wait for it to complete
       await signOut();
       
-      // Only navigate after signOut completes successfully
+      // Once signOut is complete, navigate to sign-in page
       navigate('/sign-in');
       
       toast({

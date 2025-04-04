@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { Session, User } from '@supabase/supabase-js';
@@ -110,9 +109,8 @@ export const useAuth = () => {
     try {
       console.log("Signing out...");
       
-      // Call supabase signOut and wait for it to complete
-      // Using explicit await to ensure we wait for the operation to finish
-      const { error } = await supabase.auth.signOut();
+      // Call supabase signOut method with the global scope to sign out from all sessions
+      const { error } = await supabase.auth.signOut({ scope: 'global' });
       
       if (error) {
         console.error("Error signing out:", error);
@@ -121,10 +119,9 @@ export const useAuth = () => {
       
       console.log("Sign out successful from Supabase");
       
-      // Only after successful sign out from Supabase, update the local state
-      setUser(null);
-      setSession(null);
-      setUserRole(null);
+      // Let the onAuthStateChange handle the state update
+      // No need to manually update user and session state here
+      // The listener will receive a SIGNED_OUT event and update the state
     } catch (error: any) {
       console.error("Error in signOut function:", error);
       toast({
