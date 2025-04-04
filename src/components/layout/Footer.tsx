@@ -1,7 +1,11 @@
 
 import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { Flag } from "lucide-react";
 
 const Footer = () => {
+  const { isAuthenticated } = useAuth();
+  
   return (
     <footer className="bg-dirigo-blue text-white py-8 mt-auto">
       <div className="container mx-auto px-4">
@@ -18,6 +22,14 @@ const Footer = () => {
               <li><Link to="/issues" className="text-gray-300 hover:text-white">Issues</Link></li>
               <li><Link to="/about" className="text-gray-300 hover:text-white">About</Link></li>
               <li><Link to="/verify" className="text-gray-300 hover:text-white">Verification</Link></li>
+              {isAuthenticated && (
+                <li>
+                  <Link to="/reports" className="text-gray-300 hover:text-white flex items-center gap-1">
+                    <Flag className="h-4 w-4" />
+                    <span>Reports</span>
+                  </Link>
+                </li>
+              )}
               <li><Link to="/privacy" className="text-gray-300 hover:text-white">Privacy Policy</Link></li>
             </ul>
           </div>
