@@ -18,6 +18,7 @@ const Navbar = () => {
 
   const handleSignOut = async () => {
     try {
+      console.log("Signing out...");
       await signOut();
       navigate('/sign-in');
       toast({
