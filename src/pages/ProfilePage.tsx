@@ -9,8 +9,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Pencil, User, Book, MessageSquare, Calendar } from "lucide-react";
+import { Pencil, User, Book, MessageSquare, Calendar, Shield } from "lucide-react";
 import { format } from "date-fns";
+import { Badge } from "@/components/ui/badge";
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -32,6 +33,33 @@ const ProfilePage = () => {
     navigate(`/issues/${issueId}`);
   };
 
+  // Role display utilities
+  const getRoleBadgeVariant = (role: string) => {
+    switch (role) {
+      case 'dirigo_admin':
+        return 'destructive';
+      case 'politician_admin':
+        return 'default';
+      case 'moderator':
+        return 'secondary';
+      default:
+        return 'outline';
+    }
+  };
+  
+  const getRoleDisplayName = (role: string) => {
+    switch (role) {
+      case 'dirigo_admin':
+        return 'DirigoVotes Admin';
+      case 'politician_admin':
+        return 'Politician Admin';
+      case 'moderator':
+        return 'Moderator';
+      default:
+        return 'Basic User';
+    }
+  };
+
   return (
     <Layout>
       <div className="container mx-auto max-w-6xl">
@@ -43,9 +71,17 @@ const ProfilePage = () => {
                 <User size={32} className="text-white" />
               </div>
               <div>
-                <CardTitle className="text-2xl">
-                  {profile.data?.name || user?.email?.split('@')[0] || "User"}
-                </CardTitle>
+                <div className="flex items-center mb-1">
+                  <CardTitle className="text-2xl mr-2">
+                    {profile.data?.name || user?.email?.split('@')[0] || "User"}
+                  </CardTitle>
+                  {profile.data?.role && (
+                    <Badge variant={getRoleBadgeVariant(profile.data.role)}>
+                      <Shield className="h-3 w-3 mr-1" /> 
+                      {getRoleDisplayName(profile.data.role)}
+                    </Badge>
+                  )}
+                </div>
                 <CardDescription>{user?.email}</CardDescription>
               </div>
             </div>

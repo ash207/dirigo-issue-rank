@@ -5,6 +5,8 @@ import { Session, User } from '@supabase/supabase-js';
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from 'react-router-dom';
 
+type UserRole = 'basic' | 'moderator' | 'politician_admin' | 'dirigo_admin';
+
 type AuthContextType = {
   user: User | null;
   session: Session | null;
@@ -13,6 +15,9 @@ type AuthContextType = {
   signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   isAuthenticated: boolean;
+  userRole: UserRole | null;
+  isAdmin: boolean;
+  isModerator: boolean;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -29,22 +34,56 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
   const { toast } = useToast();
+
+  const fetchUserRole = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .single();
+      
+      if (error) throw error;
+      
+      if (data?.role) {
+        setUserRole(data.role as UserRole);
+      } else {
+        setUserRole('basic');
+      }
+    } catch (error) {
+      console.error('Error fetching user role:', error);
+      setUserRole('basic');
+    }
+  };
 
   useEffect(() => {
     // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, currentSession) => {
+      async (event, currentSession) => {
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
+        
+        if (currentSession?.user) {
+          await fetchUserRole(currentSession.user.id);
+        } else {
+          setUserRole(null);
+        }
+        
         setLoading(false);
       }
     );
 
     // Then check for existing session
-    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+    supabase.auth.getSession().then(async ({ data: { session: currentSession } }) => {
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
+      
+      if (currentSession?.user) {
+        await fetchUserRole(currentSession.user.id);
+      }
+      
       setLoading(false);
     });
 
@@ -112,6 +151,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
+      setUserRole(null);
       toast({
         title: "Signed out",
         description: "You have been signed out successfully",
@@ -125,6 +165,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Compute admin status based on role
+  const isAdmin = userRole === 'dirigo_admin' || userRole === 'politician_admin';
+  
+  // Compute moderator status (includes admins as well)
+  const isModerator = isAdmin || userRole === 'moderator';
+
   return (
     <AuthContext.Provider 
       value={{ 
@@ -134,7 +180,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signIn, 
         signUp, 
         signOut,
-        isAuthenticated: !!user 
+        isAuthenticated: !!user,
+        userRole,
+        isAdmin,
+        isModerator
       }}
     >
       {children}

@@ -174,18 +174,21 @@ export type Database = {
           created_at: string
           id: string
           name: string | null
+          role: Database["public"]["Enums"]["user_role"]
           updated_at: string
         }
         Insert: {
           created_at?: string
           id: string
           name?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
         }
         Update: {
           created_at?: string
           id?: string
           name?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
         }
         Relationships: []
@@ -290,6 +293,19 @@ export type Database = {
         }
         Returns: number
       }
+      get_user_role: {
+        Args: {
+          user_id: string
+        }
+        Returns: string
+      }
+      has_role: {
+        Args: {
+          user_id: string
+          required_role: Database["public"]["Enums"]["user_role"]
+        }
+        Returns: boolean
+      }
       increment_counter: {
         Args: {
           x: number
@@ -298,7 +314,7 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      user_role: "basic" | "moderator" | "politician_admin" | "dirigo_admin"
     }
     CompositeTypes: {
       [_ in never]: never
