@@ -6,7 +6,7 @@ import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/contexts/AuthContext";
 import IssueHeader from "@/components/issues/IssueHeader";
 import PositionsList from "@/components/positions/PositionsList";
-import usePositionVotes from "@/hooks/usePositionVotes";
+import usePositionVotes from "@/hooks/position/usePositionVotes";
 import { useIssueData } from "@/hooks/useIssueData";
 import { usePositionsData } from "@/hooks/usePositionsData";
 import IssueLoadingState from "@/components/issues/IssueLoadingState";
