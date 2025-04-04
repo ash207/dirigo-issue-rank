@@ -31,18 +31,20 @@ const handler = async (req: Request): Promise<Response> => {
     // Create a Supabase client with the auth header from the request
     const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
     
-    // Extract user ID from auth context
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    // Extract user ID from auth JWT
+    const jwt = authHeader.replace('Bearer ', '');
     
-    if (!user) {
-      throw new Error('Unable to get user from auth context');
+    // Get the user from auth context
+    const { data: { user }, error: userError } = await supabase.auth.getUser(jwt);
+    
+    if (userError || !user) {
+      console.error("Unable to get user:", userError);
+      throw new Error('Unable to get user from auth token');
     }
+    
+    console.log("Retrieved user ID:", user.id);
     
     // Insert the report into the database
     const { data, error } = await supabase

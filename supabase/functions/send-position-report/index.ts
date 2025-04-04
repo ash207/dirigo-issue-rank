@@ -8,12 +8,12 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-interface ReportRequest {
+interface PositionReportRequest {
   positionId: string;
   positionTitle: string;
   positionContent: string;
-  issueId: string;
-  issueTitle: string;
+  issueId?: string;
+  issueTitle?: string;
   reportReason: string;
 }
 
@@ -24,7 +24,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { positionId, positionTitle, positionContent, issueId, issueTitle, reportReason }: ReportRequest = await req.json();
+    const { positionId, positionTitle, positionContent, issueId, issueTitle, reportReason }: PositionReportRequest = await req.json();
     const authHeader = req.headers.get('Authorization');
     
     if (!authHeader) {
@@ -34,20 +34,22 @@ const handler = async (req: Request): Promise<Response> => {
     // Create a Supabase client with the auth header from the request
     const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
     
-    // Extract user ID from auth context
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    // Extract user ID from auth JWT
+    const jwt = authHeader.replace('Bearer ', '');
     
-    if (!user) {
-      throw new Error('Unable to get user from auth context');
+    // Get the user from auth context
+    const { data: { user }, error: userError } = await supabase.auth.getUser(jwt);
+    
+    if (userError || !user) {
+      console.error("Unable to get user:", userError);
+      throw new Error('Unable to get user from auth token');
     }
     
-    // Insert the report into the database
+    console.log("Retrieved user ID:", user.id);
+    
+    // Insert the position report into the database
     const { data, error } = await supabase
       .from('position_reports')
       .insert({

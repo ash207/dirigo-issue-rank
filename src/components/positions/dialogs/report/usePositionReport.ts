@@ -41,6 +41,10 @@ export const usePositionReport = (
     setIsSubmitting(true);
 
     try {
+      if (!session?.access_token) {
+        throw new Error("No authentication token available");
+      }
+
       // We need to pass the auth token for the edge function to identify the user
       const { error } = await supabase.functions.invoke("send-position-report", {
         body: {
@@ -51,9 +55,9 @@ export const usePositionReport = (
           issueTitle,
           reportReason: reason,
         },
-        headers: session?.access_token
-          ? { Authorization: `Bearer ${session.access_token}` }
-          : undefined,
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
       });
 
       if (error) throw error;
