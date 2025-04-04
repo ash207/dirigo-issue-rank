@@ -40,8 +40,8 @@ const Navbar = () => {
             Verification
           </Link>
           {isAuthenticated && (
-            <Link to="/reports" className="text-dirigo-white hover:text-opacity-80 flex items-center">
-              <Flag className="mr-1 h-4 w-4" />
+            <Link to="/reports" className="text-dirigo-white hover:text-opacity-80 flex items-center gap-1">
+              <Flag className="h-4 w-4" />
               Reports
             </Link>
           )}
