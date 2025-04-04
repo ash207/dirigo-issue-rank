@@ -47,17 +47,27 @@ serve(async (req) => {
       .single();
 
     // Only allow access to admin users (for security)
-    if (!profile || profile.role !== "dirigo_admin") {
+    if (!profile || profile.role !== "admin") {
       return new Response(
         JSON.stringify({ error: "Unauthorized - Admin access required" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Parse query parameters
-    const url = new URL(req.url);
-    const page = parseInt(url.searchParams.get("page") || "1");
-    const pageSize = parseInt(url.searchParams.get("pageSize") || "10");
+    // Parse request body for pagination parameters
+    let body;
+    let page = 1;
+    let pageSize = 10;
+    
+    if (req.body) {
+      try {
+        body = await req.json();
+        page = parseInt(body.page) || 1;
+        pageSize = parseInt(body.pageSize) || 10;
+      } catch (e) {
+        console.error("Error parsing JSON body:", e);
+      }
+    }
     
     // Get all users with pagination
     const { data: authUsers, error: usersError } = await supabaseAdmin.auth.admin.listUsers({

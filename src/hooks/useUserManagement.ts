@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,9 +37,9 @@ export const useUserManagement = () => {
         headers: {
           Authorization: `Bearer ${session.access_token}`
         },
-        query: {
-          page: page.toString(),
-          pageSize: pageSize.toString()
+        body: {
+          page,
+          pageSize
         }
       });
 
@@ -82,7 +81,6 @@ export const useUserManagement = () => {
 
       if (error) throw error;
 
-      // Update local state
       setUsers(prev => 
         prev.map(user => 
           user.id === userId ? { ...user, role } : user
@@ -121,7 +119,6 @@ export const useUserManagement = () => {
 
       if (error) throw error;
 
-      // Update local state
       setUsers(prev => 
         prev.map(user => 
           user.id === userId ? { ...user, status } : user
