@@ -31,12 +31,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
+  // Update user profile status when email is confirmed
+  const updateUserStatusIfVerified = async (currentUser: User | null) => {
+    if (!currentUser) return;
+    
+    // Check if email is confirmed
+    if (currentUser.email_confirmed_at) {
+      try {
+        // Check current status
+        const { data: profile, error: fetchError } = await supabase
+          .from('profiles')
+          .select('status')
+          .eq('id', currentUser.id)
+          .single();
+          
+        if (fetchError) throw fetchError;
+        
+        // If status is still pending but email is confirmed, update to active
+        if (profile?.status === 'pending') {
+          const { error: updateError } = await supabase
+            .from('profiles')
+            .update({ status: 'active' })
+            .eq('id', currentUser.id);
+            
+          if (updateError) throw updateError;
+          
+          console.log('User status updated to active after email verification');
+        }
+      } catch (error) {
+        console.error('Error updating user status:', error);
+      }
+    }
+  };
+
   useEffect(() => {
     // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
+        
+        // If the event is a user sign-in, check email verification
+        if (event === 'SIGNED_IN' && currentSession?.user) {
+          updateUserStatusIfVerified(currentSession.user);
+        }
+        
         setLoading(false);
       }
     );
@@ -45,6 +84,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
+      
+      // Check email verification for existing session
+      if (currentSession?.user) {
+        updateUserStatusIfVerified(currentSession.user);
+      }
+      
       setLoading(false);
     });
 
