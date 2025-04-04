@@ -1,16 +1,44 @@
+
 import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
-const Dialog = DialogPrimitive.Root
+const Dialog = ({ onOpenChange: userOnOpenChange, ...props }: DialogPrimitive.DialogProps) => {
+  // Add wrapper to clean up pointer-events when dialog is closed
+  const handleOpenChange = React.useCallback((open: boolean) => {
+    if (!open) {
+      // Ensure pointer-events are restored when dialog closes
+      document.body.style.removeProperty('pointer-events');
+    }
+    if (userOnOpenChange) {
+      userOnOpenChange(open);
+    }
+  }, [userOnOpenChange]);
+
+  return <DialogPrimitive.Root {...props} onOpenChange={handleOpenChange} />;
+};
 
 const DialogTrigger = DialogPrimitive.Trigger
 
 const DialogPortal = DialogPrimitive.Portal
 
-const DialogClose = DialogPrimitive.Close
+const DialogClose = React.forwardRef<
+  React.ElementRef<typeof DialogPrimitive.Close>,
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Close>
+>(({ ...props }, ref) => (
+  <DialogPrimitive.Close
+    ref={ref}
+    {...props}
+    onClick={(e) => {
+      // Ensure pointer-events are restored when dialog closes via the close button
+      document.body.style.removeProperty('pointer-events');
+      props.onClick?.(e);
+    }}
+  />
+))
+DialogClose.displayName = "DialogClose"
 
 const DialogOverlay = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Overlay>,
@@ -39,6 +67,10 @@ const DialogContent = React.forwardRef<
         "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg",
         className
       )}
+      onCloseAutoFocus={() => {
+        // Ensure pointer-events are restored when focus returns to trigger
+        document.body.style.removeProperty('pointer-events');
+      }}
       {...props}
     >
       {children}

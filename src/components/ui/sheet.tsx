@@ -1,3 +1,4 @@
+
 import * as SheetPrimitive from "@radix-ui/react-dialog"
 import { cva, type VariantProps } from "class-variance-authority"
 import { X } from "lucide-react"
@@ -5,11 +6,38 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-const Sheet = SheetPrimitive.Root
+const Sheet = ({ onOpenChange: userOnOpenChange, ...props }: SheetPrimitive.DialogProps) => {
+  // Add wrapper to clean up pointer-events when sheet is closed
+  const handleOpenChange = React.useCallback((open: boolean) => {
+    if (!open) {
+      // Ensure pointer-events are restored when sheet closes
+      document.body.style.removeProperty('pointer-events');
+    }
+    if (userOnOpenChange) {
+      userOnOpenChange(open);
+    }
+  }, [userOnOpenChange]);
+
+  return <SheetPrimitive.Root {...props} onOpenChange={handleOpenChange} />;
+};
 
 const SheetTrigger = SheetPrimitive.Trigger
 
-const SheetClose = SheetPrimitive.Close
+const SheetClose = React.forwardRef<
+  React.ElementRef<typeof SheetPrimitive.Close>,
+  React.ComponentPropsWithoutRef<typeof SheetPrimitive.Close>
+>(({ ...props }, ref) => (
+  <SheetPrimitive.Close
+    ref={ref}
+    {...props}
+    onClick={(e) => {
+      // Ensure pointer-events are restored when sheet closes via the close button
+      document.body.style.removeProperty('pointer-events');
+      props.onClick?.(e);
+    }}
+  />
+))
+SheetClose.displayName = "SheetClose"
 
 const SheetPortal = SheetPrimitive.Portal
 
@@ -128,4 +156,3 @@ export {
   Sheet, SheetClose,
   SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetOverlay, SheetPortal, SheetTitle, SheetTrigger
 }
-

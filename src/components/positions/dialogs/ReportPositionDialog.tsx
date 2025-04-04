@@ -54,13 +54,20 @@ const ReportPositionDialog = ({
   useEffect(() => {
     if (!open) {
       resetState();
+      // Ensure body has pointer-events restored
+      document.body.style.removeProperty('pointer-events');
     }
   }, [open, resetState]);
 
   // Render sign-in form
   if (isSigningIn && !isAuthenticated) {
     return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog open={open} onOpenChange={(newOpen) => {
+        if (!newOpen) {
+          document.body.style.removeProperty('pointer-events');
+        }
+        onOpenChange(newOpen);
+      }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Sign in to submit report</DialogTitle>
@@ -83,7 +90,12 @@ const ReportPositionDialog = ({
 
   // Render report form
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(newOpen) => {
+      if (!newOpen) {
+        document.body.style.removeProperty('pointer-events');
+      }
+      onOpenChange(newOpen);
+    }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Report Position</DialogTitle>
