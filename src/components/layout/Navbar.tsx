@@ -25,10 +25,10 @@ const Navbar = () => {
       setIsSigningOut(true);
       console.log("Signing out...");
       
-      // Call signOut and wait for it to complete
+      // Call signOut (use try-catch to handle failures)
       await signOut();
       
-      // Once signOut is complete, navigate to sign-in page
+      // Force navigation to sign-in page even if there's an error
       navigate('/sign-in');
       
       toast({
@@ -42,6 +42,9 @@ const Navbar = () => {
         description: "There was a problem signing out of your account",
         variant: "destructive",
       });
+      
+      // Still navigate away to sign-in page on error
+      navigate('/sign-in');
     } finally {
       setIsSigningOut(false);
     }
