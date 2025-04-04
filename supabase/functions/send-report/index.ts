@@ -46,8 +46,12 @@ const handler = async (req: Request): Promise<Response> => {
     
     console.log("Retrieved user ID:", user.id);
     
-    // Insert the report into the database
-    const { data, error } = await supabase
+    // Use service role key for admin operations to bypass RLS
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+    const adminClient = createClient(supabaseUrl, supabaseServiceKey);
+    
+    // Insert the report into the database using admin client to bypass RLS
+    const { data, error } = await adminClient
       .from('issue_reports')
       .insert({
         issue_id: issueId,
