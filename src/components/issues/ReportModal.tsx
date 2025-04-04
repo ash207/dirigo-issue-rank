@@ -4,7 +4,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
 import AuthForm from "./auth/AuthForm";
 import ReportForm from "./report/ReportForm";
@@ -56,9 +55,6 @@ const ReportModal = ({ open, onOpenChange, issueId, issueTitle }: ReportModalPro
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Sign in to submit report</DialogTitle>
-            <DialogDescription>
-              Authentication is required to submit reports to prevent abuse.
-            </DialogDescription>
           </DialogHeader>
           
           <AuthForm
@@ -84,9 +80,6 @@ const ReportModal = ({ open, onOpenChange, issueId, issueTitle }: ReportModalPro
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Report Issue</DialogTitle>
-          <DialogDescription>
-            Please provide details about why you're reporting this issue.
-          </DialogDescription>
         </DialogHeader>
         <ReportForm
           onSubmit={handleSubmitReport}

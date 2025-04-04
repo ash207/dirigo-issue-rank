@@ -38,7 +38,7 @@ const PositionReportForm = ({ onSubmit, isSubmitting, isAuthenticated, onSignInC
         value={reason}
         onChange={(e) => setReason(e.target.value)}
         className="min-h-[100px]"
-        disabled={!isAuthenticated && isSubmitting}
+        disabled={!isAuthenticated}
       />
       {!isAuthenticated && (
         <p className="text-sm text-muted-foreground">
