@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { Search, User, LogOut } from "lucide-react";
-import { useAuth } from "@/contexts/auth";
+import { useAuthContext } from "@/contexts/auth";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 
 const Navbar = () => {
-  const { user, signOut, isAuthenticated } = useAuth();
+  const { user, signOut, isAuthenticated } = useAuthContext();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isSigningOut, setIsSigningOut] = useState(false);
