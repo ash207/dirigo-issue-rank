@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,10 +15,18 @@ export type UserWithProfile = {
   name: string | null;
 };
 
-export const useUserManagement = () => {
+export type UserPagination = {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+};
+
+// Separate hook for user listing and pagination
+export const useUserList = () => {
   const [users, setUsers] = useState<UserWithProfile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [pagination, setPagination] = useState({
+  const [pagination, setPagination] = useState<UserPagination>({
     page: 1,
     pageSize: 10,
     total: 0,
@@ -60,13 +69,27 @@ export const useUserManagement = () => {
     }
   };
 
+  return {
+    users,
+    isLoading,
+    pagination,
+    fetchUsers,
+    setUsers
+  };
+};
+
+// Separate hook for user role management
+export const useUserRoleManagement = (setUsers: React.Dispatch<React.SetStateAction<UserWithProfile[]>>) => {
+  const [isUpdatingRole, setIsUpdatingRole] = useState(false);
+  const { session } = useAuth();
+
   const updateUserRole = async (userId: string, role: string) => {
     if (!session?.access_token) {
       toast.error("Authentication required");
       return false;
     }
 
-    setIsLoading(true);
+    setIsUpdatingRole(true);
     try {
       const { data, error } = await supabase.functions.invoke("manage-user", {
         headers: {
@@ -94,9 +117,20 @@ export const useUserManagement = () => {
       toast.error(error.message || "Failed to update user role");
       return false;
     } finally {
-      setIsLoading(false);
+      setIsUpdatingRole(false);
     }
   };
+
+  return {
+    isUpdatingRole,
+    updateUserRole
+  };
+};
+
+// Separate hook for user status management
+export const useUserStatusManagement = (setUsers: React.Dispatch<React.SetStateAction<UserWithProfile[]>>) => {
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const { session } = useAuth();
 
   const updateUserStatus = async (userId: string, status: string) => {
     if (!session?.access_token) {
@@ -104,7 +138,7 @@ export const useUserManagement = () => {
       return false;
     }
 
-    setIsLoading(true);
+    setIsUpdatingStatus(true);
     try {
       const { data, error } = await supabase.functions.invoke("manage-user", {
         headers: {
@@ -132,9 +166,21 @@ export const useUserManagement = () => {
       toast.error(error.message || "Failed to update user status");
       return false;
     } finally {
-      setIsLoading(false);
+      setIsUpdatingStatus(false);
     }
   };
+
+  return {
+    isUpdatingStatus,
+    updateUserStatus
+  };
+};
+
+// Main hook that composes the functionality
+export const useUserManagement = () => {
+  const { users, isLoading, pagination, fetchUsers, setUsers } = useUserList();
+  const { updateUserRole } = useUserRoleManagement(setUsers);
+  const { updateUserStatus } = useUserStatusManagement(setUsers);
 
   return {
     users,
