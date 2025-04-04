@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/auth";
 
 const IssuesPage = () => {
   const { isAuthenticated } = useAuth();
@@ -19,12 +18,10 @@ const IssuesPage = () => {
   const [verificationFilter, setVerificationFilter] = useState("all");
   const [scopeFilter, setScopeFilter] = useState("all");
   
-  // Fetch all issues
   const issuesQuery = useQuery({
     queryKey: ["issues"],
     queryFn: async () => {
       try {
-        // First, get all issues
         const { data: issuesData, error: issuesError } = await supabase
           .from("issues")
           .select("*, positions(id)")
@@ -32,7 +29,6 @@ const IssuesPage = () => {
         
         if (issuesError) throw issuesError;
         
-        // For each issue, fetch the creator's name
         const issuesWithCreators = await Promise.all(issuesData.map(async (issue) => {
           let creatorName = "Anonymous";
           
@@ -48,12 +44,11 @@ const IssuesPage = () => {
             }
           }
           
-          // Make sure to include the scope property with a default value
           return {
             id: issue.id,
             title: issue.title,
             category: issue.category,
-            scope: issue.scope || "state", // Default to state if not specified
+            scope: issue.scope || "state",
             votes: issue.positions?.length || 0,
             positions: issue.positions?.length || 0,
             creator: creatorName
@@ -68,7 +63,6 @@ const IssuesPage = () => {
     }
   });
 
-  // Filter issues based on search query and filters
   const filteredIssues = issuesQuery.data?.filter(issue => {
     const matchesSearch = searchQuery ? 
       issue.title.toLowerCase().includes(searchQuery.toLowerCase()) : true;
@@ -79,25 +73,19 @@ const IssuesPage = () => {
     const matchesScope = scopeFilter !== "all" ?
       issue.scope === scopeFilter : true;
     
-    // Verification filter would be implemented here if we had that data
-    
     return matchesSearch && matchesCategory && matchesScope;
   }) || [];
 
-  // Handle filter changes
   const handleFilterChange = (category: string, verification: string, scope: string) => {
     setCategoryFilter(category);
     setVerificationFilter(verification);
     setScopeFilter(scope);
   };
 
-  // Handle search form submission
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    // The filtering happens automatically via the filteredIssues derived state
   };
 
-  // Handle errors
   useEffect(() => {
     if (issuesQuery.error) {
       toast.error("Failed to load issues");
@@ -120,7 +108,6 @@ const IssuesPage = () => {
           )}
         </div>
         
-        {/* Search and filter section */}
         <div className="mb-8">
           <form onSubmit={handleSearch} className="flex gap-2 mb-4">
             <Input
@@ -137,7 +124,6 @@ const IssuesPage = () => {
           <IssueFilter onFilterChange={handleFilterChange} />
         </div>
         
-        {/* Show loading state */}
         {issuesQuery.isLoading && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(6)].map((_, i) => (
@@ -150,7 +136,6 @@ const IssuesPage = () => {
           </div>
         )}
         
-        {/* Show issues */}
         {!issuesQuery.isLoading && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredIssues.map(issue => (

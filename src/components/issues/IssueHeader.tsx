@@ -1,4 +1,3 @@
-
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Globe, Landmark, Flag, MoreHorizontal, Pencil, Trash2, Flag as FlagIcon } from "lucide-react";
@@ -11,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import ReportModal from "./ReportModal";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/auth";
 
 interface IssueHeaderProps {
   issue: {
