@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
-import { Search, User, LogOut } from "lucide-react";
+import { Search, User, LogOut, Flag } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   DropdownMenu,
@@ -39,6 +39,12 @@ const Navbar = () => {
           <Link to="/verify" className="text-dirigo-white hover:text-opacity-80">
             Verification
           </Link>
+          {isAuthenticated && (
+            <Link to="/reports" className="text-dirigo-white hover:text-opacity-80 flex items-center">
+              <Flag className="mr-1 h-4 w-4" />
+              Reports
+            </Link>
+          )}
         </div>
 
         <div className="flex items-center space-x-2">
