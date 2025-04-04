@@ -1,18 +1,47 @@
 
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
-import { Search, User, LogOut, Flag } from "lucide-react";
+import { Search, User, LogOut, Flag, Users } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const Navbar = () => {
   const { user, signOut, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const checkUserRole = async () => {
+      if (!user) {
+        setIsAdmin(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .single();
+
+        if (!error && data) {
+          setIsAdmin(data.role === "dirigo_admin");
+        }
+      } catch (error) {
+        console.error("Error checking admin status:", error);
+      }
+    };
+
+    checkUserRole();
+  }, [user]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -45,6 +74,12 @@ const Navbar = () => {
               Reports
             </Link>
           )}
+          {isAdmin && (
+            <Link to="/admin/users" className="text-dirigo-white hover:text-opacity-80 flex items-center gap-1">
+              <Users className="h-4 w-4" />
+              Admin
+            </Link>
+          )}
         </div>
 
         <div className="flex items-center space-x-2">
@@ -65,6 +100,16 @@ const Navbar = () => {
                   <User className="mr-2 h-4 w-4" />
                   <span>My Profile</span>
                 </DropdownMenuItem>
+                {isAdmin && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => navigate('/admin/users')}>
+                      <Users className="mr-2 h-4 w-4" />
+                      <span>User Management</span>
+                    </DropdownMenuItem>
+                  </>
+                )}
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut}>
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Sign Out</span>

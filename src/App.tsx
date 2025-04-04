@@ -1,9 +1,8 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import IssuesPage from "./pages/IssuesPage";
@@ -17,34 +16,38 @@ import NotFound from "./pages/NotFound";
 import SignInPage from "./pages/SignInPage";
 import SignUpPage from "./pages/SignUpPage";
 import ReportsPage from "./pages/ReportsPage";
+import AdminUsersPage from "./pages/AdminUsersPage";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/issues" element={<IssuesPage />} />
-            <Route path="/issues/:id" element={<IssueDetail />} />
-            <Route path="/issues/create" element={<CreateIssuePage />} />
-            <Route path="/issues/edit/:id" element={<EditIssuePage />} />
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/verify" element={<VerificationPage />} />
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="/reports" element={<ReportsPage />} />
-            <Route path="/sign-in" element={<SignInPage />} />
-            <Route path="/sign-up" element={<SignUpPage />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
-  </QueryClientProvider>
-);
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <Router>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/issues" element={<IssuesPage />} />
+              <Route path="/issues/:id" element={<IssueDetail />} />
+              <Route path="/issues/create" element={<CreateIssuePage />} />
+              <Route path="/issues/:id/edit" element={<EditIssuePage />} />
+              <Route path="/sign-in" element={<SignInPage />} />
+              <Route path="/sign-up" element={<SignUpPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/reports" element={<ReportsPage />} />
+              <Route path="/admin/users" element={<AdminUsersPage />} />
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="/verify" element={<VerificationPage />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Router>
+        </TooltipProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  );
+}
 
 export default App;
