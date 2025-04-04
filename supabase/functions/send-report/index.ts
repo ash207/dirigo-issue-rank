@@ -53,7 +53,8 @@ const handler = async (req: Request): Promise<Response> => {
         issue_id: issueId,
         issue_title: issueTitle,
         report_reason: reportReason,
-        reporter_id: user.id
+        reporter_id: user.id,
+        status: 'pending'
       });
     
     if (error) {
