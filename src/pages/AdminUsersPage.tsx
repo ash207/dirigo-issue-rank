@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
@@ -72,7 +73,7 @@ const AdminUsersPage = () => {
 
   const renderRoleBadge = (role: string) => {
     switch (role) {
-      case "admin":
+      case "dirigo_admin":
         return <Badge className="bg-purple-100 text-purple-800">Admin</Badge>;
       case "premium":
         return <Badge className="bg-blue-100 text-blue-800">Premium</Badge>;
@@ -244,7 +245,7 @@ const AdminUsersPage = () => {
                                 <SelectContent>
                                   <SelectItem value="basic">Basic</SelectItem>
                                   <SelectItem value="premium">Premium</SelectItem>
-                                  <SelectItem value="admin">Admin</SelectItem>
+                                  <SelectItem value="dirigo_admin">Admin</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>

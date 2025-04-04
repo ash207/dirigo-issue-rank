@@ -33,7 +33,8 @@ const Navbar = () => {
           .single();
 
         if (!error && data) {
-          setIsAdmin(data.role === "admin");
+          // Check if user has admin role - matching one of the allowed enum values
+          setIsAdmin(data.role === "dirigo_admin");
         }
       } catch (error) {
         console.error("Error checking admin status:", error);
