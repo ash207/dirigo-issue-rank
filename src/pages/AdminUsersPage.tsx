@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
@@ -73,7 +72,7 @@ const AdminUsersPage = () => {
 
   const renderRoleBadge = (role: string) => {
     switch (role) {
-      case "dirigo_admin":
+      case "admin":
         return <Badge className="bg-purple-100 text-purple-800">Admin</Badge>;
       case "premium":
         return <Badge className="bg-blue-100 text-blue-800">Premium</Badge>;
@@ -90,7 +89,6 @@ const AdminUsersPage = () => {
     const pageItems = [];
     const maxVisiblePages = 5;
     
-    // Always show first page
     pageItems.push(
       <PaginationItem key="first">
         <PaginationLink 
@@ -102,7 +100,6 @@ const AdminUsersPage = () => {
       </PaginationItem>
     );
     
-    // Add ellipsis if needed
     if (page > 3) {
       pageItems.push(
         <PaginationItem key="ellipsis-start">
@@ -111,7 +108,6 @@ const AdminUsersPage = () => {
       );
     }
     
-    // Add pages around the current page
     const startPage = Math.max(2, page - 1);
     const endPage = Math.min(totalPages - 1, page + 1);
     
@@ -130,7 +126,6 @@ const AdminUsersPage = () => {
       }
     }
     
-    // Add ellipsis if needed
     if (page < totalPages - 2) {
       pageItems.push(
         <PaginationItem key="ellipsis-end">
@@ -139,7 +134,6 @@ const AdminUsersPage = () => {
       );
     }
     
-    // Always show last page if we have more than 1 page
     if (totalPages > 1) {
       pageItems.push(
         <PaginationItem key="last">
@@ -250,7 +244,7 @@ const AdminUsersPage = () => {
                                 <SelectContent>
                                   <SelectItem value="basic">Basic</SelectItem>
                                   <SelectItem value="premium">Premium</SelectItem>
-                                  <SelectItem value="dirigo_admin">Admin</SelectItem>
+                                  <SelectItem value="admin">Admin</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>

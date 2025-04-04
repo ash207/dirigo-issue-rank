@@ -33,7 +33,7 @@ const Navbar = () => {
           .single();
 
         if (!error && data) {
-          setIsAdmin(data.role === "dirigo_admin");
+          setIsAdmin(data.role === "admin");
         }
       } catch (error) {
         console.error("Error checking admin status:", error);

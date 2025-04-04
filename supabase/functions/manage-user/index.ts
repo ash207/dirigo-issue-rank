@@ -47,7 +47,7 @@ serve(async (req) => {
       .single();
 
     // Only allow access to admin users (for security)
-    if (!profile || profile.role !== "dirigo_admin") {
+    if (!profile || profile.role !== "admin") {
       return new Response(
         JSON.stringify({ error: "Unauthorized - Admin access required" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -69,7 +69,7 @@ serve(async (req) => {
     // Handle different actions
     if (action === "updateRole") {
       // Check valid role
-      if (!["basic", "premium", "dirigo_admin"].includes(value)) {
+      if (!["basic", "premium", "admin"].includes(value)) {
         return new Response(
           JSON.stringify({ error: "Invalid role value" }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
