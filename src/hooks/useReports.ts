@@ -62,16 +62,15 @@ export const useReports = () => {
         ].filter(Boolean); // Filter out any null/undefined values
         
         if (userIds.length > 0) {
-          // Get user profiles directly from the auth.users table via Supabase functions
-          const { data: users, error: usersError } = await supabase
-            .from("profiles")
-            .select("id, name")
-            .in("id", userIds);
+          // Get user emails from the auth.users table
+          const { data: users, error: usersError } = await supabase.functions.invoke("get-user-emails", {
+            body: { userIds }
+          });
             
           if (!usersError && users) {
             // Create a map of user IDs to emails
             const userMap = users.reduce((acc, user) => {
-              acc[user.id] = user.name || user.id;
+              acc[user.id] = user.email;
               return acc;
             }, {} as Record<string, string>);
             
