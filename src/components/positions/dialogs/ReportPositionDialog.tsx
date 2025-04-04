@@ -37,7 +37,8 @@ const ReportPositionDialog = ({
     showAuthSuccess,
     handleSubmitReport,
     handleSignIn,
-    handleBackToReport
+    handleBackToReport,
+    setIsSigningIn
   } = usePositionReport(
     positionId,
     positionTitle,
@@ -85,6 +86,7 @@ const ReportPositionDialog = ({
           onSubmit={handleSubmitReport}
           isSubmitting={isSubmitting}
           isAuthenticated={isAuthenticated}
+          onSignInClick={() => setIsSigningIn(true)}
         />
       </DialogContent>
     </Dialog>

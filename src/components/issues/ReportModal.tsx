@@ -26,7 +26,8 @@ const ReportModal = ({ open, onOpenChange, issueId, issueTitle }: ReportModalPro
     showAuthSuccess,
     handleSubmitReport,
     handleSignIn,
-    handleBackToReport
+    handleBackToReport,
+    setIsSigningIn
   } = useReport(issueId, issueTitle, () => {
     onOpenChange(false);
   });
@@ -69,6 +70,7 @@ const ReportModal = ({ open, onOpenChange, issueId, issueTitle }: ReportModalPro
           onSubmit={handleSubmitReport}
           isSubmitting={isSubmitting}
           isAuthenticated={isAuthenticated}
+          onSignInClick={() => setIsSigningIn(true)}
         />
       </DialogContent>
     </Dialog>

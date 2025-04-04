@@ -11,15 +11,24 @@ interface ReportFormProps {
   onSubmit: (reason: string) => Promise<void>;
   isSubmitting: boolean;
   isAuthenticated: boolean;
+  onSignInClick: () => void;
 }
 
-const ReportForm = ({ onSubmit, isSubmitting, isAuthenticated }: ReportFormProps) => {
+const ReportForm = ({ onSubmit, isSubmitting, isAuthenticated, onSignInClick }: ReportFormProps) => {
   const [reason, setReason] = useState("");
 
   const handleSubmit = async () => {
     if (reason.trim()) {
       await onSubmit(reason);
     }
+  };
+
+  const handleButtonClick = () => {
+    if (!isAuthenticated) {
+      onSignInClick();
+      return;
+    }
+    handleSubmit();
   };
 
   return (
@@ -43,7 +52,7 @@ const ReportForm = ({ onSubmit, isSubmitting, isAuthenticated }: ReportFormProps
           </Button>
         </DialogClose>
         <Button 
-          onClick={handleSubmit} 
+          onClick={handleButtonClick} 
           disabled={isAuthenticated ? (!reason.trim() || isSubmitting) : isSubmitting}
         >
           {isAuthenticated 

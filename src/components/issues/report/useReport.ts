@@ -84,6 +84,7 @@ export const useReport = (
     isSubmitting,
     isAuthenticated,
     isSigningIn,
+    setIsSigningIn,
     authError,
     showAuthSuccess,
     handleSubmitReport,

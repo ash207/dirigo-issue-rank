@@ -90,6 +90,7 @@ export const usePositionReport = (
     isSubmitting,
     isAuthenticated,
     isSigningIn,
+    setIsSigningIn,
     authError,
     showAuthSuccess,
     handleSubmitReport,
