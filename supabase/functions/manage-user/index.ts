@@ -136,15 +136,19 @@ serve(async (req) => {
           
           console.log("Confirming email for:", userEmail);
           
-          // 1. Use admin API to update the auth record
+          // 1. Use admin API to update the auth record with full verified set
           const now = new Date().toISOString();
+          
+          // CRITICAL FIX: Update with the full set of required fields for complete verification
           const { data: authUpdateData, error: authUpdateError } = await supabaseAdmin.auth.admin.updateUserById(
             userId,
             { 
               email_confirmed_at: now,
+              confirmed_at: now,
               user_metadata: { 
                 email_confirmed: true, 
-                email_verified: true
+                email_verified: true,
+                is_verified: true
               },
               app_metadata: {
                 email_verified: true,

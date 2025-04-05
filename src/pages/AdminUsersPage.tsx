@@ -25,39 +25,53 @@ const AdminUsersPage = () => {
 
   // Listen for email verification events and refresh data
   useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'email_verification_success') {
+    const handleStorageChange = (e: StorageEvent | CustomEvent) => {
+      if ((e as StorageEvent).key === 'email_verification_success' || 
+          (e as CustomEvent).type === 'storage') {
+        console.log("Email verification detected, refreshing users list");
         setLastEmailVerification(Date.now());
       }
     };
 
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    // Listen for both storage events (cross-tab) and custom events (same tab)
+    window.addEventListener('storage', handleStorageChange as EventListener);
+    window.addEventListener('storage', handleStorageChange as EventListener);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange as EventListener);
+      window.removeEventListener('storage', handleStorageChange as EventListener);
+    };
   }, []);
 
+  // Fetch users when auth state changes or after email verification
   useEffect(() => {
     if (!isAuthenticated) {
       navigate("/sign-in");
       return;
     }
     
+    console.log("Fetching users list, triggered by auth change or email verification");
     fetchUsers();
-  }, [isAuthenticated, navigate, lastEmailVerification]);
+  }, [isAuthenticated, navigate, lastEmailVerification, fetchUsers]);
 
   const handlePageChange = (page: number) => {
     fetchUsers(page, pagination.pageSize);
   };
 
   const handleRoleChange = async (userId: string, newRole: string) => {
-    await updateUserRole(userId, newRole);
-    // Refresh the user list to get updated data
-    fetchUsers(pagination.page, pagination.pageSize);
+    const result = await updateUserRole(userId, newRole);
+    if (result) {
+      // Refresh the users list to get the latest data
+      fetchUsers(pagination.page, pagination.pageSize);
+    }
   };
 
   const handleStatusChange = async (userId: string, newStatus: string) => {
-    await updateUserStatus(userId, newStatus);
-    // Refresh the user list to get updated data
-    fetchUsers(pagination.page, pagination.pageSize);
+    const result = await updateUserStatus(userId, newStatus);
+    if (result) {
+      // Refresh the users list to get the latest data
+      fetchUsers(pagination.page, pagination.pageSize);
+    }
   };
 
   return (
