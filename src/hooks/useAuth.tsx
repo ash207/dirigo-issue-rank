@@ -1,11 +1,17 @@
 
 import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { 
-  SignupState,
-} from "@/services/auth/AuthService";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+
+// Define the SignupState enum since AuthService was removed
+export enum SignupState {
+  IDLE = "idle",
+  CHECKING_EMAIL = "checking_email",
+  CREATING_USER = "creating_user",
+  SUCCESS = "success",
+  ERROR = "error"
+}
 
 export function useAuth() {
   const [email, setEmail] = useState("");
@@ -93,9 +99,11 @@ export function useAuth() {
         resetForm();
         toast({
           title: "Account Created",
-          description: "Your account has been created. You can now sign in.",
+          description: "Your account has been created. Please check your email for verification.",
         });
-        navigate('/welcome', { state: { email } });
+        
+        console.log("Redirecting to email-sent page with email:", email);
+        navigate('/email-sent', { state: { email } });
       }
     } catch (err: any) {
       console.error("Signup error:", err);

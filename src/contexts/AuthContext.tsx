@@ -4,6 +4,7 @@ import { Session, User } from '@supabase/supabase-js';
 import { useToast } from "@/hooks/use-toast";
 import { useAuthState } from '@/hooks/useAuthState';
 import { signIn, signOut, signUp } from '@/services/auth';
+import { useNavigate } from 'react-router-dom';
 
 type AuthContextType = {
   user: User | null;
@@ -28,6 +29,7 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, session, loading, isAuthenticated } = useAuthState();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleSignIn = async (email: string, password: string) => {
     try {
@@ -69,6 +71,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             title: "Account Created",
             description: "Please check your email for a verification link.",
           });
+          
+          // Navigate to email sent page after successful signup
+          navigate('/email-sent', { state: { email } });
         },
         (error) => {
           console.error("Signup error in context:", error);
@@ -77,6 +82,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             description: error.message || "Failed to create account",
             variant: "destructive",
           });
+          
+          // Handle potential success with timeout
+          if (error.code === "potential_success_with_timeout") {
+            navigate('/email-sent', { state: { email } });
+          }
         }
       );
     } catch (error) {

@@ -29,6 +29,7 @@ export async function signUp(
     
     console.log("Signup successful! User data:", data);
     
+    // Call the success callback
     onSuccess(data);
     
   } catch (error: any) {

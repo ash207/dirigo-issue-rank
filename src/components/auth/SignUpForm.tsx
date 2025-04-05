@@ -49,6 +49,7 @@ export const SignUpForm = ({ onTimeoutError }: SignUpFormProps) => {
       await signUp(values.email, values.password);
       console.log(`Signup request completed for ${values.email}`);
       // Success message will be shown by the AuthContext
+      // The navigation should now happen in the AuthContext's signUp function
     } catch (error: any) {
       console.error("Sign-up error:", error);
       

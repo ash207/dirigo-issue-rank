@@ -89,6 +89,7 @@ export function useSignup(): UseSignupReturn {
         // Success
         toast.success("Account created successfully! Please check your email for verification.");
         
+        console.log("Signup successful, redirecting to email-sent with email:", email);
         // Navigate to the email sent page with the email in the state
         navigate('/email-sent', { state: { email } });
       }
