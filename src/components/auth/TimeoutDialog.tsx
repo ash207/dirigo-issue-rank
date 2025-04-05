@@ -37,11 +37,16 @@ export const TimeoutDialog = ({ open, onOpenChange, onRetry, email }: TimeoutDia
     setIsResending(true);
     
     try {
+      // Get the origin dynamically and ensure it matches Supabase settings
+      const origin = window.location.origin;
+      const redirectUrl = `${origin}/welcome`;
+      console.log(`Resending verification with redirect URL: ${redirectUrl}`);
+      
       const { error } = await supabase.auth.resend({
         type: 'signup',
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/welcome`
+          emailRedirectTo: redirectUrl
         }
       });
       

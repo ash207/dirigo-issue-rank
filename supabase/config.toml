@@ -29,8 +29,8 @@ file_size_limit = '50MiB'
 [auth]
 enabled = true
 port = 9999
-site_url = 'http://localhost:5173'
-additional_redirect_urls = ['https://localhost:5173']
+site_url = 'https://30a5fb21-b349-4719-af2d-aeab12a8a859.lovableproject.com'
+additional_redirect_urls = ['http://localhost:5173', 'https://localhost:5173', 'https://30a5fb21-b349-4719-af2d-aeab12a8a859.lovableproject.com', 'http://dirigovotes.com', 'https://dirigovotes.com']
 jwt_expiry = 3600
 enable_refresh_token_rotation = true
 refresh_token_reuse_interval = 10

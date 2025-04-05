@@ -44,11 +44,13 @@ const NewSignupPage = () => {
     setIsLoading(true);
     
     try {
+      console.log(`Signup attempt for: ${email} with redirect to: ${window.location.origin}/welcome`);
       const { data, error } = await registerNewUser(email, password);
       
       if (error) {
+        console.log("Signup error:", error.code, error.message);
         // Special handling for timeout errors
-        if (error.message?.includes("timeout") || error.message?.includes("may have been created")) {
+        if (error.code === 'email_timeout' || error.message?.includes("timeout") || error.message?.includes("may have been created")) {
           setShowTimeoutDialog(true);
           setIsLoading(false);
           return;
