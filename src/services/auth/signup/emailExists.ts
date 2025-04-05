@@ -15,7 +15,7 @@ export async function emailExists(email: string): Promise<boolean> {
     // Use admin functions to check if the user exists
     // This just checks for existence without any authentication attempts
     const { count, error } = await supabase
-      .from('profiles')
+      .from('users')
       .select('*', { count: 'exact', head: true })
       .eq('id', email);
     
