@@ -45,6 +45,9 @@ import * as z from "zod";
 type TemplateKey = keyof typeof emailTemplates;
 const templateOptions: TemplateKey[] = Object.keys(emailTemplates) as TemplateKey[];
 
+// Define a type that includes both TemplateKey and "custom"
+type SelectedTemplateType = TemplateKey | "custom";
+
 // Form schema for email sending
 const emailFormSchema = z.object({
   recipient: z.string().email("Please enter a valid email address"),
@@ -58,7 +61,7 @@ const AdminEmailSender = () => {
   const { session } = useAuth();
   const [isSending, setIsSending] = useState(false);
   const [openPreview, setOpenPreview] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<TemplateKey | "custom">("custom");
+  const [selectedTemplate, setSelectedTemplate] = useState<SelectedTemplateType>("custom");
   const [recipientName, setRecipientName] = useState("");
   const [confirmationLink, setConfirmationLink] = useState("#");
 
