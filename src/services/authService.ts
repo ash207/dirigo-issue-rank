@@ -29,7 +29,7 @@ export async function signIn(
   }
 }
 
-// Improved sign-up function with better timeout handling
+// Improved sign-up function with better error handling and retry logic
 export async function signUp(
   email: string, 
   password: string, 
@@ -38,9 +38,9 @@ export async function signUp(
   onError: (error: any) => void
 ) {
   try {
-    // Set a timeout for the entire operation - increased to 20 seconds
+    // Set a timeout for the entire operation - increased to 30 seconds
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error("Request timed out after 20 seconds")), 20000);
+      setTimeout(() => reject(new Error("Request timed out after 30 seconds")), 30000);
     });
     
     // Create the actual signup promise with proper options
@@ -49,6 +49,10 @@ export async function signUp(
       password,
       options: {
         emailRedirectTo: redirectUrl,
+        data: {
+          // Adding timestamp to help identify signup attempts
+          signup_attempt: new Date().toISOString()
+        }
       }
     });
     

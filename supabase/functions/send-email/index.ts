@@ -49,6 +49,8 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error('Unable to get user from auth token');
     }
     
+    console.log("Sending email with Resend using subdomain email format");
+    
     // Send email using Resend with custom subdomain
     const emailOptions: any = {
       from: "Dirigo Votes <contact@contact.dirigovotes.com>",
