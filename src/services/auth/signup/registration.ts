@@ -23,7 +23,7 @@ export async function registerNewUser(email: string, password: string, redirectT
         options: {
           emailRedirectTo: redirectTo,
           data: {
-            email_confirmed: false,
+            email_confirmed: true, // Set this to true to skip email confirmation
           }
         }
       }),

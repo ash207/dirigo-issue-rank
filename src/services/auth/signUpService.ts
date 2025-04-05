@@ -16,6 +16,9 @@ export async function signUp(
       password,
       options: {
         emailRedirectTo: redirectUrl,
+        data: {
+          email_confirmed: true, // Set this to true to skip email confirmation
+        }
       }
     });
     

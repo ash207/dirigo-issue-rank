@@ -23,7 +23,7 @@ export async function createUser(email: string, password: string): Promise<boole
       options: {
         emailRedirectTo: redirectUrl,
         data: {
-          email_confirmed: false,
+          email_confirmed: true, // Set this to true to skip email confirmation
         }
       }
     });
@@ -79,10 +79,19 @@ export async function createUser(email: string, password: string): Promise<boole
     }
     
     console.log("User created successfully:", data);
-    toast({
-      title: "Account Created",
-      description: "Please check your email for a confirmation link.",
-    });
+    
+    // If email confirmation is set to true in the user data, we can assume the account is ready
+    if (data.user?.user_metadata?.email_confirmed) {
+      toast({
+        title: "Account Created",
+        description: "Your account has been created. You can now sign in.",
+      });
+    } else {
+      toast({
+        title: "Account Created",
+        description: "Please check your email for a confirmation link.",
+      });
+    }
     
     return true;
   } catch (err: any) {
