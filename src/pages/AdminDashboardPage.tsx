@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import Layout from "@/components/layout/Layout";
@@ -8,8 +8,8 @@ import SendTestEmailButton from "@/components/email/SendTestEmailButton";
 import UserLookupForm from "@/components/admin/UserLookupForm";
 import AdminEmailSender from "@/components/admin/AdminEmailSender";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useEffect } from "react";
 import { toast } from "sonner";
+import { UserManagementTable } from "@/components/admin/UserManagementTable";
 
 const AdminDashboardPage = () => {
   const navigate = useNavigate();
@@ -31,7 +31,7 @@ const AdminDashboardPage = () => {
         <Tabs defaultValue="emails" value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="mb-6">
             <TabsTrigger value="emails">Email Management</TabsTrigger>
-            <TabsTrigger value="users">User Lookup</TabsTrigger>
+            <TabsTrigger value="users">User Management</TabsTrigger>
           </TabsList>
           
           <TabsContent value="emails" className="space-y-6">
@@ -50,7 +50,7 @@ const AdminDashboardPage = () => {
             </Card>
           </TabsContent>
           
-          <TabsContent value="users">
+          <TabsContent value="users" className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle>User Lookup</CardTitle>
@@ -62,6 +62,8 @@ const AdminDashboardPage = () => {
                 <UserLookupForm />
               </CardContent>
             </Card>
+            
+            <UserManagementTable />
           </TabsContent>
         </Tabs>
       </div>
