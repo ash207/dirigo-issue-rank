@@ -12,21 +12,25 @@ export async function emailExists(email: string): Promise<boolean> {
     
     console.log(`Checking if email exists: ${email}`);
     
-    // Method 1: Try to use the signUp method with a temporary password
-    // This approach leverages the built-in validation in Supabase
-    const { error: signUpError } = await supabase.auth.signUp({
+    // Method: Try to sign in with an invalid password to check if the email exists
+    // This will return an auth error with a specific message if the email exists
+    const { error } = await supabase.auth.signInWithPassword({
       email,
-      password: `TemporaryCheck${Math.random().toString(36).substring(2)}!A1`, // Random password that meets requirements
-      options: {
-        emailRedirectTo: window.location.origin + '/welcome',
-      }
+      password: 'checkingEmailExistence', // This is intentionally incorrect
     });
     
-    // If the error message mentions the email is already registered, the email exists
-    if (signUpError) {
-      const errorMsg = signUpError.message.toLowerCase();
-      if (errorMsg.includes("already") || errorMsg.includes("existing")) {
-        console.log(`Email check result for ${email}: Exists (already registered)`);
+    // If we get "Invalid login credentials", the email exists but password is wrong
+    // If we get "Email not confirmed", the account exists but isn't verified
+    if (error) {
+      const errorMsg = error.message.toLowerCase();
+      console.log(`Auth error response: ${errorMsg}`);
+      
+      if (
+        errorMsg.includes("invalid login credentials") || 
+        errorMsg.includes("email not confirmed") ||
+        errorMsg.includes("invalid credentials")
+      ) {
+        console.log(`Email check result for ${email}: Exists (based on auth error)`);
         return true;
       }
     }

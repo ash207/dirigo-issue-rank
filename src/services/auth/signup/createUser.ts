@@ -28,33 +28,42 @@ export async function createUser(email: string, password: string): Promise<boole
       }
     });
     
-    // Create a timeout promise that rejects after 15 seconds
+    // Create a timeout promise that rejects after 10 seconds
     const timeoutPromise = new Promise((_, reject) => {
       setTimeout(() => {
-        reject(new Error('The signup request timed out. Your account may have been created but we couldn\'t confirm it.'));
-      }, 15000); // 15 seconds timeout
+        reject({
+          status: 504,
+          message: 'The signup request timed out. Your account may have been created but we couldn\'t confirm it.',
+          __isAuthError: true
+        });
+      }, 10000); // 10 seconds timeout
     });
     
     // Race between the signup request and the timeout
     const { data, error } = await Promise.race([
       signUpPromise,
-      timeoutPromise.then(() => {
-        throw {
-          status: 504,
-          message: 'Gateway timeout while creating account',
-          __isAuthError: true
-        };
-      })
+      timeoutPromise
     ]) as any;
     
     if (error) {
       console.error("Error creating user:", error);
       
+      // Check if the error indicates user already exists
+      if (error.message?.toLowerCase().includes("already") || 
+          error.message?.toLowerCase().includes("exists")) {
+        toast({
+          title: "Account Already Exists",
+          description: "An account with this email already exists. Please try signing in.",
+          variant: "default",
+        });
+        return true; // Return true to redirect to welcome page
+      }
+      
       // Special handling for timeout errors
       if (error.status === 504 || error.message?.includes('timeout')) {
         toast({
           title: "Signup may have succeeded",
-          description: "We couldn't confirm if your account was created due to a timeout. Please try signing in or check your email.",
+          description: "We couldn't confirm if your account was created due to a timeout. Please check your email or try signing in.",
           variant: "default",
         });
         // Return true in case of timeout as the user might have been created
@@ -83,7 +92,7 @@ export async function createUser(email: string, password: string): Promise<boole
     if (err.status === 504 || err.message?.includes('timeout')) {
       toast({
         title: "Signup may have succeeded",
-        description: "We couldn't confirm if your account was created due to a timeout. Please try signing in or check your email.",
+        description: "We couldn't confirm if your account was created due to a timeout. Please check your email or try signing in.",
         variant: "default",
       });
       // Return true in case of timeout as the user might have been created
