@@ -55,9 +55,18 @@ export async function manuallyConfirmUserEmail(userId: string, session: any) {
       }
     });
     
-    if (error) throw error;
+    if (error) {
+      console.error("Error from manage-user function:", error);
+      throw error;
+    }
     
-    return { success: true, data };
+    console.log("Email confirmation result:", data);
+    
+    return { 
+      success: true, 
+      data,
+      message: data?.message || "Email verified and account activated"
+    };
   } catch (error: any) {
     console.error('Error manually confirming user email:', error);
     return { 

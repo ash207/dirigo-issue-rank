@@ -138,17 +138,54 @@ serve(async (req) => {
           
           // 1. Update the auth.users table to set email_confirmed_at timestamp
           const now = new Date().toISOString();
+          // Use email_verified: true in both user_metadata and identity_data
           const { data: updateData, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
             userId,
             { 
               email_confirmed_at: now,
-              user_metadata: { email_confirmed: true }
+              user_metadata: { 
+                email_confirmed: true, 
+                email_verified: true  // Add this field
+              },
+              app_metadata: {
+                email_verified: true  // Add this field
+              }
             }
           );
           
           if (updateError) throw updateError;
           
           console.log("Updated auth user confirmation status:", updateData);
+          
+          // Also update the user's identity data to mark email as verified
+          try {
+            // Get the user's identities
+            const { data: identityData, error: identityError } = await supabaseAdmin
+              .from("identities")
+              .select("id, identity_data")
+              .eq("user_id", userId);
+            
+            if (identityError) throw identityError;
+            
+            if (identityData && identityData.length > 0) {
+              // Update each identity to mark email as verified
+              for (const identity of identityData) {
+                const updatedIdentityData = {
+                  ...identity.identity_data,
+                  email_verified: true
+                };
+                
+                await supabaseAdmin
+                  .from("identities")
+                  .update({ identity_data: updatedIdentityData })
+                  .eq("id", identity.id);
+              }
+              console.log("Updated identity data to mark email as verified");
+            }
+          } catch (identityUpdateError) {
+            console.error("Error updating identity data:", identityUpdateError);
+            // Continue with other operations even if this fails
+          }
           
           // 2. Also update the profile status to active if it's pending
           const { data: profileData, error: profileError } = await supabaseAdmin
@@ -163,9 +200,12 @@ serve(async (req) => {
             console.log("Updated profile status:", profileData);
           }
           
+          const adminMessage = `User email confirmed and status updated to active`;
+          
+          // Send admin confirmation
           result = { 
             success: true, 
-            message: "User email confirmed and status updated to active", 
+            message: adminMessage, 
             user: updateData.user,
             profile: profileError ? null : profileData[0]
           };

@@ -47,6 +47,7 @@ export const UserTable = ({
       
       if (result.success) {
         toast.success(`Email verified for ${email}`);
+        // Force refresh of the user list (this will be handled by the parent component)
       } else {
         toast.error(result.message || "Failed to verify email");
       }

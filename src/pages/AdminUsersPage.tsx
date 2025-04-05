@@ -36,10 +36,14 @@ const AdminUsersPage = () => {
 
   const handleRoleChange = async (userId: string, newRole: string) => {
     await updateUserRole(userId, newRole);
+    // Refresh the user list to get updated data
+    fetchUsers(pagination.page, pagination.pageSize);
   };
 
   const handleStatusChange = async (userId: string, newStatus: string) => {
     await updateUserStatus(userId, newStatus);
+    // Refresh the user list to get updated data
+    fetchUsers(pagination.page, pagination.pageSize);
   };
 
   return (

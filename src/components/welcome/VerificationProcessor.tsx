@@ -67,8 +67,17 @@ const VerificationProcessor = ({
 
       // Decode token to get user ID and timestamp
       try {
-        const tokenData = atob(token);
-        const [userId, timestamp] = tokenData.split('_');
+        // Support both URL-safe base64 and standard base64 encoding
+        let decoded;
+        try {
+          decoded = atob(token);
+        } catch (e) {
+          // If standard base64 decoding fails, try decoding as URL-safe base64
+          decoded = atob(token.replace(/-/g, '+').replace(/_/g, '/'));
+        }
+        
+        // Extract user ID and timestamp
+        const [userId, timestamp] = decoded.split('_');
         
         console.log("Decoded token data:", { userId, timestamp });
         
@@ -108,13 +117,30 @@ const VerificationProcessor = ({
             console.log("Admin email confirmation result:", data);
           }
         } else {
-          // User isn't logged in yet, try to confirm email anyway via admin function
-          // This requires a valid user ID and email combination
-          // You'll need to use a special service token to call this function without authentication
-          // For now, we'll just show a message asking the user to log in
-          console.log("User not logged in, verification will be processed when they log in");
+          // User isn't logged in yet
+          console.log("User not logged in, trying alternate confirmation method");
           
-          // For direct confirmation without login, we would need a special service-level confirmation endpoint
+          // Try to sign in with token to confirm email
+          // This is a workaround since we can't directly access auth.users without being logged in
+          const { error: signInError } = await supabase.auth.signInWithOtp({
+            email: email,
+            options: {
+              shouldCreateUser: false // Don't create a new user if one doesn't exist
+            }
+          });
+          
+          if (signInError) {
+            console.error("Error sending OTP:", signInError);
+            // Continue with the process even if OTP fails
+          } else {
+            console.log("Sent OTP to user for verification");
+          }
+          
+          // For direct confirmation, the user will need to log in first
+          toast({
+            title: "Verification Initiated",
+            description: "Please sign in with your email to complete verification.",
+          });
         }
         
         // Mark as successful
