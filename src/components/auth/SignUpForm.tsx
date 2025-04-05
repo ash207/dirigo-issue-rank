@@ -55,6 +55,13 @@ export const SignUpForm = ({ onTimeoutError }: SignUpFormProps) => {
     } catch (error: any) {
       console.error(`Sign-up error (attempt #${retryCount}):`, error);
       
+      // Check for the special error code we added
+      if (error.code === "potential_success_with_timeout") {
+        setError(error.message);
+        onTimeoutError();
+        return;
+      }
+      
       // Handle specific error cases
       if (error.code === "over_email_send_rate_limit") {
         setError("Too many sign-up attempts. Please try again later.");

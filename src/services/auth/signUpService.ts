@@ -39,9 +39,9 @@ export async function signUp(
           }
         });
         
-        // Create a timeout promise
+        // Create a timeout promise with increased duration (30 seconds instead of 15)
         const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error("Client timeout after 15 seconds")), 15000);
+          setTimeout(() => reject(new Error("Client timeout after 30 seconds")), 30000);
         });
         
         // Race the signup against the timeout
@@ -73,6 +73,18 @@ export async function signUp(
             error.message?.includes("network") ||
             error.message?.includes("fetch")) {
           currentRetry++;
+          
+          // If this was the last retry attempt and it failed with a timeout,
+          // we'll still try to check if the account was created
+          if (currentRetry > maxRetries && error.message?.includes("timeout")) {
+            // Return a special error that indicates potential account creation
+            onError({
+              ...error,
+              code: "potential_success_with_timeout",
+              message: "Your account may have been created despite the timeout. Please check your email or try signing in."
+            });
+            return;
+          }
         } else {
           // For other errors (like user already exists), don't retry
           break;
