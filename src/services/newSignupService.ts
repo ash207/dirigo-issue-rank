@@ -26,30 +26,9 @@ export async function registerNewUser(email: string, password: string, redirectT
       }, 8000); // 8 seconds timeout to preempt server timeouts
     });
     
-    // Check if user already exists before attempting signup
-    // Using the auth API to get users - properly typed version
-    const { data, error: userLookupError } = await supabase.auth.admin
-      .listUsers()
-      .catch(() => ({ data: null, error: null }));
-    
-    // Check if the user already exists by comparing emails
-    const existingUser = data?.users?.find(user => 
-      user.email?.toLowerCase() === email.toLowerCase()
-    );
-    
-    if (userLookupError) {
-      console.error("Error checking for existing user:", userLookupError);
-    }
-    
-    if (existingUser) {
-      return {
-        data: null,
-        error: {
-          code: 'user_exists',
-          message: 'An account with this email already exists. Please try signing in or reset your password.'
-        }
-      };
-    }
+    // We can't reliably check if a user exists using the anon key before signup
+    // since the admin.listUsers() API requires higher privileges
+    // Instead, we'll handle the error from signUp if the user already exists
     
     // Create the actual signup request
     const signupPromise = supabase.auth.signUp({
@@ -72,6 +51,19 @@ export async function registerNewUser(email: string, password: string, redirectT
     // Log result for debugging
     if (response.error) {
       console.error("Registration error:", response.error);
+      
+      // Handle user already exists error
+      if (response.error.message?.includes("already") || 
+          response.error.message?.includes("exists") ||
+          response.error.status === 400) {
+        return {
+          data: null,
+          error: {
+            code: 'user_exists',
+            message: 'An account with this email already exists. Please try signing in or reset your password.'
+          }
+        };
+      }
       
       // Return custom error for timeouts or network issues
       if (
