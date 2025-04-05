@@ -27,16 +27,21 @@ export async function registerNewUser(email: string, password: string, redirectT
     });
     
     // Check if user already exists before attempting signup
-    // Using the auth API to check for existing users by email
-    const { data: existingUsers, error: userLookupError } = await supabase.auth.admin
-      .listUsers({ filter: `email.eq.${email}` })
-      .catch(() => ({ data: { users: [] }, error: null }));
+    // Using the auth API to get users - properly typed version
+    const { data, error: userLookupError } = await supabase.auth.admin
+      .listUsers()
+      .catch(() => ({ data: null, error: null }));
+    
+    // Check if the user already exists by comparing emails
+    const existingUser = data?.users?.find(user => 
+      user.email?.toLowerCase() === email.toLowerCase()
+    );
     
     if (userLookupError) {
       console.error("Error checking for existing user:", userLookupError);
     }
     
-    if (existingUsers?.users && existingUsers.users.length > 0) {
+    if (existingUser) {
       return {
         data: null,
         error: {
