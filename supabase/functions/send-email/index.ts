@@ -3,12 +3,22 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.36.0";
 import { Resend } from "npm:resend@2.0.0";
 
-// Initialize Resend with API key and check if it exists
-const resendApiKey = Deno.env.get("RESEND_API_KEY");
-if (!resendApiKey) {
+// Initialize Resend with primary API key
+const primaryApiKey = Deno.env.get("RESEND_API_KEY");
+const fallbackApiKey = Deno.env.get("RESEND_API_KEY_2");
+
+if (!primaryApiKey) {
   console.error("RESEND_API_KEY is not set in environment variables");
 }
-const resend = new Resend(resendApiKey);
+
+if (!fallbackApiKey) {
+  console.error("RESEND_API_KEY_2 is not set in environment variables");
+}
+
+// Create primary Resend instance
+const resend = new Resend(primaryApiKey);
+// Create fallback Resend instance
+const fallbackResend = new Resend(fallbackApiKey);
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -58,9 +68,8 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Authenticated user:", user.id);
     console.log("Sending email to:", to);
     console.log("Email subject:", subject);
-    console.log("Using Resend API key (first 5 chars):", resendApiKey?.substring(0, 5) + "...");
     
-    // Send email using Resend with subdomain email address
+    // Prepare email options
     const emailOptions: any = {
       from: "Dirigo Votes <no-reply@contact.dirigovotes.com>",
       to: [to],
@@ -81,23 +90,55 @@ const handler = async (req: Request): Promise<Response> => {
       subject: emailOptions.subject
     }));
     
-    const emailResponse = await resend.emails.send(emailOptions);
-
-    console.log("Email sent successfully:", JSON.stringify(emailResponse));
+    console.log("Trying primary API key (first 5 chars):", primaryApiKey?.substring(0, 5) + "...");
     
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: "Email sent successfully",
-        data: emailResponse
-      }), {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json",
-          ...corsHeaders,
-        },
+    try {
+      // Try with primary API key first
+      const emailResponse = await resend.emails.send(emailOptions);
+      console.log("Email sent successfully with primary API key:", JSON.stringify(emailResponse));
+      
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: "Email sent successfully",
+          data: emailResponse
+        }), {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+            ...corsHeaders,
+          },
+        }
+      );
+    } catch (primaryError: any) {
+      // If primary key fails, log the error and try with fallback
+      console.error("Error with primary API key:", primaryError.message);
+      console.log("Trying fallback API key (first 5 chars):", fallbackApiKey?.substring(0, 5) + "...");
+      
+      try {
+        // Try with fallback API key
+        const fallbackResponse = await fallbackResend.emails.send(emailOptions);
+        console.log("Email sent successfully with fallback API key:", JSON.stringify(fallbackResponse));
+        
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            message: "Email sent successfully with fallback API key",
+            data: fallbackResponse
+          }), {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json",
+              ...corsHeaders,
+            },
+          }
+        );
+      } catch (fallbackError: any) {
+        // Both API keys failed
+        console.error("Error with fallback API key:", fallbackError.message);
+        throw new Error(`Failed with both API keys. Primary error: ${primaryError.message}. Fallback error: ${fallbackError.message}`);
       }
-    );
+    }
   } catch (error: any) {
     console.error("Error in send-email function:", error);
     console.error("Error details:", error.message);
