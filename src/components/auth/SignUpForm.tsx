@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CardContent, CardFooter } from "@/components/ui/card";
-import { AtSign, Lock, AlertCircle, RefreshCw } from "lucide-react";
+import { AtSign, Lock, AlertCircle } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -27,7 +27,6 @@ interface SignUpFormProps {
 export const SignUpForm = ({ onTimeoutError }: SignUpFormProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [retryCount, setRetryCount] = useState(0);
   const { signUp } = useAuth();
   const navigate = useNavigate();
   
@@ -45,21 +44,17 @@ export const SignUpForm = ({ onTimeoutError }: SignUpFormProps) => {
     setError(null);
     
     try {
-      // Track retry attempts - increment the current value
-      const newRetryCount = retryCount + 1;
-      setRetryCount(newRetryCount);
-      
-      console.log(`Signup attempt #${newRetryCount} for ${values.email}`);
+      console.log(`Attempting to sign up user: ${values.email}`);
       
       await signUp(values.email, values.password);
       console.log(`Signup request completed for ${values.email}`);
       // Success message will be shown by the AuthContext
     } catch (error: any) {
-      console.error(`Sign-up error (attempt #${retryCount}):`, error);
+      console.error("Sign-up error:", error);
       
       // Log detailed error info for debugging
       if (error.code || error.status || error.message) {
-        console.log("Error details in form:", {
+        console.log("Error details:", {
           code: error.code || 'undefined',
           message: error.message || 'undefined',
           status: error.status || 'undefined'
@@ -74,12 +69,8 @@ export const SignUpForm = ({ onTimeoutError }: SignUpFormProps) => {
         return;
       }
       
-      if (error.code === "over_email_send_rate_limit") {
-        setError("Too many sign-up attempts. Please try again later.");
-      } else if (error.status === 504 || error.code === "23505" || 
-                error.message?.includes("timeout") || error.message?.includes("gateway") || 
-                error.message?.includes("timed out")) {
-        // More specific messaging for timeout issues
+      if (error.message?.includes("timeout") || error.message?.includes("gateway") || 
+          error.status === 504) {
         console.log("Detected timeout or gateway error");
         setError("The server is currently busy. This doesn't mean your account wasn't created. Please check your email or try signing in with the credentials you just entered.");
         onTimeoutError();
@@ -95,14 +86,6 @@ export const SignUpForm = ({ onTimeoutError }: SignUpFormProps) => {
     }
   };
 
-  const handleRetry = () => {
-    console.log("User clicked retry button");
-    if (form.getValues().email && form.getValues().password) {
-      console.log("Retrying signup with the same credentials");
-      form.handleSubmit(onSubmit)();
-    }
-  };
-
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -110,21 +93,7 @@ export const SignUpForm = ({ onTimeoutError }: SignUpFormProps) => {
           {error && (
             <Alert variant="destructive" className="flex items-start">
               <AlertCircle className="h-4 w-4 mt-0.5 mr-2 flex-shrink-0" />
-              <div className="flex-1">
-                <AlertDescription>{error}</AlertDescription>
-                {(error.includes("busy") || error.includes("timeout") || error.includes("gateway") || error.includes("timed out")) && (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={handleRetry} 
-                    className="mt-2 flex items-center"
-                    type="button"
-                  >
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                    Try again
-                  </Button>
-                )}
-              </div>
+              <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
           

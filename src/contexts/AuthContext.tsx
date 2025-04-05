@@ -4,7 +4,6 @@ import { Session, User } from '@supabase/supabase-js';
 import { useToast } from "@/hooks/use-toast";
 import { useAuthState } from '@/hooks/useAuthState';
 import { signIn, signOut, signUp } from '@/services/auth';
-import { updateUserStatusIfVerified } from '@/utils/profileUtils';
 
 type AuthContextType = {
   user: User | null;
@@ -29,16 +28,6 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, session, loading, isAuthenticated } = useAuthState();
   const { toast } = useToast();
-
-  // Effect to update profile status when user changes
-  React.useEffect(() => {
-    if (user) {
-      // Defer this to avoid auth state change callback conflicts
-      setTimeout(() => {
-        updateUserStatusIfVerified(user);
-      }, 0);
-    }
-  }, [user]);
 
   const handleSignIn = async (email: string, password: string) => {
     try {
