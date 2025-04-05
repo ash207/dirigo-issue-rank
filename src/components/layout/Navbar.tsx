@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
-import { Search, User, LogOut, Flag, Users } from "lucide-react";
+import { Search, User, LogOut, Flag, Users, LayoutDashboard } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   DropdownMenu,
@@ -76,10 +76,16 @@ const Navbar = () => {
             </Link>
           )}
           {isAdmin && (
-            <Link to="/admin/users" className="text-dirigo-white hover:text-opacity-80 flex items-center gap-1">
-              <Users className="h-4 w-4" />
-              Admin
-            </Link>
+            <>
+              <Link to="/admin/users" className="text-dirigo-white hover:text-opacity-80 flex items-center gap-1">
+                <Users className="h-4 w-4" />
+                Users
+              </Link>
+              <Link to="/admin/dashboard" className="text-dirigo-white hover:text-opacity-80 flex items-center gap-1">
+                <LayoutDashboard className="h-4 w-4" />
+                Admin
+              </Link>
+            </>
           )}
         </div>
 
@@ -107,6 +113,10 @@ const Navbar = () => {
                     <DropdownMenuItem onClick={() => navigate('/admin/users')}>
                       <Users className="mr-2 h-4 w-4" />
                       <span>User Management</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/admin/dashboard')}>
+                      <LayoutDashboard className="mr-2 h-4 w-4" />
+                      <span>Admin Dashboard</span>
                     </DropdownMenuItem>
                   </>
                 )}
