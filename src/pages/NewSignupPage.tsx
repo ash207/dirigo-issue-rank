@@ -44,8 +44,8 @@ const NewSignupPage = () => {
     setIsLoading(true);
     
     try {
-      console.log(`Signup attempt for: ${email} with redirect to: ${window.location.origin}/welcome`);
-      const { data, error } = await registerNewUser(email, password);
+      console.log(`Signup attempt for: ${email} with redirect to: https://dirigovotes.com/welcome`);
+      const { data, error } = await registerNewUser(email, password, "https://dirigovotes.com/welcome");
       
       if (error) {
         console.log("Signup error:", error.code, error.message);

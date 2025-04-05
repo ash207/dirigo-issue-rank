@@ -2,65 +2,50 @@
 import { supabase } from "@/integrations/supabase/client";
 
 /**
- * Handles user signup with email and password
+ * Register a new user with email and password
+ * 
+ * @param email The user's email address
+ * @param password The user's password
+ * @param redirectTo Optional URL to redirect to after email confirmation
+ * @returns A promise that resolves to the auth response
  */
-export async function registerNewUser(email: string, password: string) {
-  console.log("Starting new signup process for:", email);
-  
+export async function registerNewUser(email: string, password: string, redirectTo = "https://dirigovotes.com/welcome") {
   try {
-    // Get the origin dynamically and ensure it matches what's set in Supabase
-    const origin = window.location.origin;
-    const redirectUrl = `${origin}/welcome`;
+    console.log(`Registering new user with email: ${email} and redirect URL: ${redirectTo}`);
     
-    console.log(`Using redirect URL: ${redirectUrl}`);
-    
-    const { data, error } = await supabase.auth.signUp({
+    const response = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: redirectUrl,
+        emailRedirectTo: redirectTo,
+        data: {
+          email_confirmed: false,
+        }
       }
     });
     
-    if (error) {
-      console.error("Signup error:", error);
-      throw error;
+    // Log result for debugging
+    if (response.error) {
+      console.error("Registration error:", response.error);
+      
+      // Return custom error for timeouts
+      if (response.error.message?.includes("timeout") || response.error.message?.includes("deadline exceeded")) {
+        return {
+          data: response.data,
+          error: {
+            ...response.error,
+            code: 'email_timeout',
+            message: 'Email verification timed out. Your account may have been created, but the verification email could not be sent.'
+          }
+        };
+      }
+    } else {
+      console.log("Registration successful, user ID:", response.data?.user?.id);
     }
     
-    console.log("New signup successful:", data);
-    
-    // Check if the user needs to confirm their email
-    if (data?.user && !data.user.confirmed_at) {
-      console.log("User created but needs email confirmation");
-    }
-    
-    return { data, error: null };
-    
-  } catch (error: any) {
-    console.error("Error in registerNewUser:", error);
-    
-    // Format error message for frontend
-    let message = "Failed to create account";
-    let code = error.code || "unknown_error";
-    
-    if (error.message?.includes("already") || error.message?.includes("exists")) {
-      message = "An account with this email already exists";
-      code = "email_exists";
-    } else if (error.status === 504 || error.message?.includes("timeout") || 
-               error.message?.includes("deadline exceeded") || error.message?.includes("gateway")) {
-      message = "Server timeout - your account may have been created. Please check your email or try the resend verification option.";
-      code = "email_timeout";
-    } else if (error.message) {
-      message = error.message;
-    }
-    
-    return { 
-      data: null, 
-      error: { 
-        message,
-        code,
-        originalError: error
-      } 
-    };
+    return response;
+  } catch (err) {
+    console.error("Unexpected error in registerNewUser:", err);
+    throw err;
   }
 }

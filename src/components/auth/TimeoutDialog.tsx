@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { AlertDescription } from "@/components/ui/alert";
 import { Alert } from "@/components/ui/alert";
@@ -37,9 +36,8 @@ export const TimeoutDialog = ({ open, onOpenChange, onRetry, email }: TimeoutDia
     setIsResending(true);
     
     try {
-      // Get the origin dynamically and ensure it matches Supabase settings
-      const origin = window.location.origin;
-      const redirectUrl = `${origin}/welcome`;
+      // Use the production domain for redirect
+      const redirectUrl = `https://dirigovotes.com/welcome`;
       console.log(`Resending verification with redirect URL: ${redirectUrl}`);
       
       const { error } = await supabase.auth.resend({
