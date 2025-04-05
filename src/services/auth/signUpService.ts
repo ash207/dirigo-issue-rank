@@ -78,6 +78,15 @@ export async function signUp(
         console.error(`Signup attempt ${currentRetry + 1} failed:`, error);
         console.log(`Error details - Code: ${error.code}, Status: ${error.status}, Message: ${error.message}`);
         
+        // Additional detailed logging for network errors
+        if (error.status === 504) {
+          console.error("504 Gateway Timeout received from Supabase server");
+        }
+        
+        if (error.message?.includes("fetch")) {
+          console.error("Network fetch error details:", error);
+        }
+        
         lastError = error;
         
         // Only retry on timeout or network errors
