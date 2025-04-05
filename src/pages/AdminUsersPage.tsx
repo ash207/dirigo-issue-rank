@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUserManagement } from "@/hooks/useUserManagement";
 import { useAuth } from "@/contexts/AuthContext";
@@ -22,6 +22,11 @@ const AdminUsersPage = () => {
   } = useUserManagement();
   const [lastEmailVerification, setLastEmailVerification] = useState<number>(0);
 
+  // Memoize the fetch users function to prevent unnecessary re-renders
+  const memoizedFetchUsers = useCallback((page = pagination.page, pageSize = pagination.pageSize) => {
+    fetchUsers(page, pageSize);
+  }, [fetchUsers, pagination.page, pagination.pageSize]);
+
   // Listen for email verification events and refresh data
   useEffect(() => {
     // Function to handle both storage events (cross-tab) and custom events (same tab)
@@ -38,11 +43,11 @@ const AdminUsersPage = () => {
 
     // Listen for both storage events (cross-tab) and custom events (same tab)
     window.addEventListener('storage', handleStorageChange as EventListener);
-    window.addEventListener('storage', handleStorageChange as EventListener);
+    window.addEventListener('custom-email-verification', handleStorageChange as EventListener);
     
     return () => {
       window.removeEventListener('storage', handleStorageChange as EventListener);
-      window.removeEventListener('storage', handleStorageChange as EventListener);
+      window.removeEventListener('custom-email-verification', handleStorageChange as EventListener);
     };
   }, []);
 
@@ -54,8 +59,9 @@ const AdminUsersPage = () => {
     }
     
     console.log("Fetching users list, triggered by auth change or email verification");
-    fetchUsers();
-  }, [isAuthenticated, navigate, lastEmailVerification, fetchUsers]);
+    memoizedFetchUsers();
+    // Only depend on isAuthenticated, navigate, lastEmailVerification, and memoizedFetchUsers
+  }, [isAuthenticated, navigate, lastEmailVerification, memoizedFetchUsers]);
 
   const handlePageChange = (page: number) => {
     fetchUsers(page, pagination.pageSize);

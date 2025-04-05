@@ -48,7 +48,9 @@ export const UserTable = ({
       if (result.success) {
         toast.success(`Email verified for ${email}`);
         // Dispatch a custom event to trigger a refresh of the users list
-        window.dispatchEvent(new CustomEvent('storage', { detail: { key: 'email_verification_success' } }));
+        window.dispatchEvent(new CustomEvent('custom-email-verification', { 
+          detail: { key: 'email_verification_success' } 
+        }));
       } else {
         toast.error(result.message || "Failed to verify email");
       }
