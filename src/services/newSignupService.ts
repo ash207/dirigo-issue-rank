@@ -28,6 +28,12 @@ export async function registerNewUser(email: string, password: string) {
     }
     
     console.log("New signup successful:", data);
+    
+    // Check if the user needs to confirm their email
+    if (data?.user && !data.user.confirmed_at) {
+      console.log("User created but needs email confirmation");
+    }
+    
     return { data, error: null };
     
   } catch (error: any) {
@@ -35,18 +41,26 @@ export async function registerNewUser(email: string, password: string) {
     
     // Format error message for frontend
     let message = "Failed to create account";
+    let code = error.code || "unknown_error";
     
     if (error.message?.includes("already") || error.message?.includes("exists")) {
       message = "An account with this email already exists";
-    } else if (error.status === 504 || error.message?.includes("timeout")) {
-      message = "Server timeout - your account may have been created. Please check your email";
+      code = "email_exists";
+    } else if (error.status === 504 || error.message?.includes("timeout") || 
+               error.message?.includes("deadline exceeded") || error.message?.includes("gateway")) {
+      message = "Server timeout - your account may have been created. Please check your email or try the resend verification option.";
+      code = "email_timeout";
     } else if (error.message) {
       message = error.message;
     }
     
     return { 
       data: null, 
-      error: { message } 
+      error: { 
+        message,
+        code,
+        originalError: error
+      } 
     };
   }
 }

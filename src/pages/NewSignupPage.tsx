@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { AtSign, Lock, AlertCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { TimeoutDialog } from "@/components/auth/TimeoutDialog";
 
 const NewSignupPage = () => {
   const [email, setEmail] = useState("");
@@ -15,6 +16,7 @@ const NewSignupPage = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [showTimeoutDialog, setShowTimeoutDialog] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -45,6 +47,13 @@ const NewSignupPage = () => {
       const { data, error } = await registerNewUser(email, password);
       
       if (error) {
+        // Special handling for timeout errors
+        if (error.message?.includes("timeout") || error.message?.includes("may have been created")) {
+          setShowTimeoutDialog(true);
+          setIsLoading(false);
+          return;
+        }
+        
         setErrorMessage(error.message);
         setIsLoading(false);
         return;
@@ -65,6 +74,11 @@ const NewSignupPage = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleRetry = () => {
+    // Reset error message when user wants to retry
+    setErrorMessage(null);
   };
 
   return (
@@ -152,6 +166,13 @@ const NewSignupPage = () => {
           </CardFooter>
         </form>
       </Card>
+
+      <TimeoutDialog 
+        open={showTimeoutDialog} 
+        onOpenChange={setShowTimeoutDialog}
+        onRetry={handleRetry}
+        email={email}
+      />
     </div>
   );
 };
