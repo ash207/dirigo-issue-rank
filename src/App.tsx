@@ -22,6 +22,8 @@ import CompleteSignupPage from "./pages/CompleteSignupPage";
 import WelcomePage from "./pages/WelcomePage";
 import ReportsPage from "./pages/ReportsPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
+import EmailSignInPage from "./pages/EmailSignInPage";
+import EmailSignUpPage from "./pages/EmailSignUpPage";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +46,8 @@ function App() {
               <Route path="/new-signup" element={<NewSignupPage />} />
               <Route path="/clean-signup" element={<CleanSignupPage />} />
               <Route path="/complete-signup" element={<CompleteSignupPage />} />
+              <Route path="/email-signin" element={<EmailSignInPage />} />
+              <Route path="/email-signup" element={<EmailSignUpPage />} />
               <Route path="/welcome" element={<WelcomePage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/reports" element={<ReportsPage />} />
