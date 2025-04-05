@@ -16,9 +16,6 @@ import AboutPage from "./pages/AboutPage";
 import NotFound from "./pages/NotFound";
 import SignInPage from "./pages/SignInPage";
 import SignUpPage from "./pages/SignUpPage";
-import NewSignupPage from "./pages/NewSignupPage";
-import CleanSignupPage from "./pages/CleanSignupPage";
-import CompleteSignupPage from "./pages/CompleteSignupPage";
 import WelcomePage from "./pages/WelcomePage";
 import ReportsPage from "./pages/ReportsPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
@@ -41,9 +38,6 @@ function App() {
               <Route path="/issues/:id/edit" element={<EditIssuePage />} />
               <Route path="/sign-in" element={<SignInPage />} />
               <Route path="/sign-up" element={<SignUpPage />} />
-              <Route path="/new-signup" element={<NewSignupPage />} />
-              <Route path="/clean-signup" element={<CleanSignupPage />} />
-              <Route path="/complete-signup" element={<CompleteSignupPage />} />
               <Route path="/welcome" element={<WelcomePage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/reports" element={<ReportsPage />} />

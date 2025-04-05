@@ -134,7 +134,7 @@ const Navbar = () => {
                   <User size={16} className="mr-2" /> Sign In
                 </Button>
               </Link>
-              <Link to="/complete-signup">
+              <Link to="/sign-up">
                 <Button variant="outline" className="bg-dirigo-white text-dirigo-blue hover:bg-dirigo-white/90">
                   Sign Up
                 </Button>

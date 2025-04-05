@@ -90,7 +90,7 @@ const Index = () => {
             Join thousands of Americans engaging in meaningful political discourse and shaping the future of our democracy.
           </p>
           <Button asChild size="lg" className="bg-dirigo-white text-dirigo-blue hover:bg-dirigo-white/90">
-            <Link to="/signup">Sign Up Now</Link>
+            <Link to="/sign-up">Sign Up Now</Link>
           </Button>
         </div>
       </section>
