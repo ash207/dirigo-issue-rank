@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { Session, User } from '@supabase/supabase-js';
+import { setupAuthListener } from '@/services/auth';
 
 export function useAuthState() {
   const [user, setUser] = useState<User | null>(null);
@@ -11,13 +12,11 @@ export function useAuthState() {
   // Set up auth state listener and handle initial session
   useEffect(() => {
     // Set up auth state listener first
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, currentSession) => {
-        setSession(currentSession);
-        setUser(currentSession?.user ?? null);
-        setLoading(false);
-      }
-    );
+    const { data: { subscription } } = setupAuthListener((currentUser, currentSession) => {
+      setSession(currentSession);
+      setUser(currentUser);
+      setLoading(false);
+    });
 
     // Then check for existing session
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {

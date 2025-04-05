@@ -3,7 +3,7 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { useToast } from "@/hooks/use-toast";
 import { useAuthState } from '@/hooks/useAuthState';
-import { signIn, signOut, signUp } from '@/services/authService';
+import { signIn, signOut, signUp, setupAuthListener } from '@/services/auth';
 import { updateUserStatusIfVerified } from '@/utils/profileUtils';
 
 type AuthContextType = {
