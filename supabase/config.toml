@@ -35,12 +35,21 @@ jwt_expiry = 3600
 enable_refresh_token_rotation = true
 refresh_token_reuse_interval = 10
 enable_signup = true
-email_template_custom_from_name = "Dirigo Votes"
-email_template_custom_from_email = "contact@dirigovotes.com"
-email_from_name = "Dirigo Votes"
-email_from_address = "contact@dirigovotes.com"
-email_template_system_from_name = "Dirigo Votes"
-email_template_system_from_email = "contact@dirigovotes.com"
+
+# Custom email settings - using verified domain
+email_template_custom_from_name = 'Dirigo Votes'
+email_template_custom_from_email = 'contact@dirigovotes.com'
+email_from_name = 'Dirigo Votes'
+email_from_address = 'contact@dirigovotes.com'
+email_template_system_from_name = 'Dirigo Votes'
+email_template_system_from_email = 'contact@dirigovotes.com'
+# Set SMTP configuration - uncomment and complete if needed
+# smtp_admin_email = 'contact@dirigovotes.com'
+# smtp_host = ''
+# smtp_port = 587
+# smtp_user = ''
+# smtp_pass = ''
+# smtp_max_frequency = 0
 
 [realtime]
 enabled = true
