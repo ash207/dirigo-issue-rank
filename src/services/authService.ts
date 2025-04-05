@@ -29,7 +29,7 @@ export async function signIn(
   }
 }
 
-// Significantly improved sign-up function with better error handling, retry logic and longer timeouts
+// Enhanced sign-up function with better error handling and retry logic
 export async function signUp(
   email: string, 
   password: string, 
@@ -40,69 +40,94 @@ export async function signUp(
   try {
     console.log("Starting signup process for:", email);
     
-    // Increased timeout to 60 seconds
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error("Request timed out after 60 seconds")), 60000);
-    });
+    // Try the signup process with a longer timeout
+    const maxRetries = 2;
+    let currentRetry = 0;
+    let lastError = null;
     
-    // Create the signup promise with proper options
-    const signUpPromise = supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          signup_attempt: new Date().toISOString()
+    while (currentRetry <= maxRetries) {
+      try {
+        // Increased timeout between retries
+        if (currentRetry > 0) {
+          console.log(`Retry attempt ${currentRetry}/${maxRetries}`);
+          await wait(1000 * currentRetry); // Wait longer for each retry
+        }
+        
+        // Set a client-side timeout to catch supabase timeouts
+        const signUpPromise = supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: redirectUrl,
+            data: {
+              signup_attempt: new Date().toISOString(),
+              retry_count: currentRetry
+            }
+          }
+        });
+        
+        // Create a timeout promise
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error("Client timeout after 15 seconds")), 15000);
+        });
+        
+        // Race the signup against the timeout
+        const { data, error } = await Promise.race([
+          signUpPromise,
+          timeoutPromise.then(() => {
+            throw new Error("Request timed out. Please try again.");
+          })
+        ]) as any;
+        
+        if (error) throw error;
+        
+        // If we reach here, the signup was successful
+        console.log("Signup successful:", data?.user?.id);
+        
+        // Add a delay to ensure Supabase completes background operations
+        await wait(1000);
+        
+        onSuccess(data);
+        return; // Exit the function on success
+        
+      } catch (error: any) {
+        console.error(`Signup attempt ${currentRetry + 1} failed:`, error);
+        lastError = error;
+        
+        // Only retry on timeout or network errors
+        if (error.status === 504 || 
+            error.message?.includes("timeout") || 
+            error.message?.includes("network") ||
+            error.message?.includes("fetch")) {
+          currentRetry++;
+        } else {
+          // For other errors (like user already exists), don't retry
+          break;
         }
       }
-    });
-    
-    console.log("Waiting for signup response...");
-    
-    // Race the signup against the timeout
-    const { data, error } = await Promise.race([
-      signUpPromise,
-      timeoutPromise.then(() => {
-        console.log("Signup timed out after 60 seconds");
-        throw new Error("The server is busy. Please try again later or check your email for a verification link.");
-      })
-    ]) as any;
-    
-    if (error) {
-      console.error("Signup returned an error:", error);
-      throw error;
     }
-
-    // Check if the user was actually created and add a longer wait
-    if (data?.user) {
-      console.log("User created successfully:", data.user.id);
-      // Add a longer delay (2 seconds) to allow Supabase to complete background tasks
-      await wait(2000);
-      onSuccess(data);
-    } else {
-      console.error("User data is missing from the signup response");
-      throw new Error("Failed to create account. Please try again.");
-    }
+    
+    // If we get here, all retries failed or non-retriable error
+    throw lastError || new Error("Failed to create account after multiple attempts");
+    
   } catch (error: any) {
-    console.error("Signup error details:", error);
+    console.error("All signup attempts failed:", error);
     
-    // Handle specific error cases with improved messaging
+    // Provide helpful error messages based on error type
     let errorMessage = "Failed to create account";
     
     if (error.code === "over_email_send_rate_limit") {
       errorMessage = "Too many sign-up attempts. Please try again later.";
     } else if (error.status === 504 || error.code === "23505" || 
               error.message?.includes("timeout") || error.message?.includes("gateway") || 
-              error.message?.includes("timed out")) {
-      // More specific messaging for timeout issues
-      errorMessage = "The server is busy or experiencing timeouts. Your account may have been created. Please check your email or try signing in with the credentials you just used.";
+              error.message?.includes("network")) {
+      errorMessage = "The server is experiencing high traffic. Your account may have been created. Please check your email or try signing in with the credentials you just used.";
     } else if (error.message?.includes("already") || error.message?.includes("exists")) {
       errorMessage = "An account with this email already exists. Please try signing in.";
     } else if (error.message) {
       errorMessage = error.message;
     }
     
-    console.log("Returning error to user:", errorMessage);
     onError({ ...error, message: errorMessage });
     throw error;
   }

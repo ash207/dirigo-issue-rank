@@ -28,6 +28,7 @@ const SignUpPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showTimeoutDialog, setShowTimeoutDialog] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   const { signUp, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   
@@ -53,17 +54,24 @@ const SignUpPage = () => {
     setShowTimeoutDialog(false);
     
     try {
+      // Increment retry count for tracking purposes
+      const attemptCount = retryCount + 1;
+      setRetryCount(attemptCount);
+      
+      console.log(`Signup attempt #${attemptCount} for ${values.email}`);
       await signUp(values.email, values.password);
       // Success message will be shown by the AuthContext
     } catch (error: any) {
-      console.error("Sign-up error:", error);
+      console.error(`Sign-up error (attempt #${retryCount}):`, error);
       
       // Handle specific error cases
       if (error.code === "over_email_send_rate_limit") {
         setError("Too many sign-up attempts. Please try again later.");
-      } else if (error.status === 504 || error.message?.includes("timeout") || 
-                error.message?.includes("gateway") || error.message?.includes("timed out")) {
-        setError("The server is currently busy. This doesn't mean your account wasn't created. Please check your email or try signing in instead.");
+      } else if (error.status === 504 || error.code === "23505" || 
+                error.message?.includes("timeout") || error.message?.includes("gateway") || 
+                error.message?.includes("timed out")) {
+        // More specific messaging for timeout issues
+        setError("The server is currently busy. This doesn't mean your account wasn't created. Please check your email or try signing in with the credentials you just entered.");
         setShowTimeoutDialog(true);
       } else if (error.message?.includes("already") || error.message?.includes("exists")) {
         setError("An account with this email already exists. Please try signing in instead.");
