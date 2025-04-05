@@ -27,11 +27,16 @@ export async function registerNewUser(email: string, password: string, redirectT
     });
     
     // Check if user already exists before attempting signup
-    const { data: existingUser } = await supabase.auth.admin
-      .getUserByEmail(email)
-      .catch(() => ({ data: null }));
+    // Using the auth API to check for existing users by email
+    const { data: existingUsers, error: userLookupError } = await supabase.auth.admin
+      .listUsers({ filter: `email.eq.${email}` })
+      .catch(() => ({ data: { users: [] }, error: null }));
     
-    if (existingUser) {
+    if (userLookupError) {
+      console.error("Error checking for existing user:", userLookupError);
+    }
+    
+    if (existingUsers?.users && existingUsers.users.length > 0) {
       return {
         data: null,
         error: {
@@ -69,7 +74,7 @@ export async function registerNewUser(email: string, password: string, redirectT
         response.error.message?.includes("deadline exceeded") ||
         response.error.message?.includes("fetch") ||
         response.error.message?.includes("network") ||
-        response.error.status === 504
+        (response.error as any)?.status === 504
       ) {
         return {
           data: response.data,
@@ -94,7 +99,7 @@ export async function registerNewUser(email: string, password: string, redirectT
       err.message?.includes("Network") ||
       err.message?.includes("fetch") ||
       err.code === 'email_timeout' ||
-      err.status === 504
+      (err as any)?.status === 504
     ) {
       return {
         data: { user: null, session: null },
