@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { AtSign, Lock, AlertCircle } from "lucide-react";
+import { AtSign, Lock, AlertCircle, RefreshCw } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const SignUpPage = () => {
@@ -15,6 +15,7 @@ const SignUpPage = () => {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
   const { signUp, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   
@@ -40,15 +41,34 @@ const SignUpPage = () => {
       if (error.code === "over_email_send_rate_limit") {
         setError("Too many sign-up attempts. Please try again later.");
       } else if (error.status === 504 || error.message?.includes("timeout")) {
-        setError("The server is busy. Please try again in a few minutes.");
+        if (retryCount < 2) {
+          setError("The server is busy. We'll automatically retry in a few seconds...");
+          setRetryCount(prev => prev + 1);
+          
+          // Automatically retry after a delay
+          setTimeout(() => {
+            handleSubmit(e);
+          }, 3000);
+        } else {
+          setError("The server is experiencing high load. Please try again later or contact support if this persists.");
+        }
       } else if (error.message) {
         setError(error.message);
       } else {
         setError("Failed to create account. Please try again.");
       }
     } finally {
-      setIsLoading(false);
+      // Only set loading to false if not retrying
+      if (!(error && (error as any).status === 504 && retryCount < 2)) {
+        setIsLoading(false);
+      }
     }
+  };
+
+  const handleRetry = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setRetryCount(0);
+    handleSubmit(new Event('submit') as any);
   };
 
   return (
@@ -66,7 +86,19 @@ const SignUpPage = () => {
               {error && (
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{error}</AlertDescription>
+                  <AlertDescription className="flex justify-between items-center">
+                    <span>{error}</span>
+                    {error.includes("server is busy") && 
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={handleRetry}
+                        className="ml-2 flex items-center gap-1"
+                      >
+                        <RefreshCw className="h-3 w-3" /> Retry now
+                      </Button>
+                    }
+                  </AlertDescription>
                 </Alert>
               )}
               
@@ -108,7 +140,7 @@ const SignUpPage = () => {
                 type="submit"
                 disabled={isLoading}
               >
-                {isLoading ? "Creating account..." : "Sign up"}
+                {isLoading ? (retryCount > 0 ? "Retrying..." : "Creating account...") : "Sign up"}
               </Button>
               <div className="text-center text-sm">
                 Already have an account?{" "}
