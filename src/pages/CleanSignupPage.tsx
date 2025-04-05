@@ -1,6 +1,7 @@
 
 import { useAuth } from "@/hooks/useAuth";
 import { CleanSignupForm } from "@/components/auth/CleanSignupForm";
+import { useEffect } from "react";
 
 const CleanSignupPage = () => {
   const {
@@ -14,8 +15,16 @@ const CleanSignupPage = () => {
     error,
     isCheckingEmail,
     isCreatingUser,
-    handleSignup
+    handleSignup,
+    resetForm
   } = useAuth();
+
+  // Reset form when component unmounts
+  useEffect(() => {
+    return () => {
+      resetForm();
+    };
+  }, [resetForm]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
