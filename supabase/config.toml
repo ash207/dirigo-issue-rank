@@ -36,16 +36,16 @@ enable_refresh_token_rotation = true
 refresh_token_reuse_interval = 10
 enable_signup = true
 
-# Custom email settings - using verified domain with proper subdomain
+# Use simple email settings to avoid potential DNS issues
 email_template_custom_from_name = 'Dirigo Votes'
-email_template_custom_from_email = 'no-reply@contact.dirigovotes.com'
+email_template_custom_from_email = 'noreply@dirigovotes.com'
 email_from_name = 'Dirigo Votes'
-email_from_address = 'no-reply@contact.dirigovotes.com'
+email_from_address = 'noreply@dirigovotes.com'
 email_template_system_from_name = 'Dirigo Votes'
-email_template_system_from_email = 'no-reply@contact.dirigovotes.com'
+email_template_system_from_email = 'noreply@dirigovotes.com'
 
-# Email rate limiting
-rate_limit_email_sent = 20
+# Increase email rate limiting further
+rate_limit_email_sent = 50
 email_confirm_change_email_template_id = 'd-7e4e79720a064eeeb2each'
 disable_confirm_change_email = false
 

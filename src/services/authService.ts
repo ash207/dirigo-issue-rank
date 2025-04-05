@@ -29,7 +29,7 @@ export async function signIn(
   }
 }
 
-// Improved sign-up function with better error handling and retry logic
+// Significantly improved sign-up function with better error handling, retry logic and longer timeouts
 export async function signUp(
   email: string, 
   password: string, 
@@ -38,42 +38,49 @@ export async function signUp(
   onError: (error: any) => void
 ) {
   try {
-    // Set a timeout for the entire operation - increased to 45 seconds
+    console.log("Starting signup process for:", email);
+    
+    // Increased timeout to 60 seconds
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error("Request timed out after 45 seconds")), 45000);
+      setTimeout(() => reject(new Error("Request timed out after 60 seconds")), 60000);
     });
     
-    // Create the actual signup promise with proper options
+    // Create the signup promise with proper options
     const signUpPromise = supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: redirectUrl,
         data: {
-          // Adding timestamp to help identify signup attempts
           signup_attempt: new Date().toISOString()
         }
       }
     });
     
+    console.log("Waiting for signup response...");
+    
     // Race the signup against the timeout
     const { data, error } = await Promise.race([
       signUpPromise,
       timeoutPromise.then(() => {
+        console.log("Signup timed out after 60 seconds");
         throw new Error("The server is busy. Please try again later or check your email for a verification link.");
       })
     ]) as any;
     
     if (error) {
+      console.error("Signup returned an error:", error);
       throw error;
     }
 
-    // Check if the user was actually created
+    // Check if the user was actually created and add a longer wait
     if (data?.user) {
-      // Add a short delay to allow Supabase to complete background tasks
-      await wait(1000);
+      console.log("User created successfully:", data.user.id);
+      // Add a longer delay (2 seconds) to allow Supabase to complete background tasks
+      await wait(2000);
       onSuccess(data);
     } else {
+      console.error("User data is missing from the signup response");
       throw new Error("Failed to create account. Please try again.");
     }
   } catch (error: any) {
@@ -87,13 +94,15 @@ export async function signUp(
     } else if (error.status === 504 || error.code === "23505" || 
               error.message?.includes("timeout") || error.message?.includes("gateway") || 
               error.message?.includes("timed out")) {
-      errorMessage = "The server is busy. Your account may have been created. Please check your email or try signing in.";
+      // More specific messaging for timeout issues
+      errorMessage = "The server is busy or experiencing timeouts. Your account may have been created. Please check your email or try signing in with the credentials you just used.";
     } else if (error.message?.includes("already") || error.message?.includes("exists")) {
       errorMessage = "An account with this email already exists. Please try signing in.";
     } else if (error.message) {
       errorMessage = error.message;
     }
     
+    console.log("Returning error to user:", errorMessage);
     onError({ ...error, message: errorMessage });
     throw error;
   }

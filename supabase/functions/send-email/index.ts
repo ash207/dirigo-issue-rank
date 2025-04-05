@@ -49,11 +49,11 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error('Unable to get user from auth token');
     }
     
-    console.log("Sending email with Resend using no-reply@ subdomain email format");
+    console.log("Sending email with Resend using main domain format");
     
-    // Send email using Resend with updated sender address
+    // Send email using Resend with main domain email address
     const emailOptions: any = {
-      from: "Dirigo Votes <no-reply@contact.dirigovotes.com>",
+      from: "Dirigo Votes <noreply@dirigovotes.com>",
       to: [to],
       subject: subject,
       html: htmlContent,
