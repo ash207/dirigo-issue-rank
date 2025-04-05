@@ -4,6 +4,7 @@ import { validateSignupForm } from "@/utils/emailValidation";
 import { emailExists } from "@/services/auth/signup/emailExists";
 import { createUser } from "@/services/auth/signup/createUser";
 import { toast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 export function useNewSignup() {
   const [email, setEmail] = useState("");
@@ -12,6 +13,7 @@ export function useNewSignup() {
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const resetForm = () => {
     setEmail("");
@@ -34,8 +36,11 @@ export function useNewSignup() {
     try {
       // Check if email already exists
       setIsCheckingEmail(true);
+      console.log(`Checking if email exists: ${email}`);
       const emailAlreadyExists = await emailExists(email);
       setIsCheckingEmail(false);
+      
+      console.log(`Email exists check result: ${emailAlreadyExists}`);
       
       if (emailAlreadyExists) {
         setErrorMessage("An account with this email already exists. Please try signing in.");
@@ -48,7 +53,8 @@ export function useNewSignup() {
       
       if (success) {
         resetForm();
-        // We show the success toast in the createUser function
+        navigate('/welcome', { state: { email } });
+        // Toast notification is shown in the createUser function
       }
     } catch (err: any) {
       console.error("Signup error:", err);

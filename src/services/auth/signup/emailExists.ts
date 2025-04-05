@@ -17,7 +17,13 @@ export async function emailExists(email: string): Promise<boolean> {
     
     // If we get an invalid login credentials error, the user exists
     // This error occurs when the email exists but the password is wrong
-    return error?.message?.includes('Invalid login credentials') || false;
+    if (error && error.message) {
+      console.log(`Email check for ${email}: ${error.message}`);
+      return error.message.includes('Invalid login credentials');
+    }
+    
+    // If no error or a different error, assume user doesn't exist
+    return false;
   } catch (err) {
     console.error("Error checking if email exists:", err);
     // In case of error, we assume the user doesn't exist for security reasons

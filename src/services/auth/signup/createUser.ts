@@ -28,6 +28,17 @@ export async function createUser(email: string, password: string): Promise<boole
     });
     
     if (error) {
+      // Handle case where user already exists
+      if (error.message?.includes('already') || error.message?.includes('exists')) {
+        console.error("User already exists:", error);
+        toast({
+          title: "Account Exists",
+          description: "An account with this email already exists. Please try signing in.",
+          variant: "destructive",
+        });
+        return false;
+      }
+      
       console.error("Error creating user:", error);
       toast({
         title: "Error",
