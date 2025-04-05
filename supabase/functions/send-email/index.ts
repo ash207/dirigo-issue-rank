@@ -3,12 +3,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.36.0";
 import { Resend } from "npm:resend@2.0.0";
 
-// Initialize Resend with your API key
-const resendApiKey = Deno.env.get("RESEND_API_KEY");
-if (!resendApiKey) {
-  console.error("RESEND_API_KEY is not set in environment variables");
-}
-const resend = new Resend(resendApiKey);
+const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -31,7 +26,6 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    console.log("Received email request");
     const { to, subject, htmlContent, textContent, replyTo }: EmailRequest = await req.json();
     const authHeader = req.headers.get('Authorization');
     
@@ -42,10 +36,6 @@ const handler = async (req: Request): Promise<Response> => {
     // Create a Supabase client with the auth header from the request
     const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
-    
-    console.log("Using Supabase URL:", supabaseUrl);
-    console.log("Authorization header present:", !!authHeader);
-    
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
     
     // Extract user ID from auth JWT
@@ -59,35 +49,25 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error('Unable to get user from auth token');
     }
     
-    console.log("Authenticated user:", user.id);
-    console.log("Sending email to:", to);
-    console.log("Email subject:", subject);
+    console.log("Sending email with Resend using subdomain format");
     
-    // Construct email options
+    // Send email using Resend with subdomain email address
     const emailOptions: any = {
-      from: "Dirigo Votes <noreply@dirigovotes.com>",
+      from: "Dirigo Votes <no-reply@contact.dirigovotes.com>",
       to: [to],
       subject: subject,
       html: htmlContent,
-      text: textContent || ""
+      text: textContent
     };
 
     // Add reply-to if provided
     if (replyTo) {
       emailOptions.reply_to = replyTo;
-      console.log("Using reply-to:", replyTo);
     }
 
-    console.log("Sending email with Resend using options:", JSON.stringify({
-      from: emailOptions.from,
-      to: emailOptions.to,
-      subject: emailOptions.subject
-    }));
-    
-    // Send the email with Resend
     const emailResponse = await resend.emails.send(emailOptions);
 
-    console.log("Email sent successfully:", JSON.stringify(emailResponse));
+    console.log("Email sent successfully:", emailResponse);
     
     return new Response(
       JSON.stringify({ 
@@ -104,18 +84,8 @@ const handler = async (req: Request): Promise<Response> => {
     );
   } catch (error: any) {
     console.error("Error in send-email function:", error);
-    console.error("Error details:", error.message);
-    
-    // More detailed error information
-    if (error.response) {
-      console.error("Resend API error response:", JSON.stringify(error.response));
-    }
-    
     return new Response(
-      JSON.stringify({ 
-        error: error.message,
-        details: error.response || "No additional details available"
-      }),
+      JSON.stringify({ error: error.message }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
