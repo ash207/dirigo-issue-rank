@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Mail, Search, UserCheck, User, XCircle, CheckCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
+import { lookupUserByEmail } from "@/services/auth/adminService";
 import { toast } from "sonner";
 
 interface UserInfo {
@@ -43,15 +43,7 @@ const UserLookupForm = () => {
     setUserInfo(null);
     
     try {
-      const { data, error } = await supabase.functions.invoke("lookup-user", {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`
-        },
-        body: { email }
-      });
-      
-      if (error) throw error;
-      
+      const data = await lookupUserByEmail(email, session.access_token);
       setUserInfo(data);
       
       if (!data.exists) {

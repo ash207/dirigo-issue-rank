@@ -7,6 +7,19 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Helper function to check if email exists
+async function checkEmailExists(supabaseAdmin, email) {
+  const { data: users, error: usersError } = await supabaseAdmin.auth.admin.listUsers();
+  
+  if (usersError) {
+    throw usersError;
+  }
+
+  // Find user by email
+  const foundUser = users.users.find(u => u.email === email);
+  return { exists: !!foundUser, foundUser };
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -64,17 +77,10 @@ serve(async (req) => {
       );
     }
 
-    // Look up user by email
-    const { data: users, error: usersError } = await supabaseAdmin.auth.admin.listUsers();
+    // First check if the email exists
+    const { exists, foundUser } = await checkEmailExists(supabaseAdmin, email);
     
-    if (usersError) {
-      throw usersError;
-    }
-
-    // Find user by email
-    const foundUser = users.users.find(u => u.email === email);
-    
-    if (!foundUser) {
+    if (!exists) {
       return new Response(
         JSON.stringify({ 
           exists: false, 
@@ -84,7 +90,7 @@ serve(async (req) => {
       );
     }
 
-    // Get profile data
+    // Get profile data if user exists
     const { data: userProfile, error: profileError } = await supabaseAdmin
       .from("profiles")
       .select("*")
