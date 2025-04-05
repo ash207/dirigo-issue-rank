@@ -58,7 +58,7 @@ const AdminEmailSender = () => {
   const { session } = useAuth();
   const [isSending, setIsSending] = useState(false);
   const [openPreview, setOpenPreview] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<TemplateKey | "">("");
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateKey | "custom">("custom");
   const [recipientName, setRecipientName] = useState("");
   const [confirmationLink, setConfirmationLink] = useState("#");
 
@@ -98,11 +98,13 @@ const AdminEmailSender = () => {
 
   // Handle template selection
   const handleTemplateChange = (value: string) => {
-    if (value && templateOptions.includes(value as TemplateKey)) {
+    if (value === "custom") {
+      setSelectedTemplate("custom");
+      form.setValue("subject", "");
+      form.setValue("content", "");
+    } else if (templateOptions.includes(value as TemplateKey)) {
       setSelectedTemplate(value as TemplateKey);
       applyTemplate(value as TemplateKey);
-    } else {
-      setSelectedTemplate("");
     }
   };
 
@@ -125,7 +127,7 @@ const AdminEmailSender = () => {
       
       toast("Email sent successfully!");
       form.reset();
-      setSelectedTemplate("");
+      setSelectedTemplate("custom");
     } catch (error) {
       console.error("Error sending email:", error);
       toast("Failed to send email. Please try again.");
@@ -157,7 +159,7 @@ const AdminEmailSender = () => {
                   <SelectValue placeholder="Select a template or create custom email" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Custom Email</SelectItem>
+                  <SelectItem value="custom">Custom Email</SelectItem>
                   {templateOptions.map((template) => (
                     <SelectItem key={template} value={template}>
                       {template.replace(/([A-Z])/g, ' $1').trim().split(' ').map(word => 
@@ -170,7 +172,7 @@ const AdminEmailSender = () => {
             </div>
 
             {/* Template Configuration */}
-            {selectedTemplate && (
+            {selectedTemplate !== "custom" && (
               <div className="space-y-4 border p-4 rounded-md bg-slate-50">
                 <h3 className="font-medium">Template Configuration</h3>
                 
@@ -182,7 +184,7 @@ const AdminEmailSender = () => {
                     onChange={(e) => {
                       setRecipientName(e.target.value);
                       // Re-apply template with new name
-                      if (selectedTemplate) {
+                      if (selectedTemplate !== "custom") {
                         applyTemplate(selectedTemplate);
                       }
                     }}
@@ -198,7 +200,7 @@ const AdminEmailSender = () => {
                       onChange={(e) => {
                         setConfirmationLink(e.target.value);
                         // Re-apply template with new link
-                        if (selectedTemplate) {
+                        if (selectedTemplate !== "custom") {
                           applyTemplate(selectedTemplate);
                         }
                       }}
