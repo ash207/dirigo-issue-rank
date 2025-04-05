@@ -120,16 +120,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signUp = async (email: string, password: string) => {
+  // Helper function to wait a specified time
+  const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+  // Function to attempt sign up with retries
+  const attemptSignUp = async (email: string, password: string, retries = 2): Promise<any> => {
     try {
-      setLoading(true);
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           emailRedirectTo: window.location.origin + '/verify',
         }
       });
+      
+      if (error) {
+        throw error;
+      }
+      
+      return { data, error: null };
+    } catch (error: any) {
+      // Only retry on timeout errors and if we have retries left
+      if (retries > 0 && (error.status === 504 || error.message?.includes("timeout") || 
+                          error.message?.includes("gateway") || error.message?.includes("timed out"))) {
+        console.log(`Sign-up attempt failed with timeout, retrying... (${retries} attempts left)`);
+        await wait(3000); // Wait 3 seconds before retrying
+        return attemptSignUp(email, password, retries - 1);
+      }
+      
+      throw error;
+    }
+  };
+
+  const signUp = async (email: string, password: string) => {
+    try {
+      setLoading(true);
+      
+      // Attempt sign-up with automatic retries for timeout errors
+      const { error } = await attemptSignUp(email, password);
 
       if (error) {
         throw error;
@@ -147,8 +175,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (error.code === "over_email_send_rate_limit") {
         errorMessage = "Too many sign-up attempts. Please try again later.";
-      } else if (error.status === 504 || error.message?.includes("timeout")) {
-        errorMessage = "The server is busy. Please try again in a few minutes.";
+      } else if (error.status === 504 || error.message?.includes("timeout") || 
+                error.message?.includes("gateway") || error.message?.includes("timed out")) {
+        errorMessage = "The server is busy. Your account may have been created. Please check your email or try signing in.";
       } else if (error.message) {
         errorMessage = error.message;
       }

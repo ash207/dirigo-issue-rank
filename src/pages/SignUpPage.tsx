@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { AtSign, Lock, AlertCircle } from "lucide-react";
+import { AtSign, Lock, AlertCircle, RefreshCw } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const SignUpPage = () => {
@@ -39,8 +39,8 @@ const SignUpPage = () => {
       // Handle specific error cases
       if (error.code === "over_email_send_rate_limit") {
         setError("Too many sign-up attempts. Please try again later.");
-      } else if (error.status === 504 || error.message?.includes("timeout")) {
-        setError("The server is busy. Please try again in a few minutes.");
+      } else if (error.status === 504 || error.message?.includes("timeout") || error.message?.includes("gateway") || error.message?.includes("timed out")) {
+        setError("The server is currently busy. This doesn't mean your account wasn't created. Please check your email or try signing in instead.");
       } else if (error.message) {
         setError(error.message);
       } else {
@@ -48,6 +48,12 @@ const SignUpPage = () => {
       }
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleRetry = () => {
+    if (email && password) {
+      handleSubmit(new Event('submit') as any);
     }
   };
 
@@ -64,9 +70,23 @@ const SignUpPage = () => {
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4">
               {error && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{error}</AlertDescription>
+                <Alert variant="destructive" className="flex items-start">
+                  <AlertCircle className="h-4 w-4 mt-0.5 mr-2 flex-shrink-0" />
+                  <div className="flex-1">
+                    <AlertDescription>{error}</AlertDescription>
+                    {(error.includes("busy") || error.includes("timeout") || error.includes("gateway") || error.includes("timed out")) && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={handleRetry} 
+                        className="mt-2 flex items-center"
+                        type="button"
+                      >
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                        Try again
+                      </Button>
+                    )}
+                  </div>
                 </Alert>
               )}
               
