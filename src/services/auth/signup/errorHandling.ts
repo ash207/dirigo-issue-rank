@@ -21,7 +21,6 @@ export function processAuthError(err: any): AuthResponse {
     return {
       data: null,
       error: {
-        name: "AuthRetryableFetchError",
         code: 'email_timeout',
         message: 'Email verification timed out. Your account may have been created, but the verification email could not be sent.'
       }

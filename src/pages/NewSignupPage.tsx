@@ -1,6 +1,6 @@
 
 import { TimeoutDialog } from "@/components/auth/TimeoutDialog";
-import { SignupFormNew } from "@/components/auth/SignupFormNew";
+import { SignupForm } from "@/components/auth/SignupFormNew";
 import { useSignup } from "@/hooks/useSignup";
 import { useExistingUserCheck } from "@/hooks/useExistingUserCheck";
 
@@ -25,7 +25,7 @@ const NewSignupPage = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
-      <SignupFormNew
+      <SignupForm
         email={email}
         setEmail={setEmail}
         password={password}
