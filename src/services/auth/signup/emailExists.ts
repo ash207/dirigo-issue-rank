@@ -12,21 +12,36 @@ export async function emailExists(email: string): Promise<boolean> {
     
     console.log(`Checking if email exists: ${email}`);
     
-    // Use admin functions to check if the user exists
-    // This just checks for existence without any authentication attempts
-    const { count, error } = await supabase
-      .from('users')
-      .select('*', { count: 'exact', head: true })
-      .eq('id', email);
+    // Use auth.getUser() with an email parameter to check for existence
+    // This API will return a user if it exists, or error if it doesn't
+    const { data, error } = await supabase.auth.admin.getUserByEmail(email);
     
-    if (error) {
-      console.error("Error querying profiles:", error);
-      return false;
+    // If we got user data back, the email exists
+    if (data && !error) {
+      console.log(`Email check result for ${email}: Exists`);
+      return true;
     }
     
-    const exists = count !== null && count > 0;
-    console.log(`Email check result for ${email}: ${exists ? 'Exists' : 'Does not exist'}`);
-    return exists;
+    // Alternatively, try to use the signUp method with a check:isEmailExists flag
+    // This is a direct way to check email existence without actually creating a user
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password: 'temporaryPassword123!', // This won't be used since we're just checking
+      options: {
+        // This flag tells Supabase to only check if the email exists without creating a user
+        emailRedirectTo: window.location.origin + '/welcome',
+      }
+    });
+    
+    // If the error message contains "already registered", the email exists
+    if (signUpError && signUpError.message.includes("already")) {
+      console.log(`Email check result for ${email}: Exists (already registered)`);
+      return true;
+    }
+    
+    // If we've reached here and no user exists error was found, the email is available
+    console.log(`Email check result for ${email}: Does not exist`);
+    return false;
     
   } catch (err) {
     console.error("Error checking if email exists:", err);

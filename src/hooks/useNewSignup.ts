@@ -34,7 +34,7 @@ export function useNewSignup() {
     }
     
     try {
-      // Step 1: Check if email already exists using our query approach
+      // Step 1: Check if email already exists
       setIsCheckingEmail(true);
       console.log(`Checking if email exists: ${email}`);
       const emailAlreadyExists = await emailExists(email);
