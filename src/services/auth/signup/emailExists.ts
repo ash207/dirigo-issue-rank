@@ -12,34 +12,23 @@ export async function emailExists(email: string): Promise<boolean> {
     
     console.log(`Checking if email exists: ${email}`);
     
-    // Use auth.getUser() with an email parameter to check for existence
-    // This API will return a user if it exists, or error if it doesn't
-    const { data, error } = await supabase.auth.admin.getUserByEmail(email);
-    
-    // If we got user data back, the email exists
-    if (data && !error) {
-      console.log(`Email check result for ${email}: Exists`);
-      return true;
-    }
-    
-    // Alternatively, try to use the signUp method with a check:isEmailExists flag
+    // Try to use the signUp method with the email to check if it already exists
     // This is a direct way to check email existence without actually creating a user
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email,
       password: 'temporaryPassword123!', // This won't be used since we're just checking
       options: {
-        // This flag tells Supabase to only check if the email exists without creating a user
         emailRedirectTo: window.location.origin + '/welcome',
       }
     });
     
     // If the error message contains "already registered", the email exists
-    if (signUpError && signUpError.message.includes("already")) {
+    if (signUpError && signUpError.message.toLowerCase().includes("already")) {
       console.log(`Email check result for ${email}: Exists (already registered)`);
       return true;
     }
     
-    // If we've reached here and no user exists error was found, the email is available
+    // If we've reached here and no "already registered" error was found, the email is available
     console.log(`Email check result for ${email}: Does not exist`);
     return false;
     
