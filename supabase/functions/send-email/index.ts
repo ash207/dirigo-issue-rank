@@ -15,6 +15,11 @@ if (!fallbackApiKey) {
   console.error("RESEND_API_KEY_2 is not set in environment variables");
 }
 
+// Check if API keys are identical
+if (primaryApiKey && fallbackApiKey && primaryApiKey === fallbackApiKey) {
+  console.warn("WARNING: Primary and fallback API keys are identical. This will not provide true redundancy.");
+}
+
 // Create primary Resend instance
 const resend = new Resend(primaryApiKey);
 // Create fallback Resend instance
@@ -90,6 +95,13 @@ const handler = async (req: Request): Promise<Response> => {
       subject: emailOptions.subject
     }));
     
+    // Validate primary API key format
+    if (!primaryApiKey?.startsWith('re_')) {
+      console.error("Primary API key appears to be invalid. Should start with 're_'");
+    } else {
+      console.log("Primary API key format appears valid (starts with 're_')");
+    }
+    
     console.log("Trying primary API key (first 5 chars):", primaryApiKey?.substring(0, 5) + "...");
     
     try {
@@ -113,6 +125,15 @@ const handler = async (req: Request): Promise<Response> => {
     } catch (primaryError: any) {
       // If primary key fails, log the error and try with fallback
       console.error("Error with primary API key:", primaryError.message);
+      console.error("Full primary error:", JSON.stringify(primaryError));
+      
+      // Validate fallback API key format
+      if (!fallbackApiKey?.startsWith('re_')) {
+        console.error("Fallback API key appears to be invalid. Should start with 're_'");
+      } else {
+        console.log("Fallback API key format appears valid (starts with 're_')");
+      }
+      
       console.log("Trying fallback API key (first 5 chars):", fallbackApiKey?.substring(0, 5) + "...");
       
       try {
@@ -136,6 +157,7 @@ const handler = async (req: Request): Promise<Response> => {
       } catch (fallbackError: any) {
         // Both API keys failed
         console.error("Error with fallback API key:", fallbackError.message);
+        console.error("Full fallback error:", JSON.stringify(fallbackError));
         throw new Error(`Failed with both API keys. Primary error: ${primaryError.message}. Fallback error: ${fallbackError.message}`);
       }
     }
