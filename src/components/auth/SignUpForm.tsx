@@ -45,17 +45,17 @@ export const SignUpForm = ({ onTimeoutError }: SignUpFormProps) => {
     setError(null);
     
     try {
-      // Track retry attempts
-      const currentRetryCount = retryCount + 1;
-      setRetryCount(currentRetryCount);
+      // Track retry attempts - increment the current value
+      const newRetryCount = retryCount + 1;
+      setRetryCount(newRetryCount);
       
-      console.log(`Signup attempt #${currentRetryCount} for ${values.email}`);
+      console.log(`Signup attempt #${newRetryCount} for ${values.email}`);
       
       await signUp(values.email, values.password);
       console.log(`Signup request completed for ${values.email}`);
       // Success message will be shown by the AuthContext
     } catch (error: any) {
-      console.error(`Sign-up error (attempt #${currentRetryCount}):`, error);
+      console.error(`Sign-up error (attempt #${retryCount}):`, error);
       
       // Log detailed error info for debugging
       if (error.code || error.status || error.message) {
