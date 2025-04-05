@@ -49,8 +49,6 @@ export async function signUp(
       password,
       options: {
         emailRedirectTo: redirectUrl,
-        // Using flowType which is a valid option
-        flowType: "pkce" 
       }
     });
     
