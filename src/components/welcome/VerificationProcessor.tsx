@@ -87,10 +87,10 @@ const VerificationProcessor = ({
         const session = sessionData.session;
         
         if (session && session.user) {
-          // If user is already logged in, update their profile
+          // If user is already logged in, update their profile status
           await updateUserStatusIfVerified(session.user);
           
-          // Admin users can also call an edge function to update other users
+          // Admin users can call edge function to update other users
           if (email !== session.user.email) {
             // This is an admin confirming another user
             const { data, error } = await supabase.functions.invoke("manage-user", {
@@ -108,8 +108,13 @@ const VerificationProcessor = ({
             console.log("Admin email confirmation result:", data);
           }
         } else {
-          // User isn't logged in yet, we'll just tell them verification was successful
-          console.log("User not logged in, but verification processed");
+          // User isn't logged in yet, try to confirm email anyway via admin function
+          // This requires a valid user ID and email combination
+          // You'll need to use a special service token to call this function without authentication
+          // For now, we'll just show a message asking the user to log in
+          console.log("User not logged in, verification will be processed when they log in");
+          
+          // For direct confirmation without login, we would need a special service-level confirmation endpoint
         }
         
         // Mark as successful

@@ -9,6 +9,8 @@ export async function updateUserStatusIfVerified(currentUser: User | null) {
   // Check if email is confirmed
   if (currentUser.email_confirmed_at) {
     try {
+      console.log("Email is confirmed, updating profile status if needed");
+      
       // Check current status
       const { data: profile, error: fetchError } = await supabase
         .from('profiles')
@@ -40,6 +42,8 @@ export async function manuallyConfirmUserEmail(userId: string, session: any) {
   if (!userId || !session) return { success: false, message: "Missing required parameters" };
   
   try {
+    console.log("Manually confirming email for user:", userId);
+    
     // Make an admin call to the manage-user edge function
     const { data, error } = await supabase.functions.invoke("manage-user", {
       headers: {

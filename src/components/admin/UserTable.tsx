@@ -2,6 +2,11 @@
 import { format } from "date-fns";
 import { UserWithProfile } from "@/hooks/useUserManagement";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { useState } from "react";
+import { manuallyConfirmUserEmail } from "@/utils/profileUtils";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Table,
   TableBody,
@@ -26,6 +31,33 @@ export const UserTable = ({
   handleRoleChange, 
   handleStatusChange 
 }: UserTableProps) => {
+  const [confirmingUser, setConfirmingUser] = useState<string | null>(null);
+  const { session } = useAuth();
+
+  const handleConfirmEmail = async (userId: string, email: string) => {
+    if (!session) {
+      toast.error("You must be logged in to perform this action");
+      return;
+    }
+    
+    setConfirmingUser(userId);
+    
+    try {
+      const result = await manuallyConfirmUserEmail(userId, session);
+      
+      if (result.success) {
+        toast.success(`Email verified for ${email}`);
+      } else {
+        toast.error(result.message || "Failed to verify email");
+      }
+    } catch (error) {
+      console.error("Error confirming email:", error);
+      toast.error("Failed to verify email");
+    } finally {
+      setConfirmingUser(null);
+    }
+  };
+  
   return (
     <div className="rounded-md border">
       <Table>
@@ -56,9 +88,20 @@ export const UserTable = ({
                     Verified
                   </Badge>
                 ) : (
-                  <Badge variant="outline" className="bg-yellow-100 text-yellow-800">
-                    Pending
-                  </Badge>
+                  <div className="flex flex-col gap-2">
+                    <Badge variant="outline" className="bg-yellow-100 text-yellow-800">
+                      Pending
+                    </Badge>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => handleConfirmEmail(user.id, user.email)}
+                      disabled={confirmingUser === user.id}
+                    >
+                      {confirmingUser === user.id ? "Verifying..." : "Verify Email"}
+                    </Button>
+                  </div>
                 )}
               </TableCell>
               <TableCell>

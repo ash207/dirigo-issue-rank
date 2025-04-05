@@ -121,7 +121,6 @@ serve(async (req) => {
         // This is a special admin action to confirm a user's email
         console.log("Confirming email for user:", userId);
         
-        // 1. Update the auth.users table to set email_confirmed_at
         try {
           // First try to get the user email if not provided
           let userEmail = email;
@@ -135,24 +134,35 @@ serve(async (req) => {
             throw new Error("Could not determine user email");
           }
           
-          // Update the user's email_confirmed_at timestamp
+          console.log("Confirming email for:", userEmail);
+          
+          // 1. Update the auth.users table to set email_confirmed_at timestamp
+          const now = new Date().toISOString();
           const { data: updateData, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
             userId,
-            { email_confirmed_at: new Date().toISOString() }
+            { 
+              email_confirmed_at: now,
+              user_metadata: { email_confirmed: true }
+            }
           );
           
           if (updateError) throw updateError;
           
-          console.log("Updated auth user:", updateData);
+          console.log("Updated auth user confirmation status:", updateData);
           
           // 2. Also update the profile status to active if it's pending
           const { data: profileData, error: profileError } = await supabaseAdmin
             .from("profiles")
             .update({ status: "active" })
             .eq("id", userId)
-            .eq("status", "pending")
             .select("*");
             
+          if (profileError) {
+            console.error("Error updating profile status:", profileError);
+          } else {
+            console.log("Updated profile status:", profileData);
+          }
+          
           result = { 
             success: true, 
             message: "User email confirmed and status updated to active", 
