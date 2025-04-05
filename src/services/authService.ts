@@ -38,9 +38,9 @@ export async function signUp(
   onError: (error: any) => void
 ) {
   try {
-    // Set a timeout for the entire operation - increased to 30 seconds
+    // Set a timeout for the entire operation - increased to 45 seconds
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error("Request timed out after 30 seconds")), 30000);
+      setTimeout(() => reject(new Error("Request timed out after 45 seconds")), 45000);
     });
     
     // Create the actual signup promise with proper options
@@ -60,7 +60,7 @@ export async function signUp(
     const { data, error } = await Promise.race([
       signUpPromise,
       timeoutPromise.then(() => {
-        throw new Error("The server is busy. Please try again or check your email for a verification link.");
+        throw new Error("The server is busy. Please try again later or check your email for a verification link.");
       })
     ]) as any;
     
@@ -70,6 +70,8 @@ export async function signUp(
 
     // Check if the user was actually created
     if (data?.user) {
+      // Add a short delay to allow Supabase to complete background tasks
+      await wait(1000);
       onSuccess(data);
     } else {
       throw new Error("Failed to create account. Please try again.");
@@ -82,8 +84,9 @@ export async function signUp(
     
     if (error.code === "over_email_send_rate_limit") {
       errorMessage = "Too many sign-up attempts. Please try again later.";
-    } else if (error.status === 504 || error.message?.includes("timeout") || 
-              error.message?.includes("gateway") || error.message?.includes("timed out")) {
+    } else if (error.status === 504 || error.code === "23505" || 
+              error.message?.includes("timeout") || error.message?.includes("gateway") || 
+              error.message?.includes("timed out")) {
       errorMessage = "The server is busy. Your account may have been created. Please check your email or try signing in.";
     } else if (error.message?.includes("already") || error.message?.includes("exists")) {
       errorMessage = "An account with this email already exists. Please try signing in.";

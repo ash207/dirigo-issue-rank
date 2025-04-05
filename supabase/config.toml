@@ -45,7 +45,7 @@ email_template_system_from_name = 'Dirigo Votes'
 email_template_system_from_email = 'no-reply@contact.dirigovotes.com'
 
 # Email rate limiting
-rate_limit_email_sent = 10
+rate_limit_email_sent = 20
 email_confirm_change_email_template_id = 'd-7e4e79720a064eeeb2each'
 disable_confirm_change_email = false
 
