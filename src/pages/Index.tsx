@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import Layout from "@/components/layout/Layout";
 import { Link } from "react-router-dom";
 import IssueCard from "@/components/issues/IssueCard";
+import SendTestEmailButton from "@/components/email/SendTestEmailButton";
 
 const Index = () => {
   // Mock data for featured issues
@@ -92,6 +93,11 @@ const Index = () => {
             <Link to="/signup">Sign Up Now</Link>
           </Button>
         </div>
+      </section>
+      
+      {/* Test Email Section - only shown to authenticated users */}
+      <section className="py-8 text-center">
+        <SendTestEmailButton />
       </section>
     </Layout>
   );
