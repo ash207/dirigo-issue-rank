@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useUserManagement } from "@/hooks/useUserManagement";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { UserTable } from "@/components/admin/UserTable";
@@ -20,10 +20,30 @@ export const UserManagementTable = () => {
 
   const [refreshing, setRefreshing] = useState(false);
 
-  const handleRefresh = async () => {
+  // Create a memoized fetchUsers function that can be passed to child components
+  const refreshUsersList = useCallback(async () => {
     setRefreshing(true);
     await fetchUsers(pagination.page, pagination.pageSize);
     setRefreshing(false);
+  }, [fetchUsers, pagination.page, pagination.pageSize]);
+
+  // Listen for auth state changes or email verification successes
+  useEffect(() => {
+    const handleAuthChange = () => {
+      console.log("Fetching users list, triggered by auth change or email verification");
+      refreshUsersList();
+    };
+
+    // Listen for both authentication changes and email verification
+    window.addEventListener('custom-email-verification', handleAuthChange);
+    
+    return () => {
+      window.removeEventListener('custom-email-verification', handleAuthChange);
+    };
+  }, [refreshUsersList]);
+
+  const handleRefresh = () => {
+    refreshUsersList();
   };
 
   const handlePageChange = (page: number) => {
@@ -34,7 +54,7 @@ export const UserManagementTable = () => {
     const result = await updateUserRole(userId, newRole);
     if (result) {
       // Refresh the users list to get the latest data
-      fetchUsers(pagination.page, pagination.pageSize);
+      refreshUsersList();
     }
   };
 
@@ -42,7 +62,7 @@ export const UserManagementTable = () => {
     const result = await updateUserStatus(userId, newStatus);
     if (result) {
       // Refresh the users list to get the latest data
-      fetchUsers(pagination.page, pagination.pageSize);
+      refreshUsersList();
     }
   };
 
@@ -80,6 +100,7 @@ export const UserManagementTable = () => {
               users={users} 
               handleRoleChange={handleRoleChange}
               handleStatusChange={handleStatusChange}
+              refreshUsers={refreshUsersList}
             />
             <div className="mt-6 flex justify-center">
               <UserPagination

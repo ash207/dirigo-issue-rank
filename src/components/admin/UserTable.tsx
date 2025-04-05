@@ -4,7 +4,7 @@ import { UserWithProfile } from "@/hooks/useUserManagement";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { manuallyConfirmUserEmail } from "@/utils/profileUtils";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -24,15 +24,54 @@ interface UserTableProps {
   users: UserWithProfile[];
   handleRoleChange: (userId: string, newRole: string) => Promise<void>;
   handleStatusChange: (userId: string, newStatus: string) => Promise<void>;
+  refreshUsers: () => Promise<void>;
 }
 
 export const UserTable = ({ 
   users, 
   handleRoleChange, 
-  handleStatusChange 
+  handleStatusChange,
+  refreshUsers
 }: UserTableProps) => {
   const [confirmingUser, setConfirmingUser] = useState<string | null>(null);
   const { session } = useAuth();
+
+  // Listen for email verification events
+  useEffect(() => {
+    const handleEmailVerification = () => {
+      console.log("Email verification event detected, refreshing users list");
+      refreshUsers();
+    };
+
+    // Listen for the custom event
+    window.addEventListener('custom-email-verification', handleEmailVerification);
+    
+    // Also listen for storage events (for cross-tab notifications)
+    const handleStorageEvent = (event: StorageEvent | CustomEvent) => {
+      if ('detail' in event) {
+        // This is the CustomEvent from the same tab
+        const detail = (event as CustomEvent).detail;
+        if (detail?.key === 'email_verification_success') {
+          console.log("Email verification storage event detected (same tab)");
+          refreshUsers();
+        }
+      } else {
+        // This is a StorageEvent from another tab
+        const storageEvent = event as StorageEvent;
+        if (storageEvent.key === 'email_verification_success') {
+          console.log("Email verification storage event detected (cross-tab)");
+          refreshUsers();
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageEvent as EventListener);
+
+    return () => {
+      window.removeEventListener('custom-email-verification', handleEmailVerification);
+      window.removeEventListener('storage', handleStorageEvent as EventListener);
+    };
+  }, [refreshUsers]);
 
   const handleConfirmEmail = async (userId: string, email: string) => {
     if (!session) {
@@ -47,10 +86,14 @@ export const UserTable = ({
       
       if (result.success) {
         toast.success(`Email verified for ${email}`);
+        
         // Dispatch a custom event to trigger a refresh of the users list
         window.dispatchEvent(new CustomEvent('custom-email-verification', { 
           detail: { key: 'email_verification_success' } 
         }));
+        
+        // Also refresh immediately
+        await refreshUsers();
       } else {
         toast.error(result.message || "Failed to verify email");
       }
@@ -130,6 +173,13 @@ export const UserTable = ({
               </TableCell>
             </TableRow>
           ))}
+          {users.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                No users found.
+              </TableCell>
+            </TableRow>
+          )}
         </TableBody>
       </Table>
     </div>

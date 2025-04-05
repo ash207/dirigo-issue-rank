@@ -31,11 +31,28 @@ export async function updateUserStatusIfVerified(currentUser: User | null) {
         if (updateError) throw updateError;
         
         console.log('User status updated to active after email verification');
+        
+        // Notify components that user status has changed
+        notifyEmailVerification();
       }
     } catch (error) {
       console.error('Error updating user status:', error);
     }
   }
+}
+
+// Helper function to notify components about email verification
+export function notifyEmailVerification() {
+  // Notify other browser tabs
+  localStorage.setItem('email_verification_success', Date.now().toString());
+  
+  // Create a custom event to notify the current tab
+  window.dispatchEvent(new CustomEvent('custom-email-verification', {
+    detail: {
+      key: 'email_verification_success',
+      time: Date.now()
+    }
+  }));
 }
 
 // Manually update a user's profile status and email confirmation
@@ -63,17 +80,8 @@ export async function manuallyConfirmUserEmail(userId: string, session: any) {
     
     console.log("Email confirmation result:", data);
 
-    // Notify other browser tabs
-    localStorage.setItem('email_verification_success', Date.now().toString());
-    
-    // Create a custom event to notify the current tab
-    // FIXED: Use CustomEvent instead of StorageEvent for same-tab notifications
-    window.dispatchEvent(new CustomEvent('storage', {
-      detail: {
-        key: 'email_verification_success',
-        newValue: Date.now().toString()
-      }
-    }));
+    // Notify other components about the verification success
+    notifyEmailVerification();
     
     return { 
       success: true, 

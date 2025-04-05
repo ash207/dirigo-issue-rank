@@ -145,6 +145,16 @@ const VerificationProcessor = ({
         
         // Mark as successful
         setVerificationSuccess(true);
+        
+        // Notify other components about the verification success
+        // 1. For cross-tab communication
+        localStorage.setItem('email_verification_success', Date.now().toString());
+        
+        // 2. For same-tab communication
+        window.dispatchEvent(new CustomEvent('custom-email-verification', { 
+          detail: { key: 'email_verification_success' } 
+        }));
+        
         toast({
           title: "Account Confirmed",
           description: "Your account has been successfully confirmed. You can now log in.",
