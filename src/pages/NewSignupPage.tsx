@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { registerNewUser, checkUserExists } from "@/services/newSignupService";
@@ -53,14 +52,18 @@ const NewSignupPage = () => {
     if (retryCount >= 2) {
       // If we've already retried twice, show the timeout dialog
       setShowTimeoutDialog(true);
-      setIsLoading(false);
-      return { error: { code: 'max_retries', message: 'Maximum retry attempts reached' } };
+      return { 
+        error: { 
+          code: 'max_retries', 
+          message: 'Maximum retry attempts reached' 
+        } 
+      };
     }
     
     console.log(`Signup attempt for: ${email} with redirect to: https://dirigovotes.com/welcome${retryCount > 0 ? ` (retry ${retryCount})` : ''}`);
     
     try {
-      // Check if user already exists before attempting to create
+      // Check if user already exists before attempting to create (on retries)
       if (retryCount > 0) {
         const exists = await checkUserExists(email);
         if (exists) {
@@ -77,14 +80,13 @@ const NewSignupPage = () => {
       const result = await registerNewUser(email, password, "https://dirigovotes.com/welcome");
       
       if (result.error) {
-        console.log(`Signup error (attempt ${retryCount})`, result.error);
+        console.log(`Signup error (attempt ${retryCount}):`, result.error);
         
         // If it's a timeout error, retry automatically after a delay
         const isTimeout = 
           result.error.code === 'email_timeout' || 
           result.error.message?.includes('timeout') || 
-          (result.error as any)?.status === 504 || 
-          result.error.message?.includes('may have been created');
+          (result.error as any)?.status === 504;
           
         if (isTimeout) {
           console.log(`Retrying signup automatically (attempt ${retryCount + 1})`);
@@ -106,20 +108,17 @@ const NewSignupPage = () => {
           // Retry with incremented count
           return handleSignupWithRetry(retryCount + 1);
         }
-        
-        // If it's a user_exists error, treat it as a success
-        if (result.error.code === 'user_exists') {
-          console.log("User already exists, treating as success");
-          return { data: { user: { email } }, error: null };
-        }
-        
-        return result;
       }
       
       return result;
-    } catch (err) {
+    } catch (err: any) {
       console.error(`Unexpected error during signup (attempt ${retryCount}):`, err);
-      return { error: err };
+      return { 
+        error: { 
+          code: 'signup_error',
+          message: err.message || 'An unexpected error occurred' 
+        } 
+      };
     }
   };
 
@@ -148,20 +147,30 @@ const NewSignupPage = () => {
     setIsLoading(true);
     
     try {
-      const { data, error } = await handleSignupWithRetry();
+      const result = await handleSignupWithRetry();
+      
+      // Handle the case where result might be undefined
+      if (!result) {
+        setErrorMessage("An unknown error occurred during signup");
+        setIsLoading(false);
+        return;
+      }
+      
+      const { data, error } = result;
       
       if (error) {
         console.log("Final signup error:", error.code, error.message);
         
         // Special handling for timeout errors
-        if (error.code === 'email_timeout' || error.message?.includes("timeout") || error.message?.includes("may have been created")) {
+        if (error.code === 'email_timeout' || error.message?.includes("timeout")) {
           setShowTimeoutDialog(true);
           setIsLoading(false);
           return;
         }
         
         if (error.code === 'max_retries') {
-          // Already handled above
+          // Already handled above by showing the timeout dialog
+          setIsLoading(false);
           return;
         }
         
@@ -172,6 +181,7 @@ const NewSignupPage = () => {
             description: "An account with this email already exists. Please check your email or try signing in.",
           });
           navigate("/welcome", { state: { email } });
+          setIsLoading(false);
           return;
         }
         
@@ -200,6 +210,7 @@ const NewSignupPage = () => {
   const handleRetry = () => {
     // Reset error message when user wants to retry
     setErrorMessage(null);
+    setShowTimeoutDialog(false);
   };
 
   return (
