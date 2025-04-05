@@ -1,11 +1,9 @@
 
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger
 } from "@/components/ui/dialog";
 
 interface EmailPreviewProps {
@@ -25,9 +23,6 @@ const EmailPreview = ({
 }: EmailPreviewProps) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogTrigger asChild>
-        <Button type="button" variant="outline">Preview Email</Button>
-      </DialogTrigger>
       <DialogContent className="max-w-3xl max-h-[80vh] overflow-auto">
         <DialogHeader>
           <DialogTitle>Email Preview</DialogTitle>

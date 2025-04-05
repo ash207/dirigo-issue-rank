@@ -4,21 +4,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { emailTemplates } from "@/services/auth/adminService";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage
-} from "@/components/ui/form";
+import { Form } from "@/components/ui/form";
 import EmailTemplateSelector, { SelectedTemplateType } from "./EmailTemplateSelector";
 import TemplateConfiguration from "./TemplateConfiguration";
 import EmailPreview from "./EmailPreview";
+import EmailRecipientField from "./EmailRecipientField";
+import EmailSubjectField from "./EmailSubjectField";
+import EmailContentField from "./EmailContentField";
+import EmailFormActions from "./EmailFormActions";
 
 // Form schema for email sending
 const emailFormSchema = z.object({
@@ -101,12 +94,15 @@ const EmailForm = ({ onSubmit, isSending }: EmailFormProps) => {
     }
   };
 
+  const handleOpenPreview = () => {
+    setOpenPreview(true);
+  };
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         {/* Template Selector */}
         <div className="space-y-2">
-          <FormLabel>Email Template</FormLabel>
           <EmailTemplateSelector
             selectedTemplate={selectedTemplate}
             onTemplateChange={handleTemplateChange}
@@ -124,57 +120,10 @@ const EmailForm = ({ onSubmit, isSending }: EmailFormProps) => {
           />
         )}
 
-        {/* Recipient Email Field */}
-        <FormField
-          control={form.control}
-          name="recipient"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Recipient Email</FormLabel>
-              <FormControl>
-                <Input placeholder="user@example.com" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        {/* Subject Field */}
-        <FormField
-          control={form.control}
-          name="subject"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Subject</FormLabel>
-              <FormControl>
-                <Input placeholder="Email subject" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        {/* Email Content Field */}
-        <FormField
-          control={form.control}
-          name="content"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email Content (HTML)</FormLabel>
-              <FormControl>
-                <Textarea 
-                  placeholder="<p>Enter your email content here...</p>" 
-                  className="min-h-[200px] font-mono text-sm"
-                  {...field} 
-                />
-              </FormControl>
-              <FormDescription>
-                You can use HTML tags to format your email.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {/* Form Fields */}
+        <EmailRecipientField control={form.control} />
+        <EmailSubjectField control={form.control} />
+        <EmailContentField control={form.control} />
         
         {/* Email Preview */}
         <EmailPreview
@@ -186,22 +135,11 @@ const EmailForm = ({ onSubmit, isSending }: EmailFormProps) => {
         />
         
         {/* Form Actions */}
-        <div className="flex justify-between">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => form.reset()}
-          >
-            Reset
-          </Button>
-          <Button 
-            type="submit" 
-            disabled={isSending}
-            className="bg-dirigo-blue hover:bg-dirigo-blue/90"
-          >
-            {isSending ? "Sending..." : "Send Email"}
-          </Button>
-        </div>
+        <EmailFormActions 
+          isSending={isSending}
+          onReset={() => form.reset()}
+          openPreview={handleOpenPreview}
+        />
       </form>
     </Form>
   );
