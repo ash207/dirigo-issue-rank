@@ -47,8 +47,8 @@ export const UserTable = ({
       
       if (result.success) {
         toast.success(`Email verified for ${email}`);
-        // Force refresh of the user list
-        // This will be handled by the storage event listener in AdminUsersPage
+        // Dispatch a custom event to trigger a refresh of the users list
+        window.dispatchEvent(new CustomEvent('storage', { detail: { key: 'email_verification_success' } }));
       } else {
         toast.error(result.message || "Failed to verify email");
       }
@@ -65,11 +65,11 @@ export const UserTable = ({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>User</TableHead>
-            <TableHead>Joined</TableHead>
-            <TableHead>Email Verification</TableHead>
-            <TableHead>Role</TableHead>
-            <TableHead>Status</TableHead>
+            <TableHead className="w-[250px]">User</TableHead>
+            <TableHead className="w-[120px]">Joined</TableHead>
+            <TableHead className="w-[180px]">Email Verification</TableHead>
+            <TableHead className="w-[180px]">Role</TableHead>
+            <TableHead className="w-[180px]">Status</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -77,8 +77,8 @@ export const UserTable = ({
             <TableRow key={user.id}>
               <TableCell className="font-medium">
                 <div>
-                  <div>{user.name || "N/A"}</div>
-                  <div className="text-sm text-muted-foreground">{user.email}</div>
+                  <div className="font-medium">{user.name || "N/A"}</div>
+                  <div className="text-sm text-muted-foreground truncate max-w-[230px]">{user.email}</div>
                 </div>
               </TableCell>
               <TableCell>

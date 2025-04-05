@@ -26,8 +26,11 @@ const AdminUsersPage = () => {
   useEffect(() => {
     // Function to handle both storage events (cross-tab) and custom events (same tab)
     const handleStorageChange = (e: StorageEvent | CustomEvent) => {
-      if ((e as StorageEvent).key === 'email_verification_success' || 
-          (e as CustomEvent).type === 'storage') {
+      const isStorageEvent = 'key' in e;
+      const isCustomEvent = e instanceof CustomEvent;
+      
+      if ((isStorageEvent && e.key === 'email_verification_success') || 
+          (isCustomEvent && e.type === 'storage')) {
         console.log("Email verification detected, refreshing users list");
         setLastEmailVerification(Date.now());
       }
@@ -77,14 +80,14 @@ const AdminUsersPage = () => {
   return (
     <Layout>
       <div className="container mx-auto py-8">
-        <Card>
+        <Card className="shadow-md">
           <CardHeader className="pb-2">
             <CardTitle className="text-2xl font-bold">User Management</CardTitle>
             <CardDescription className="text-muted-foreground">
               Manage user roles and statuses. Admins can upgrade users to premium or admin roles and activate or deactivate accounts.
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-6">
             {isLoading ? (
               <div className="space-y-3">
                 <Skeleton className="h-12 w-full" />
