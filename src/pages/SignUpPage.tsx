@@ -7,14 +7,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { AtSign, Lock, AlertCircle, RefreshCw } from "lucide-react";
+import { AtSign, Lock, AlertCircle, RefreshCw, Info } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const SignUpPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showTimeoutDialog, setShowTimeoutDialog] = useState(false);
   const { signUp, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   
@@ -29,6 +32,7 @@ const SignUpPage = () => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+    setShowTimeoutDialog(false);
     
     try {
       await signUp(email, password);
@@ -39,8 +43,12 @@ const SignUpPage = () => {
       // Handle specific error cases
       if (error.code === "over_email_send_rate_limit") {
         setError("Too many sign-up attempts. Please try again later.");
-      } else if (error.status === 504 || error.message?.includes("timeout") || error.message?.includes("gateway") || error.message?.includes("timed out")) {
+      } else if (error.status === 504 || error.message?.includes("timeout") || 
+                error.message?.includes("gateway") || error.message?.includes("timed out")) {
         setError("The server is currently busy. This doesn't mean your account wasn't created. Please check your email or try signing in instead.");
+        setShowTimeoutDialog(true);
+      } else if (error.message?.includes("already") || error.message?.includes("exists")) {
+        setError("An account with this email already exists. Please try signing in instead.");
       } else if (error.message) {
         setError(error.message);
       } else {
@@ -55,6 +63,10 @@ const SignUpPage = () => {
     if (email && password) {
       handleSubmit(new Event('submit') as any);
     }
+  };
+
+  const closeTimeoutDialog = () => {
+    setShowTimeoutDialog(false);
   };
 
   return (
@@ -140,6 +152,50 @@ const SignUpPage = () => {
           </form>
         </Card>
       </div>
+
+      {/* Timeout information dialog */}
+      <Dialog open={showTimeoutDialog} onOpenChange={setShowTimeoutDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Server Timeout Information</DialogTitle>
+            <DialogDescription>
+              Due to high demand, the server is experiencing timeouts during account creation.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <Alert>
+              <Info className="h-4 w-4 mr-2" />
+              <AlertDescription>
+                <strong>Important:</strong> Even when you see a timeout, your account may have been successfully created. 
+                Check your email for a verification link before trying again.
+              </AlertDescription>
+            </Alert>
+            <p>What you can do now:</p>
+            <ol className="list-decimal pl-5 space-y-2">
+              <li>Check your inbox (and spam folder) for a verification email</li>
+              <li>Try to sign in with the credentials you just used</li>
+              <li>Wait a few minutes before trying to sign up again</li>
+            </ol>
+          </div>
+          <DialogFooter className="flex justify-between">
+            <Button variant="outline" onClick={closeTimeoutDialog}>
+              Close
+            </Button>
+            <div className="space-x-2">
+              <Button variant="outline" onClick={handleRetry}>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Try Again
+              </Button>
+              <Button onClick={() => {
+                closeTimeoutDialog();
+                navigate("/sign-in");
+              }}>
+                Go to Sign In
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 };
