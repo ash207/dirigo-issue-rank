@@ -78,18 +78,15 @@ export async function generateConfirmationLink(email: string, token: string): Pr
       throw new Error("User is not in pending status");
     }
     
-    // Generate confirmation link using Supabase's password recovery mechanism
-    // This will send an email to the user with a confirmation link
-    // We're not actually sending the email here, just generating the link
-    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: "https://dirigovotes.com/welcome"
-    });
+    // Create a secure token (in a production app, we would store this in the database)
+    // But for this demo, we'll use a simple encoded token
+    const timestamp = Date.now();
+    const userId = userData.id;
+    const tokenData = `${userId}_${timestamp}`;
+    const encodedToken = btoa(tokenData);
     
-    if (error) throw error;
-    
-    // This is a placeholder link. In a real application, we would need to work with
-    // Supabase's auth APIs to generate a proper confirmation token
-    const confirmationLink = `https://dirigovotes.com/welcome?email=${encodeURIComponent(email)}&confirmation=true`;
+    // Generate a confirmation link with the token
+    const confirmationLink = `https://dirigovotes.com/welcome?token=${encodedToken}&email=${encodeURIComponent(email)}`;
     
     return confirmationLink;
   } catch (err) {

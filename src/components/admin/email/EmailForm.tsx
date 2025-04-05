@@ -38,6 +38,7 @@ const EmailForm = ({ onSubmit, isSending }: EmailFormProps) => {
   const [userStatus, setUserStatus] = useState<string | null>(null);
   const [currentEmail, setCurrentEmail] = useState("");
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
+  const [linkError, setLinkError] = useState<string | null>(null);
 
   // Initialize the form
   const form = useForm<EmailFormValues>({
@@ -58,6 +59,8 @@ const EmailForm = ({ onSubmit, isSending }: EmailFormProps) => {
       currentEmail
     ) {
       setIsGeneratingLink(true);
+      setLinkError(null);
+      
       generateConfirmationLink(currentEmail, session.access_token)
         .then((link) => {
           setConfirmationLink(link);
@@ -66,8 +69,9 @@ const EmailForm = ({ onSubmit, isSending }: EmailFormProps) => {
         })
         .catch((error) => {
           console.error("Error generating confirmation link:", error);
-          toast("Failed to generate confirmation link", {
-            description: "Using placeholder link instead.",
+          setLinkError("Failed to auto-generate link. You can manually enter one instead.");
+          toast.error("Failed to generate confirmation link", {
+            description: "You may need to enter a link manually.",
           });
         })
         .finally(() => {
@@ -80,6 +84,10 @@ const EmailForm = ({ onSubmit, isSending }: EmailFormProps) => {
   const handleUserStatusChange = (status: string | null, email: string) => {
     setUserStatus(status);
     setCurrentEmail(email);
+    
+    // Reset link error when email changes
+    setLinkError(null);
+    
     if (status !== "pending" && selectedTemplate === "accountConfirmation") {
       // Reset confirmation link if not a pending user
       setConfirmationLink("#");
@@ -113,6 +121,7 @@ const EmailForm = ({ onSubmit, isSending }: EmailFormProps) => {
   // Handle template selection
   const handleTemplateChange = (value: SelectedTemplateType) => {
     setSelectedTemplate(value);
+    setLinkError(null);
     
     if (value === "custom") {
       form.setValue("subject", "");
@@ -165,6 +174,7 @@ const EmailForm = ({ onSubmit, isSending }: EmailFormProps) => {
             onConfirmationLinkChange={handleConfirmationLinkChange}
             isGeneratingLink={isGeneratingLink && selectedTemplate === "accountConfirmation"}
             isPendingUser={userStatus === "pending"}
+            linkError={linkError}
           />
         )}
 

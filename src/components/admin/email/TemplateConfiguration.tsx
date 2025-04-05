@@ -2,7 +2,7 @@
 import { Input } from "@/components/ui/input";
 import { FormLabel } from "@/components/ui/form";
 import { SelectedTemplateType } from "./EmailTemplateSelector";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertTriangle } from "lucide-react";
 
 interface TemplateConfigurationProps {
   selectedTemplate: SelectedTemplateType;
@@ -12,6 +12,7 @@ interface TemplateConfigurationProps {
   onConfirmationLinkChange: (link: string) => void;
   isGeneratingLink?: boolean;
   isPendingUser?: boolean;
+  linkError?: string | null;
 }
 
 const TemplateConfiguration = ({
@@ -22,6 +23,7 @@ const TemplateConfiguration = ({
   onConfirmationLinkChange,
   isGeneratingLink = false,
   isPendingUser = false,
+  linkError = null,
 }: TemplateConfigurationProps) => {
   if (selectedTemplate === "custom") {
     return null;
@@ -50,15 +52,21 @@ const TemplateConfiguration = ({
                 Generating link...
               </div>
             )}
-            {isPendingUser && selectedTemplate === "accountConfirmation" && !isGeneratingLink && confirmationLink !== "#" && (
+            {isPendingUser && selectedTemplate === "accountConfirmation" && !isGeneratingLink && !linkError && confirmationLink !== "#" && (
               <div className="text-xs text-green-600">Auto-generated for pending user</div>
+            )}
+            {linkError && (
+              <div className="flex items-center text-xs text-amber-600">
+                <AlertTriangle className="h-3 w-3 mr-1" />
+                {linkError}
+              </div>
             )}
           </div>
           <Input
             placeholder="https://example.com/confirm?token=..."
             value={confirmationLink}
             onChange={(e) => onConfirmationLinkChange(e.target.value)}
-            className={isPendingUser && selectedTemplate === "accountConfirmation" ? "border-green-300 focus-visible:ring-green-300" : ""}
+            className={isPendingUser && selectedTemplate === "accountConfirmation" && !linkError ? "border-green-300 focus-visible:ring-green-300" : ""}
             disabled={isGeneratingLink}
           />
         </div>
