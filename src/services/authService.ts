@@ -38,9 +38,9 @@ export async function signUp(
   onError: (error: any) => void
 ) {
   try {
-    // Set a timeout for the entire operation
+    // Set a timeout for the entire operation - increased to 20 seconds
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error("Request timed out after 10 seconds")), 10000);
+      setTimeout(() => reject(new Error("Request timed out after 20 seconds")), 20000);
     });
     
     // Create the actual signup promise with proper options
