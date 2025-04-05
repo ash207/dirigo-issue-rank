@@ -16,6 +16,7 @@ interface EmailRequest {
   subject: string;
   htmlContent: string;
   textContent?: string;
+  replyTo?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -25,7 +26,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { to, subject, htmlContent, textContent }: EmailRequest = await req.json();
+    const { to, subject, htmlContent, textContent, replyTo }: EmailRequest = await req.json();
     const authHeader = req.headers.get('Authorization');
     
     if (!authHeader) {
@@ -49,13 +50,20 @@ const handler = async (req: Request): Promise<Response> => {
     }
     
     // Send email using Resend with custom domain
-    const emailResponse = await resend.emails.send({
+    const emailOptions: any = {
       from: "Dirigo Votes <contact@dirigovotes.com>",
       to: [to],
       subject: subject,
       html: htmlContent,
       text: textContent
-    });
+    };
+
+    // Add reply-to if provided
+    if (replyTo) {
+      emailOptions.reply_to = replyTo;
+    }
+
+    const emailResponse = await resend.emails.send(emailOptions);
 
     console.log("Email sent successfully:", emailResponse);
     
