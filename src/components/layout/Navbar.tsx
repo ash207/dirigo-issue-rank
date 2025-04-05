@@ -118,11 +118,18 @@ const Navbar = () => {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Link to="/sign-in">
-              <Button variant="outline" className="bg-dirigo-white text-dirigo-blue hover:bg-dirigo-white/90">
-                <User size={16} className="mr-2" /> Sign In
-              </Button>
-            </Link>
+            <div className="flex items-center space-x-2">
+              <Link to="/sign-in">
+                <Button variant="outline" className="bg-dirigo-white text-dirigo-blue hover:bg-dirigo-white/90">
+                  <User size={16} className="mr-2" /> Sign In
+                </Button>
+              </Link>
+              <Link to="/complete-signup">
+                <Button variant="outline" className="bg-dirigo-white text-dirigo-blue hover:bg-dirigo-white/90">
+                  Sign Up
+                </Button>
+              </Link>
+            </div>
           )}
         </div>
       </div>
