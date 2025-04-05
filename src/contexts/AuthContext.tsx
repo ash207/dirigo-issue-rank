@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { Session, User, AuthError } from '@supabase/supabase-js';
@@ -123,54 +122,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Helper function to wait a specified time
   const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-  // Function to attempt sign up with retries
-  const attemptSignUp = async (email: string, password: string, retries = 2): Promise<any> => {
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: window.location.origin + '/verify',
-        }
-      });
-      
-      if (error) {
-        throw error;
-      }
-      
-      return { data, error: null };
-    } catch (error: any) {
-      // Only retry on timeout errors and if we have retries left
-      if (retries > 0 && (error.status === 504 || error.message?.includes("timeout") || 
-                          error.message?.includes("gateway") || error.message?.includes("timed out"))) {
-        console.log(`Sign-up attempt failed with timeout, retrying... (${retries} attempts left)`);
-        await wait(3000); // Wait 3 seconds before retrying
-        return attemptSignUp(email, password, retries - 1);
-      }
-      
-      throw error;
-    }
-  };
-
+  // Improved sign-up function with better timeout handling
   const signUp = async (email: string, password: string) => {
     try {
       setLoading(true);
       
-      // Attempt sign-up with automatic retries for timeout errors
-      const { error } = await attemptSignUp(email, password);
-
+      // Set a timeout for the entire operation
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error("Request timed out after 10 seconds")), 10000);
+      });
+      
+      // Create the actual signup promise with proper options
+      const signUpPromise = supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: window.location.origin + '/verify',
+          // Set explicit timeouts for Supabase client requests
+          captchaTimeout: 8000,
+          flowType: "pkce" // Use PKCE flow for better reliability
+        }
+      });
+      
+      // Race the signup against the timeout
+      const { data, error } = await Promise.race([
+        signUpPromise,
+        timeoutPromise.then(() => {
+          throw new Error("The server is busy. Please try again or check your email for a verification link.");
+        })
+      ]) as any;
+      
       if (error) {
         throw error;
       }
 
-      toast({
-        title: "Account Created",
-        description: "Please check your email for a verification link.",
-      });
+      // Check if the user was actually created
+      if (data?.user) {
+        toast({
+          title: "Account Created",
+          description: "Please check your email for a verification link.",
+        });
+      } else {
+        throw new Error("Failed to create account. Please try again.");
+      }
     } catch (error: any) {
       console.error("Signup error details:", error);
       
-      // Handle specific error cases
+      // Handle specific error cases with improved messaging
       let errorMessage = "Failed to create account";
       
       if (error.code === "over_email_send_rate_limit") {
@@ -178,6 +176,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else if (error.status === 504 || error.message?.includes("timeout") || 
                 error.message?.includes("gateway") || error.message?.includes("timed out")) {
         errorMessage = "The server is busy. Your account may have been created. Please check your email or try signing in.";
+      } else if (error.message?.includes("already") || error.message?.includes("exists")) {
+        errorMessage = "An account with this email already exists. Please try signing in.";
       } else if (error.message) {
         errorMessage = error.message;
       }

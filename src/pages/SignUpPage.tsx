@@ -11,16 +11,35 @@ import { AtSign, Lock, AlertCircle, RefreshCw, Info } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+// Define form validation schema
+const signUpSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+type SignUpFormValues = z.infer<typeof signUpSchema>;
 
 const SignUpPage = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showTimeoutDialog, setShowTimeoutDialog] = useState(false);
   const { signUp, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   
+  // Set up form with validation
+  const form = useForm<SignUpFormValues>({
+    resolver: zodResolver(signUpSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
@@ -28,14 +47,13 @@ const SignUpPage = () => {
     }
   }, [isAuthenticated, navigate]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (values: SignUpFormValues) => {
     setIsLoading(true);
     setError(null);
     setShowTimeoutDialog(false);
     
     try {
-      await signUp(email, password);
+      await signUp(values.email, values.password);
       // Success message will be shown by the AuthContext
     } catch (error: any) {
       console.error("Sign-up error:", error);
@@ -60,8 +78,8 @@ const SignUpPage = () => {
   };
 
   const handleRetry = () => {
-    if (email && password) {
-      handleSubmit(new Event('submit') as any);
+    if (form.getValues().email && form.getValues().password) {
+      form.handleSubmit(onSubmit)();
     }
   };
 
@@ -79,77 +97,92 @@ const SignUpPage = () => {
               Enter your information to create an account
             </CardDescription>
           </CardHeader>
-          <form onSubmit={handleSubmit}>
-            <CardContent className="space-y-4">
-              {error && (
-                <Alert variant="destructive" className="flex items-start">
-                  <AlertCircle className="h-4 w-4 mt-0.5 mr-2 flex-shrink-0" />
-                  <div className="flex-1">
-                    <AlertDescription>{error}</AlertDescription>
-                    {(error.includes("busy") || error.includes("timeout") || error.includes("gateway") || error.includes("timed out")) && (
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={handleRetry} 
-                        className="mt-2 flex items-center"
-                        type="button"
-                      >
-                        <RefreshCw className="mr-2 h-4 w-4" />
-                        Try again
-                      </Button>
-                    )}
-                  </div>
-                </Alert>
-              )}
+          
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)}>
+              <CardContent className="space-y-4">
+                {error && (
+                  <Alert variant="destructive" className="flex items-start">
+                    <AlertCircle className="h-4 w-4 mt-0.5 mr-2 flex-shrink-0" />
+                    <div className="flex-1">
+                      <AlertDescription>{error}</AlertDescription>
+                      {(error.includes("busy") || error.includes("timeout") || error.includes("gateway") || error.includes("timed out")) && (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={handleRetry} 
+                          className="mt-2 flex items-center"
+                          type="button"
+                        >
+                          <RefreshCw className="mr-2 h-4 w-4" />
+                          Try again
+                        </Button>
+                      )}
+                    </div>
+                  </Alert>
+                )}
+                
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem className="space-y-2">
+                      <FormLabel>Email</FormLabel>
+                      <div className="relative">
+                        <AtSign className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <FormControl>
+                          <Input
+                            placeholder="youremail@example.com"
+                            className="pl-9"
+                            {...field}
+                          />
+                        </FormControl>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem className="space-y-2">
+                      <FormLabel>Password</FormLabel>
+                      <div className="relative">
+                        <Lock className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <FormControl>
+                          <Input
+                            type="password"
+                            className="pl-9"
+                            {...field}
+                          />
+                        </FormControl>
+                      </div>
+                      <p className="text-xs text-muted-foreground">Password must be at least 6 characters long</p>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
               
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <div className="relative">
-                  <AtSign className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="youremail@example.com"
-                    className="pl-9"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
+              <CardFooter className="flex flex-col space-y-4">
+                <Button 
+                  className="w-full bg-dirigo-blue" 
+                  type="submit"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Creating account..." : "Sign up"}
+                </Button>
+                <div className="text-center text-sm">
+                  Already have an account?{" "}
+                  <Link to="/sign-in" className="text-dirigo-blue hover:underline">
+                    Sign in
+                  </Link>
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Lock className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="password"
-                    type="password"
-                    className="pl-9"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    minLength={6}
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground">Password must be at least 6 characters long</p>
-              </div>
-            </CardContent>
-            <CardFooter className="flex flex-col space-y-4">
-              <Button 
-                className="w-full bg-dirigo-blue" 
-                type="submit"
-                disabled={isLoading}
-              >
-                {isLoading ? "Creating account..." : "Sign up"}
-              </Button>
-              <div className="text-center text-sm">
-                Already have an account?{" "}
-                <Link to="/sign-in" className="text-dirigo-blue hover:underline">
-                  Sign in
-                </Link>
-              </div>
-            </CardFooter>
-          </form>
+              </CardFooter>
+            </form>
+          </Form>
         </Card>
       </div>
 
