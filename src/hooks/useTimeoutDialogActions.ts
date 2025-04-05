@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -71,14 +72,7 @@ export function useTimeoutDialogActions({ email, onOpenChange }: UseTimeoutDialo
       const redirectUrl = `https://dirigovotes.com/welcome`;
       console.log(`Resending verification with redirect URL: ${redirectUrl}`);
       
-      // Add a timeout to the request
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => {
-          reject(new Error('Resend request timed out after 8 seconds'));
-        }, 8000); // Use 8s timeout to detect server timeouts early
-      });
-      
-      const resendPromise = supabase.auth.resend({
+      const { error } = await supabase.auth.resend({
         type: 'signup',
         email,
         options: {
@@ -86,31 +80,13 @@ export function useTimeoutDialogActions({ email, onOpenChange }: UseTimeoutDialo
         }
       });
       
-      // Race the two promises
-      const { error } = await Promise.race([
-        resendPromise,
-        timeoutPromise.then(() => {
-          throw new Error('Resend request timed out');
-        })
-      ]) as Awaited<ReturnType<typeof supabase.auth.resend>>;
-      
       if (error) {
         console.error("Error resending verification:", error);
-        
-        // Check if it's a timeout specifically
-        if (error.message?.includes('timeout') || error.status === 504) {
-          toast({
-            title: "Timeout Error",
-            description: "The verification email request timed out. Please try again later or check your inbox as the email might still have been sent.",
-            variant: "destructive"
-          });
-        } else {
-          toast({
-            title: "Error",
-            description: error.message || "Failed to resend verification email. Please try again later.",
-            variant: "destructive"
-          });
-        }
+        toast({
+          title: "Error",
+          description: error.message || "Failed to resend verification email",
+          variant: "destructive"
+        });
       } else {
         console.log("Verification email resent successfully");
         toast({
@@ -121,21 +97,11 @@ export function useTimeoutDialogActions({ email, onOpenChange }: UseTimeoutDialo
       }
     } catch (err: any) {
       console.error("Unexpected error resending verification:", err);
-      
-      // Handle timeout specifically
-      if (err.message?.includes('timeout')) {
-        toast({
-          title: "Timeout Error",
-          description: "The verification email request timed out. Please try again later or check your inbox as the email might still have been sent.",
-          variant: "destructive"
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: err.message || "An unexpected error occurred. Please try again later.",
-          variant: "destructive"
-        });
-      }
+      toast({
+        title: "Error",
+        description: err.message || "An unexpected error occurred",
+        variant: "destructive"
+      });
     } finally {
       setIsResending(false);
     }
