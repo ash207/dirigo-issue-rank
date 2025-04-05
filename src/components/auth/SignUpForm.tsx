@@ -50,13 +50,21 @@ export const SignUpForm = ({ onTimeoutError }: SignUpFormProps) => {
       setRetryCount(attemptCount);
       
       console.log(`Signup attempt #${attemptCount} for ${values.email}`);
+      
       await signUp(values.email, values.password);
+      console.log(`Signup request completed for ${values.email}`);
       // Success message will be shown by the AuthContext
     } catch (error: any) {
       console.error(`Sign-up error (attempt #${retryCount}):`, error);
+      console.log("Error details in form:", {
+        code: error.code,
+        message: error.message,
+        status: error.status
+      });
       
       // Check for the special error code we added
       if (error.code === "potential_success_with_timeout") {
+        console.log("Detected potential successful signup despite timeout");
         setError(error.message);
         onTimeoutError();
         return;
@@ -69,6 +77,7 @@ export const SignUpForm = ({ onTimeoutError }: SignUpFormProps) => {
                 error.message?.includes("timeout") || error.message?.includes("gateway") || 
                 error.message?.includes("timed out")) {
         // More specific messaging for timeout issues
+        console.log("Detected timeout or gateway error");
         setError("The server is currently busy. This doesn't mean your account wasn't created. Please check your email or try signing in with the credentials you just entered.");
         onTimeoutError();
       } else if (error.message?.includes("already") || error.message?.includes("exists")) {
@@ -84,7 +93,9 @@ export const SignUpForm = ({ onTimeoutError }: SignUpFormProps) => {
   };
 
   const handleRetry = () => {
+    console.log("User clicked retry button");
     if (form.getValues().email && form.getValues().password) {
+      console.log("Retrying signup with the same credentials");
       form.handleSubmit(onSubmit)();
     }
   };

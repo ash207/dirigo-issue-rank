@@ -27,6 +27,9 @@ export async function signUp(
         }
         
         // Set a client-side timeout to catch supabase timeouts
+        console.log(`Attempt ${currentRetry + 1}: Initiating signup request to Supabase`);
+        
+        // Set a client-side timeout to catch supabase timeouts
         const signUpPromise = supabase.auth.signUp({
           email,
           password,
@@ -39,9 +42,14 @@ export async function signUp(
           }
         });
         
+        console.log(`Attempt ${currentRetry + 1}: Request sent, waiting for response with 30s timeout`);
+        
         // Create a timeout promise with increased duration (30 seconds instead of 15)
         const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error("Client timeout after 30 seconds")), 30000);
+          setTimeout(() => {
+            console.log(`Attempt ${currentRetry + 1}: Client timeout after 30 seconds`);
+            reject(new Error("Client timeout after 30 seconds"));
+          }, 30000);
         });
         
         // Race the signup against the timeout
@@ -52,10 +60,13 @@ export async function signUp(
           })
         ]) as any;
         
-        if (error) throw error;
+        if (error) {
+          console.error(`Attempt ${currentRetry + 1}: Supabase returned an error:`, error);
+          throw error;
+        }
         
         // If we reach here, the signup was successful
-        console.log("Signup successful:", data?.user?.id);
+        console.log(`Attempt ${currentRetry + 1}: Signup successful! User ID:`, data?.user?.id);
         
         // Add a delay to ensure Supabase completes background operations
         await wait(1000);
@@ -65,6 +76,8 @@ export async function signUp(
         
       } catch (error: any) {
         console.error(`Signup attempt ${currentRetry + 1} failed:`, error);
+        console.log(`Error details - Code: ${error.code}, Status: ${error.status}, Message: ${error.message}`);
+        
         lastError = error;
         
         // Only retry on timeout or network errors
@@ -72,11 +85,13 @@ export async function signUp(
             error.message?.includes("timeout") || 
             error.message?.includes("network") ||
             error.message?.includes("fetch")) {
+          console.log(`Error is retriable, will attempt retry ${currentRetry + 1}/${maxRetries}`);
           currentRetry++;
           
           // If this was the last retry attempt and it failed with a timeout,
           // we'll still try to check if the account was created
           if (currentRetry > maxRetries && error.message?.includes("timeout")) {
+            console.log("Maximum retries reached with timeout. Account may have been created despite timeout.");
             // Return a special error that indicates potential account creation
             onError({
               ...error,
@@ -87,16 +102,24 @@ export async function signUp(
           }
         } else {
           // For other errors (like user already exists), don't retry
+          console.log("Error is not retriable, ending retry loop.");
           break;
         }
       }
     }
     
     // If we get here, all retries failed or non-retriable error
+    console.error("All signup attempts failed:", lastError);
     throw lastError || new Error("Failed to create account after multiple attempts");
     
   } catch (error: any) {
     console.error("All signup attempts failed:", error);
+    console.log("Final error details:", {
+      code: error.code,
+      status: error.status,
+      message: error.message,
+      stack: error.stack
+    });
     
     // Provide helpful error messages based on error type
     let errorMessage = "Failed to create account";
@@ -113,6 +136,7 @@ export async function signUp(
       errorMessage = error.message;
     }
     
+    console.log("Returning user-friendly error:", errorMessage);
     onError({ ...error, message: errorMessage });
     throw error;
   }
