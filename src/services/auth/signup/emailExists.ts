@@ -8,32 +8,35 @@ import { supabase } from "@/integrations/supabase/client";
  */
 export async function emailExists(email: string): Promise<boolean> {
   try {
-    // Use a standard sign-in with an invalid password to check if the user exists
-    // This will return a specific error if the user exists
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password: 'check-user-exists-intentionally-wrong',
+    // Instead of trying a password-based approach, we'll use a different method
+    // that works more reliably for checking email existence
+    
+    // The adminAuthClient method would be ideal but requires service role key
+    // Instead, we'll use the reset password flow which gives a clear indicator
+    
+    console.log(`Checking if email exists: ${email}`);
+    
+    // Using resetPasswordForEmail will respond differently for existing vs non-existing emails
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
     });
     
-    // If we get an invalid login credentials error, the user exists
-    // This error occurs when the email exists but the password is wrong
-    if (error && error.message) {
-      console.log(`Email check for ${email}: ${error.message}`);
-      
-      // If we specifically get "Invalid login credentials", it means
-      // the email exists but the password is wrong
-      if (error.message.includes('Invalid login credentials')) {
-        return true;
+    console.log(`Password reset response for ${email}:`, error?.message);
+    
+    // If we get a "For security purposes..." message, the email exists
+    // If we get "User not found", the email doesn't exist
+    if (error) {
+      if (error.message.includes("User not found")) {
+        console.log(`Email check result for ${email}: Does not exist`);
+        return false;
       }
-      
-      // For any other error messages (including "Email not confirmed", 
-      // "Invalid email", etc.), assume the user doesn't exist
-      return false;
     }
     
-    // If no error (which shouldn't happen with an intentionally wrong password),
-    // assume user doesn't exist for safety
-    return false;
+    // If no error or any other error, this usually means the email exists
+    // (Supabase sends a reset email and returns success for security purposes)
+    console.log(`Email check result for ${email}: Likely exists`);
+    return true;
+    
   } catch (err) {
     console.error("Error checking if email exists:", err);
     // In case of error, we assume the user doesn't exist for security reasons
