@@ -17,14 +17,6 @@ export function useAuthState() {
       // Update session and user with synchronous updates
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
-      
-      // If there is a user, check for profiles and other async operations after a small delay
-      if (currentSession?.user) {
-        setTimeout(() => {
-          // This prevents deadlocks by avoiding nested Supabase calls in the callback
-          console.log("User authenticated:", currentSession.user.id);
-        }, 0);
-      }
     });
 
     // THEN check for existing session

@@ -46,16 +46,16 @@ export const SignUpForm = ({ onTimeoutError }: SignUpFormProps) => {
     
     try {
       // Track retry attempts
-      const newRetryCount = retryCount + 1;
-      setRetryCount(newRetryCount);
+      const currentRetryCount = retryCount + 1;
+      setRetryCount(currentRetryCount);
       
-      console.log(`Signup attempt #${newRetryCount} for ${values.email}`);
+      console.log(`Signup attempt #${currentRetryCount} for ${values.email}`);
       
       await signUp(values.email, values.password);
       console.log(`Signup request completed for ${values.email}`);
       // Success message will be shown by the AuthContext
     } catch (error: any) {
-      console.error(`Sign-up error (attempt #${newRetryCount}):`, error);
+      console.error(`Sign-up error (attempt #${currentRetryCount}):`, error);
       
       // Log detailed error info for debugging
       if (error.code || error.status || error.message) {
@@ -66,7 +66,7 @@ export const SignUpForm = ({ onTimeoutError }: SignUpFormProps) => {
         });
       }
       
-      // Check for the special error code we added
+      // Handle specific error cases
       if (error.code === "potential_success_with_timeout") {
         console.log("Detected potential successful signup despite timeout");
         setError(error.message);
@@ -74,7 +74,6 @@ export const SignUpForm = ({ onTimeoutError }: SignUpFormProps) => {
         return;
       }
       
-      // Handle specific error cases
       if (error.code === "over_email_send_rate_limit") {
         setError("Too many sign-up attempts. Please try again later.");
       } else if (error.status === 504 || error.code === "23505" || 

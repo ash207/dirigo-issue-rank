@@ -1,9 +1,9 @@
 
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { useToast } from "@/hooks/use-toast";
 import { useAuthState } from '@/hooks/useAuthState';
-import { signIn, signOut, signUp, setupAuthListener } from '@/services/auth';
+import { signIn, signOut, signUp } from '@/services/auth';
 import { updateUserStatusIfVerified } from '@/utils/profileUtils';
 
 type AuthContextType = {
@@ -31,7 +31,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { toast } = useToast();
 
   // Effect to update profile status when user changes
-  useEffect(() => {
+  React.useEffect(() => {
     if (user) {
       // Defer this to avoid auth state change callback conflicts
       setTimeout(() => {
