@@ -43,13 +43,11 @@ email_from_name = 'Dirigo Votes'
 email_from_address = 'contact@dirigovotes.com'
 email_template_system_from_name = 'Dirigo Votes'
 email_template_system_from_email = 'contact@dirigovotes.com'
-# Set SMTP configuration - uncomment and complete if needed
-# smtp_admin_email = 'contact@dirigovotes.com'
-# smtp_host = ''
-# smtp_port = 587
-# smtp_user = ''
-# smtp_pass = ''
-# smtp_max_frequency = 0
+
+# Email rate limiting
+rate_limit_email_sent = 10
+email_confirm_change_email_template_id = 'd-7e4e79720a064eeeb2each'
+disable_confirm_change_email = false
 
 [realtime]
 enabled = true

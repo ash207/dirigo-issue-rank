@@ -1,6 +1,7 @@
+
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
-import { Session, User } from '@supabase/supabase-js';
+import { Session, User, AuthError } from '@supabase/supabase-js';
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from 'react-router-dom';
 
@@ -125,6 +126,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          emailRedirectTo: window.location.origin + '/verify',
+        }
       });
 
       if (error) {
@@ -132,15 +136,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       toast({
-        title: "Success",
-        description: "Account created successfully. Please check your email for verification.",
+        title: "Account Created",
+        description: "Please check your email for a verification link.",
       });
     } catch (error: any) {
+      console.error("Signup error details:", error);
+      
+      // Handle specific error cases
+      let errorMessage = "Failed to create account";
+      
+      if (error.code === "over_email_send_rate_limit") {
+        errorMessage = "Too many sign-up attempts. Please try again later.";
+      } else if (error.status === 504 || error.message?.includes("timeout")) {
+        errorMessage = "The server is busy. Please try again in a few minutes.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Error",
-        description: error.message || "Failed to create account",
+        description: errorMessage,
         variant: "destructive",
       });
+      
       throw error;
     } finally {
       setLoading(false);

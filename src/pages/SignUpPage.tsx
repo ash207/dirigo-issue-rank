@@ -7,12 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { AtSign, Lock } from "lucide-react";
+import { AtSign, Lock, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const SignUpPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { signUp, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   
@@ -26,12 +28,24 @@ const SignUpPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
     
     try {
       await signUp(email, password);
       // Success message will be shown by the AuthContext
-    } catch (error) {
+    } catch (error: any) {
       console.error("Sign-up error:", error);
+      
+      // Handle specific error cases
+      if (error.code === "over_email_send_rate_limit") {
+        setError("Too many sign-up attempts. Please try again later.");
+      } else if (error.status === 504 || error.message?.includes("timeout")) {
+        setError("The server is busy. Please try again in a few minutes.");
+      } else if (error.message) {
+        setError(error.message);
+      } else {
+        setError("Failed to create account. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -49,6 +63,13 @@ const SignUpPage = () => {
           </CardHeader>
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4">
+              {error && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+              
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <div className="relative">
