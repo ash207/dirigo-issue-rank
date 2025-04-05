@@ -22,6 +22,7 @@ const Footer = () => {
               <li><Link to="/issues" className="text-gray-300 hover:text-white">Issues</Link></li>
               <li><Link to="/about" className="text-gray-300 hover:text-white">About</Link></li>
               <li><Link to="/verify" className="text-gray-300 hover:text-white">Verification</Link></li>
+              <li><Link to="/new-signup" className="text-gray-300 hover:text-white">New Sign Up</Link></li>
               {isAuthenticated && (
                 <li>
                   <Link to="/reports" className="text-gray-300 hover:text-white flex items-center gap-1">
