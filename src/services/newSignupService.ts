@@ -34,10 +34,13 @@ export async function registerNewUser(email: string, password: string, redirectT
     
     // Race the two promises
     try {
-      const response = await Promise.race([signupPromise, timeoutPromise]);
+      const response = await Promise.race([signupPromise, timeoutPromise]) as { 
+        data: { user: any } | null; 
+        error: { message?: string; status?: number; } | null;
+      };
       
       // Log result for debugging
-      if ('error' in response && response.error) {
+      if (response.error) {
         console.error("Registration error:", response.error);
         
         // Handle user already exists error
@@ -59,7 +62,7 @@ export async function registerNewUser(email: string, password: string, redirectT
           response.error.message?.includes("deadline exceeded") ||
           response.error.message?.includes("fetch") ||
           response.error.message?.includes("network") ||
-          (response.error as any)?.status === 504
+          response.error.status === 504
         ) {
           return {
             data: null,

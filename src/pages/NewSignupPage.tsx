@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { registerNewUser, checkUserExists } from "@/services/newSignupService";
@@ -8,6 +9,16 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { AtSign, Lock, AlertCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { TimeoutDialog } from "@/components/auth/TimeoutDialog";
+
+// Define response type for clarity
+interface AuthResponse {
+  data: { user?: { id?: string; email?: string } } | null;
+  error: { 
+    code?: string; 
+    message?: string;
+    status?: number;
+  } | null;
+}
 
 const NewSignupPage = () => {
   const [email, setEmail] = useState("");
@@ -48,11 +59,12 @@ const NewSignupPage = () => {
   }, [showTimeoutDialog, email]);
 
   // Create a function to handle timeouts with retry logic
-  const handleSignupWithRetry = async (retryCount = 0): Promise<any> => {
+  const handleSignupWithRetry = async (retryCount = 0): Promise<AuthResponse> => {
     if (retryCount >= 2) {
       // If we've already retried twice, show the timeout dialog
       setShowTimeoutDialog(true);
       return { 
+        data: null,
         error: { 
           code: 'max_retries', 
           message: 'Maximum retry attempts reached' 
@@ -69,6 +81,7 @@ const NewSignupPage = () => {
         if (exists) {
           console.log("User already exists, avoiding duplicate registration");
           return { 
+            data: null,
             error: { 
               code: 'user_exists', 
               message: 'An account with this email already exists. Please check your email for verification instructions or try signing in.' 
@@ -77,7 +90,7 @@ const NewSignupPage = () => {
         }
       }
       
-      const result = await registerNewUser(email, password, "https://dirigovotes.com/welcome");
+      const result = await registerNewUser(email, password, "https://dirigovotes.com/welcome") as AuthResponse;
       
       if (result.error) {
         console.log(`Signup error (attempt ${retryCount}):`, result.error);
@@ -86,7 +99,7 @@ const NewSignupPage = () => {
         const isTimeout = 
           result.error.code === 'email_timeout' || 
           result.error.message?.includes('timeout') || 
-          (result.error as any)?.status === 504;
+          result.error.status === 504;
           
         if (isTimeout) {
           console.log(`Retrying signup automatically (attempt ${retryCount + 1})`);
@@ -114,6 +127,7 @@ const NewSignupPage = () => {
     } catch (err: any) {
       console.error(`Unexpected error during signup (attempt ${retryCount}):`, err);
       return { 
+        data: null,
         error: { 
           code: 'signup_error',
           message: err.message || 'An unexpected error occurred' 
