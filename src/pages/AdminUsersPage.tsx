@@ -1,5 +1,5 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUserManagement } from "@/hooks/useUserManagement";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,10 +8,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { UserTable } from "@/components/admin/UserTable";
 import { UserPagination } from "@/components/admin/UserPagination";
+import { toast } from "sonner";
 
 const AdminUsersPage = () => {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, session } = useAuth();
   const { 
     users, 
     isLoading, 
@@ -20,6 +21,19 @@ const AdminUsersPage = () => {
     updateUserRole, 
     updateUserStatus 
   } = useUserManagement();
+  const [lastEmailVerification, setLastEmailVerification] = useState<number>(0);
+
+  // Listen for email verification events and refresh data
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'email_verification_success') {
+        setLastEmailVerification(Date.now());
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -28,7 +42,7 @@ const AdminUsersPage = () => {
     }
     
     fetchUsers();
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, lastEmailVerification]);
 
   const handlePageChange = (page: number) => {
     fetchUsers(page, pagination.pageSize);

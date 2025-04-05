@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { User } from '@supabase/supabase-js';
+import { toast } from "sonner";
 
 // Update user profile status when email is confirmed
 export async function updateUserStatusIfVerified(currentUser: User | null) {
@@ -61,6 +62,15 @@ export async function manuallyConfirmUserEmail(userId: string, session: any) {
     }
     
     console.log("Email confirmation result:", data);
+
+    // Notify other browser tabs
+    localStorage.setItem('email_verification_success', Date.now().toString());
+    
+    // Create a temporary event to notify the current tab
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'email_verification_success',
+      newValue: Date.now().toString()
+    }));
     
     return { 
       success: true, 
