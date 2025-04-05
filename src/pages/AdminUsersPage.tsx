@@ -25,6 +25,7 @@ const AdminUsersPage = () => {
 
   // Listen for email verification events and refresh data
   useEffect(() => {
+    // Function to handle both storage events (cross-tab) and custom events (same tab)
     const handleStorageChange = (e: StorageEvent | CustomEvent) => {
       if ((e as StorageEvent).key === 'email_verification_success' || 
           (e as CustomEvent).type === 'storage') {

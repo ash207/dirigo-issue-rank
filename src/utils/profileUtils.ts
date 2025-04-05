@@ -66,10 +66,13 @@ export async function manuallyConfirmUserEmail(userId: string, session: any) {
     // Notify other browser tabs
     localStorage.setItem('email_verification_success', Date.now().toString());
     
-    // Create a temporary event to notify the current tab
-    window.dispatchEvent(new StorageEvent('storage', {
-      key: 'email_verification_success',
-      newValue: Date.now().toString()
+    // Create a custom event to notify the current tab
+    // FIXED: Use CustomEvent instead of StorageEvent for same-tab notifications
+    window.dispatchEvent(new CustomEvent('storage', {
+      detail: {
+        key: 'email_verification_success',
+        newValue: Date.now().toString()
+      }
     }));
     
     return { 
