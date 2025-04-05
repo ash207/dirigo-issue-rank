@@ -8,7 +8,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { UserTable } from "@/components/admin/UserTable";
 import { UserPagination } from "@/components/admin/UserPagination";
-import { toast } from "sonner";
 
 const AdminUsersPage = () => {
   const navigate = useNavigate();
@@ -79,9 +78,9 @@ const AdminUsersPage = () => {
     <Layout>
       <div className="container mx-auto py-8">
         <Card>
-          <CardHeader>
-            <CardTitle>User Management</CardTitle>
-            <CardDescription>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-2xl font-bold">User Management</CardTitle>
+            <CardDescription className="text-muted-foreground">
               Manage user roles and statuses. Admins can upgrade users to premium or admin roles and activate or deactivate accounts.
             </CardDescription>
           </CardHeader>
@@ -99,7 +98,7 @@ const AdminUsersPage = () => {
                   handleRoleChange={handleRoleChange}
                   handleStatusChange={handleStatusChange}
                 />
-                <div className="mt-4 flex justify-center">
+                <div className="mt-6 flex justify-center">
                   <UserPagination
                     currentPage={pagination.page}
                     totalPages={pagination.totalPages}

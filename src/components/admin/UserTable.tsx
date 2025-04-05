@@ -86,12 +86,14 @@ export const UserTable = ({
               </TableCell>
               <TableCell>
                 {user.email_confirmed_at ? (
-                  <Badge variant="outline" className="bg-green-100 text-green-800">
-                    Verified
-                  </Badge>
+                  <div className="w-full flex justify-start">
+                    <Badge variant="outline" className="bg-green-100 text-green-800 px-3 py-1">
+                      Verified
+                    </Badge>
+                  </div>
                 ) : (
-                  <div className="flex flex-col gap-2">
-                    <Badge variant="outline" className="bg-yellow-100 text-yellow-800">
+                  <div className="flex flex-col gap-2 items-start">
+                    <Badge variant="outline" className="bg-yellow-100 text-yellow-800 px-3 py-1">
                       Pending
                     </Badge>
                     <Button 

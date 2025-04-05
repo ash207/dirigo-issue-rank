@@ -21,7 +21,7 @@ export const UserStatusSelector = ({
       value={currentStatus} 
       onValueChange={onStatusChange}
     >
-      <SelectTrigger className="w-24 h-8">
+      <SelectTrigger className="w-28 h-8 bg-white">
         <SelectValue placeholder="Change" />
       </SelectTrigger>
       <SelectContent>
