@@ -78,15 +78,18 @@ export async function generateConfirmationLink(email: string, token: string): Pr
       throw new Error("User is not in pending status");
     }
     
-    // Create a secure token (in a production app, we would store this in the database)
-    // But for this demo, we'll use a simple encoded token
+    // Create a secure token (in a production app, this would be a JWT with proper validation)
     const timestamp = Date.now();
     const userId = userData.id;
     const tokenData = `${userId}_${timestamp}`;
     const encodedToken = btoa(tokenData);
     
-    // Generate a confirmation link with the token
-    const confirmationLink = `https://dirigovotes.com/welcome?token=${encodedToken}&email=${encodeURIComponent(email)}`;
+    // Generate a confirmation link with the token using the current origin
+    // This ensures it works in both development and production environments
+    const host = window.location.origin || "https://dirigovotes.com";
+    const confirmationLink = `${host}/welcome?token=${encodedToken}&email=${encodeURIComponent(email)}`;
+    
+    console.log("Generated confirmation link:", confirmationLink);
     
     return confirmationLink;
   } catch (err) {

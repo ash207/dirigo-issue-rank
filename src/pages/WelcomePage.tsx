@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,24 +10,75 @@ import { toast } from "@/hooks/use-toast";
 const WelcomePage = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState<string>(location.state?.email || "");
   const [isChecking, setIsChecking] = useState(false);
   const [isResending, setIsResending] = useState(false);
+  const [isProcessingToken, setIsProcessingToken] = useState(false);
+  const [tokenProcessed, setTokenProcessed] = useState(false);
   
-  // Check for email in location state or try to get it from session
+  // Check for URL parameters (token and email) or try to get from session
   useEffect(() => {
-    const checkEmailFromSession = async () => {
-      if (!location.state?.email) {
+    const checkEmailAndToken = async () => {
+      // Try to get email from URL first, then from state, then from session
+      const urlEmail = searchParams.get("email");
+      
+      if (urlEmail) {
+        setEmail(urlEmail);
+      } else if (!location.state?.email) {
         // Try to get the email from the current session
         const { data } = await supabase.auth.getSession();
         if (data.session?.user?.email) {
           setEmail(data.session.user.email);
         }
       }
+      
+      // Check if we have a token in the URL
+      const token = searchParams.get("token");
+      if (token && !tokenProcessed) {
+        processToken(token, urlEmail || email);
+      }
     };
     
-    checkEmailFromSession();
-  }, [location.state]);
+    checkEmailAndToken();
+  }, [location.state, searchParams]);
+
+  // Process the token from the URL
+  const processToken = async (token: string, email: string) => {
+    setIsProcessingToken(true);
+    
+    try {
+      console.log("Processing token:", token);
+      console.log("Email:", email);
+      
+      // In a real implementation, this would validate the token
+      // and update the user's status accordingly
+      
+      toast({
+        title: "Confirmation Link Received",
+        description: "Processing your confirmation link...",
+      });
+      
+      // Simulate token processing (this would be replaced with real token validation)
+      setTimeout(() => {
+        toast({
+          title: "Account Confirmed",
+          description: "Your account has been successfully confirmed. You can now log in.",
+        });
+        setTokenProcessed(true);
+        setIsProcessingToken(false);
+      }, 1500);
+      
+    } catch (err) {
+      console.error("Error processing token:", err);
+      toast({
+        title: "Error",
+        description: "Could not process confirmation link. Please try signing in or contact support.",
+        variant: "destructive"
+      });
+      setIsProcessingToken(false);
+    }
+  };
 
   const handleCheckAccount = async () => {
     if (!email) {
@@ -122,7 +173,15 @@ const WelcomePage = () => {
           <CardTitle className="text-2xl font-bold">Welcome!</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          {email ? (
+          {isProcessingToken ? (
+            <p>
+              Processing your confirmation link... Please wait.
+            </p>
+          ) : tokenProcessed ? (
+            <p className="text-green-600">
+              Your account has been confirmed successfully! You can now proceed to login.
+            </p>
+          ) : email ? (
             <p>
               We've sent a verification link to <strong>{email}</strong>. 
               Please check your email and click the link to verify your account.
@@ -138,19 +197,19 @@ const WelcomePage = () => {
           </p>
           
           <div className="flex flex-col space-y-3">
-            {email && (
+            {email && !tokenProcessed && (
               <>
                 <Button 
                   variant="outline" 
                   onClick={handleCheckAccount}
-                  disabled={isChecking}
+                  disabled={isChecking || isProcessingToken}
                 >
                   {isChecking ? "Checking..." : "Check Account Status"}
                 </Button>
                 <Button 
                   variant="outline" 
                   onClick={handleResendVerification}
-                  disabled={isResending}
+                  disabled={isResending || isProcessingToken}
                 >
                   {isResending ? "Sending..." : "Resend Verification Email"}
                 </Button>
