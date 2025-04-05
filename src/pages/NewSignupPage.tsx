@@ -37,10 +37,12 @@ const NewSignupPage = () => {
         console.log(`Signup error (attempt ${retryCount})`, result.error);
         
         // If it's a timeout error, retry automatically
+        // Fix: Check for timeout indicators without relying on the status property which might not exist
         if (
           result.error.code === 'email_timeout' || 
           result.error.message?.includes('timeout') || 
-          result.error.status === 504
+          (result.error as any).status === 504 || // Use type assertion for optional status check
+          result.error.message?.includes('may have been created')
         ) {
           console.log(`Retrying signup automatically (attempt ${retryCount + 1})`);
           
