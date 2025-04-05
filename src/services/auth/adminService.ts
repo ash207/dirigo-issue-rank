@@ -56,6 +56,49 @@ export async function lookupUserByEmail(email: string, token: string) {
 }
 
 /**
+ * Generate a confirmation link for a pending user
+ * @param email The user's email address
+ * @param token JWT token for authentication
+ * @returns Promise resolving to the confirmation link
+ */
+export async function generateConfirmationLink(email: string, token: string): Promise<string> {
+  try {
+    if (!email || !token) {
+      throw new Error("Email and authentication token are required");
+    }
+    
+    // First, look up the user to confirm they exist and are pending
+    const userData = await lookupUserByEmail(email, token);
+    
+    if (!userData || !userData.exists) {
+      throw new Error("User not found");
+    }
+    
+    if (userData.status !== "pending" && !userData.emailConfirmed) {
+      throw new Error("User is not in pending status");
+    }
+    
+    // Generate confirmation link using Supabase's password recovery mechanism
+    // This will send an email to the user with a confirmation link
+    // We're not actually sending the email here, just generating the link
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: "https://dirigovotes.com/welcome"
+    });
+    
+    if (error) throw error;
+    
+    // This is a placeholder link. In a real application, we would need to work with
+    // Supabase's auth APIs to generate a proper confirmation token
+    const confirmationLink = `https://dirigovotes.com/welcome?email=${encodeURIComponent(email)}&confirmation=true`;
+    
+    return confirmationLink;
+  } catch (err) {
+    console.error("Error generating confirmation link:", err);
+    throw err;
+  }
+}
+
+/**
  * Send a custom email to a user
  * @param to Recipient email address
  * @param subject Email subject

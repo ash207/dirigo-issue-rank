@@ -1,9 +1,9 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { emailTemplates } from "@/services/auth/adminService";
+import { emailTemplates, generateConfirmationLink } from "@/services/auth/adminService";
 import { Form } from "@/components/ui/form";
 import EmailTemplateSelector, { SelectedTemplateType } from "./EmailTemplateSelector";
 import TemplateConfiguration from "./TemplateConfiguration";
@@ -12,6 +12,8 @@ import EmailRecipientField from "./EmailRecipientField";
 import EmailSubjectField from "./EmailSubjectField";
 import EmailContentField from "./EmailContentField";
 import EmailFormActions from "./EmailFormActions";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 // Form schema for email sending
 const emailFormSchema = z.object({
@@ -28,10 +30,14 @@ interface EmailFormProps {
 }
 
 const EmailForm = ({ onSubmit, isSending }: EmailFormProps) => {
+  const { session } = useAuth();
   const [openPreview, setOpenPreview] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<SelectedTemplateType>("custom");
   const [recipientName, setRecipientName] = useState("");
   const [confirmationLink, setConfirmationLink] = useState("#");
+  const [userStatus, setUserStatus] = useState<string | null>(null);
+  const [currentEmail, setCurrentEmail] = useState("");
+  const [isGeneratingLink, setIsGeneratingLink] = useState(false);
 
   // Initialize the form
   const form = useForm<EmailFormValues>({
@@ -42,6 +48,43 @@ const EmailForm = ({ onSubmit, isSending }: EmailFormProps) => {
       content: "",
     },
   });
+
+  // Generate confirmation link when a pending user is detected and account confirmation template is selected
+  useEffect(() => {
+    if (
+      session?.access_token && 
+      userStatus === "pending" && 
+      selectedTemplate === "accountConfirmation" &&
+      currentEmail
+    ) {
+      setIsGeneratingLink(true);
+      generateConfirmationLink(currentEmail, session.access_token)
+        .then((link) => {
+          setConfirmationLink(link);
+          // Re-apply the template with the new link
+          applyTemplate("accountConfirmation");
+        })
+        .catch((error) => {
+          console.error("Error generating confirmation link:", error);
+          toast("Failed to generate confirmation link", {
+            description: "Using placeholder link instead.",
+          });
+        })
+        .finally(() => {
+          setIsGeneratingLink(false);
+        });
+    }
+  }, [userStatus, selectedTemplate, currentEmail, session?.access_token]);
+
+  // Handle user status change from EmailRecipientField
+  const handleUserStatusChange = (status: string | null, email: string) => {
+    setUserStatus(status);
+    setCurrentEmail(email);
+    if (status !== "pending" && selectedTemplate === "accountConfirmation") {
+      // Reset confirmation link if not a pending user
+      setConfirmationLink("#");
+    }
+  };
 
   // Apply a template to the form
   const applyTemplate = (template: keyof typeof emailTemplates) => {
@@ -109,6 +152,9 @@ const EmailForm = ({ onSubmit, isSending }: EmailFormProps) => {
           />
         </div>
 
+        {/* Email Recipient Field - Now passes user status info */}
+        <EmailRecipientField control={form.control} onUserStatusChange={handleUserStatusChange} />
+
         {/* Template Configuration */}
         {selectedTemplate !== "custom" && (
           <TemplateConfiguration
@@ -117,11 +163,12 @@ const EmailForm = ({ onSubmit, isSending }: EmailFormProps) => {
             confirmationLink={confirmationLink}
             onRecipientNameChange={handleRecipientNameChange}
             onConfirmationLinkChange={handleConfirmationLinkChange}
+            isGeneratingLink={isGeneratingLink && selectedTemplate === "accountConfirmation"}
+            isPendingUser={userStatus === "pending"}
           />
         )}
 
         {/* Form Fields */}
-        <EmailRecipientField control={form.control} />
         <EmailSubjectField control={form.control} />
         <EmailContentField control={form.control} />
         
