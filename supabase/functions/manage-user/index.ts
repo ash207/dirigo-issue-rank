@@ -7,122 +7,183 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-serve(async (req) => {
-  // Handle CORS preflight requests
+// Handle CORS preflight requests
+const handleCors = (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
+  return null;
+};
 
+// Verify admin permissions
+const verifyAdminPermissions = async (supabase: any, token: string) => {
   try {
-    // Create a Supabase client with the Admin key
-    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
-
-    // Only allow authorized requests
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: "No authorization header" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Verify the user is authenticated
-    const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
-
+    // Verify the token and get the user
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     if (authError || !user) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      throw new Error("Unauthorized");
     }
 
-    // Check if user is an admin
-    const { data: profile } = await supabaseAdmin
+    // Check if the user has admin permissions
+    const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("role")
       .eq("id", user.id)
       .single();
 
-    // Only allow access to admin users (for security)
-    if (!profile || profile.role !== "dirigo_admin") {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized - Admin access required" }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    if (profileError) {
+      throw new Error("Error fetching user profile");
     }
 
-    // Get request body
-    const { userId, action, value } = await req.json();
+    // Verify the user is an admin
+    if (profile.role !== "dirigo_admin" && profile.role !== "politician_admin" && profile.role !== "moderator") {
+      throw new Error("Insufficient permissions");
+    }
 
-    if (!userId || !action || !value) {
-      return new Response(
-        JSON.stringify({ error: "Invalid request body" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    return user;
+  } catch (err) {
+    console.error("Error verifying admin permissions:", err);
+    throw err;
+  }
+};
+
+serve(async (req) => {
+  // Handle CORS
+  const corsResponse = handleCors(req);
+  if (corsResponse) return corsResponse;
+
+  try {
+    // Initialize Supabase client with admin privileges
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Get authorization token
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      throw new Error("Missing authorization header");
+    }
+    const token = authHeader.replace("Bearer ", "");
+
+    // Verify admin permissions
+    const adminUser = await verifyAdminPermissions(supabaseAdmin, token);
+
+    // Parse request body
+    const { userId, action, value, email } = await req.json();
+
+    if (!userId || !action) {
+      throw new Error("Missing required parameters: userId and action");
     }
 
     let result;
-    
+
     // Handle different actions
-    if (action === "updateRole") {
-      // Check valid role
-      if (!["basic", "premium", "dirigo_admin"].includes(value)) {
-        return new Response(
-          JSON.stringify({ error: "Invalid role value" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      
-      // Update user role
-      const { data, error } = await supabaseAdmin
-        .from("profiles")
-        .update({ role: value })
-        .eq("id", userId)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      result = { message: "Role updated successfully", data };
-    } 
-    else if (action === "updateStatus") {
-      // Check valid status
-      if (!["pending", "active", "deactivated"].includes(value)) {
-        return new Response(
-          JSON.stringify({ error: "Invalid status value" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      
-      // Update user status
-      const { data, error } = await supabaseAdmin
-        .from("profiles")
-        .update({ status: value })
-        .eq("id", userId)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      result = { message: "Status updated successfully", data };
-    } 
-    else {
-      return new Response(
-        JSON.stringify({ error: "Invalid action" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    switch (action) {
+      case "updateRole":
+        if (!value) {
+          throw new Error("Missing role value");
+        }
+        
+        // Update user role
+        const { data: roleData, error: roleError } = await supabaseAdmin
+          .from("profiles")
+          .update({ role: value })
+          .eq("id", userId)
+          .select("*");
+
+        if (roleError) {
+          throw roleError;
+        }
+
+        result = { success: true, message: "User role updated", user: roleData[0] };
+        break;
+
+      case "updateStatus":
+        if (!value) {
+          throw new Error("Missing status value");
+        }
+        
+        // Update user status
+        const { data: statusData, error: statusError } = await supabaseAdmin
+          .from("profiles")
+          .update({ status: value })
+          .eq("id", userId)
+          .select("*");
+
+        if (statusError) {
+          throw statusError;
+        }
+
+        result = { success: true, message: "User status updated", user: statusData[0] };
+        break;
+
+      case "confirmEmail":
+        // This is a special admin action to confirm a user's email
+        console.log("Confirming email for user:", userId);
+        
+        // 1. Update the auth.users table to set email_confirmed_at
+        try {
+          // First try to get the user email if not provided
+          let userEmail = email;
+          if (!userEmail) {
+            const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(userId);
+            if (userError) throw userError;
+            userEmail = userData.user.email;
+          }
+          
+          if (!userEmail) {
+            throw new Error("Could not determine user email");
+          }
+          
+          // Update the user's email_confirmed_at timestamp
+          const { data: updateData, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+            userId,
+            { email_confirmed_at: new Date().toISOString() }
+          );
+          
+          if (updateError) throw updateError;
+          
+          console.log("Updated auth user:", updateData);
+          
+          // 2. Also update the profile status to active if it's pending
+          const { data: profileData, error: profileError } = await supabaseAdmin
+            .from("profiles")
+            .update({ status: "active" })
+            .eq("id", userId)
+            .eq("status", "pending")
+            .select("*");
+            
+          result = { 
+            success: true, 
+            message: "User email confirmed and status updated to active", 
+            user: updateData.user,
+            profile: profileError ? null : profileData[0]
+          };
+        } catch (confirmError: any) {
+          console.error("Error confirming email:", confirmError);
+          throw new Error(`Failed to confirm email: ${confirmError.message}`);
+        }
+        break;
+        
+      default:
+        throw new Error(`Unknown action: ${action}`);
     }
 
+    return new Response(JSON.stringify(result), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (err: any) {
+    console.error("Error in manage-user function:", err);
+    
     return new Response(
-      JSON.stringify(result),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  } catch (error) {
-    console.error("Error in manage-user function:", error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({
+        error: err.message || "An error occurred while managing user",
+      }),
+      {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
     );
   }
 });

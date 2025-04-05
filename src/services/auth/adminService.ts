@@ -74,8 +74,8 @@ export async function generateConfirmationLink(email: string, token: string): Pr
       throw new Error("User not found");
     }
     
-    if (userData.status !== "pending" && !userData.emailConfirmed) {
-      throw new Error("User is not in pending status");
+    if (userData.status !== "pending" && userData.emailConfirmed) {
+      throw new Error("User is not in pending status or already confirmed");
     }
     
     // Create a secure token (in a production app, this would be a JWT with proper validation)
@@ -94,6 +94,39 @@ export async function generateConfirmationLink(email: string, token: string): Pr
     return confirmationLink;
   } catch (err) {
     console.error("Error generating confirmation link:", err);
+    throw err;
+  }
+}
+
+/**
+ * Confirm a user's email manually (admin operation)
+ * @param userId The user's ID
+ * @param email The user's email
+ * @param token JWT token for authentication
+ * @returns Promise resolving to the result of the operation
+ */
+export async function confirmUserEmail(userId: string, email: string, token: string) {
+  try {
+    if (!userId || !email || !token) {
+      throw new Error("User ID, email, and authentication token are required");
+    }
+    
+    const { data, error } = await supabase.functions.invoke("manage-user", {
+      headers: {
+        Authorization: `Bearer ${token}`
+      },
+      body: {
+        userId,
+        email,
+        action: "confirmEmail"
+      }
+    });
+    
+    if (error) throw error;
+    
+    return data;
+  } catch (err) {
+    console.error("Error confirming user email:", err);
     throw err;
   }
 }

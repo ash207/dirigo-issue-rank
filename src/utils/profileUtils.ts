@@ -34,3 +34,31 @@ export async function updateUserStatusIfVerified(currentUser: User | null) {
     }
   }
 }
+
+// Manually update a user's profile status and email confirmation
+export async function manuallyConfirmUserEmail(userId: string, session: any) {
+  if (!userId || !session) return { success: false, message: "Missing required parameters" };
+  
+  try {
+    // Make an admin call to the manage-user edge function
+    const { data, error } = await supabase.functions.invoke("manage-user", {
+      headers: {
+        Authorization: `Bearer ${session.access_token}`
+      },
+      body: {
+        userId,
+        action: "confirmEmail"
+      }
+    });
+    
+    if (error) throw error;
+    
+    return { success: true, data };
+  } catch (error: any) {
+    console.error('Error manually confirming user email:', error);
+    return { 
+      success: false, 
+      message: error.message || "Failed to confirm user email" 
+    };
+  }
+}
