@@ -1,8 +1,7 @@
 
 import { TimeoutDialog } from "@/components/auth/TimeoutDialog";
-import { SignupForm } from "@/components/auth/SignupFormNew";
-import { useSignup } from "@/hooks/useSignup";
-import { useExistingUserCheck } from "@/hooks/useExistingUserCheck";
+import { NewSignupForm } from "@/components/auth/NewSignupForm";
+import { useNewSignup } from "@/hooks/useNewSignup";
 
 const NewSignupPage = () => {
   const {
@@ -13,19 +12,14 @@ const NewSignupPage = () => {
     confirmPassword,
     setConfirmPassword,
     isLoading,
+    isCheckingEmail,
     errorMessage,
-    showTimeoutDialog,
-    setShowTimeoutDialog,
-    handleSubmit,
-    handleRetry
-  } = useSignup();
-
-  // Use the extracted hook for checking existing user
-  useExistingUserCheck(showTimeoutDialog, email);
+    handleSubmit
+  } = useNewSignup();
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
-      <SignupForm
+      <NewSignupForm
         email={email}
         setEmail={setEmail}
         password={password}
@@ -34,14 +28,8 @@ const NewSignupPage = () => {
         setConfirmPassword={setConfirmPassword}
         errorMessage={errorMessage}
         isLoading={isLoading}
+        isCheckingEmail={isCheckingEmail}
         onSubmit={handleSubmit}
-      />
-
-      <TimeoutDialog 
-        open={showTimeoutDialog} 
-        onOpenChange={setShowTimeoutDialog}
-        onRetry={handleRetry}
-        email={email}
       />
     </div>
   );

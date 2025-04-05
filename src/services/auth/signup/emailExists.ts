@@ -8,38 +8,38 @@ import { supabase } from "@/integrations/supabase/client";
  */
 export async function emailExists(email: string): Promise<boolean> {
   try {
-    // Instead of trying a password-based approach, we'll use a different method
-    // that works more reliably for checking email existence
-    
-    // The adminAuthClient method would be ideal but requires service role key
-    // Instead, we'll use the reset password flow which gives a clear indicator
+    if (!email) return false;
     
     console.log(`Checking if email exists: ${email}`);
     
-    // Using resetPasswordForEmail will respond differently for existing vs non-existing emails
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
+    // Use signUp with a dummy password to check if the email exists
+    // This is more reliable than the reset password flow
+    const { error } = await supabase.auth.signUp({
+      email,
+      password: "TemporaryPassword123!@#", // This won't be used if the email exists
     });
     
-    console.log(`Password reset response for ${email}:`, error?.message);
+    console.log(`Sign-up check response for ${email}:`, error?.message);
     
-    // If we get a "For security purposes..." message, the email exists
-    // If we get "User not found", the email doesn't exist
+    // If we get a message containing "already registered", the email exists
     if (error) {
-      if (error.message.includes("User not found")) {
-        console.log(`Email check result for ${email}: Does not exist`);
-        return false;
+      const errorMessage = error.message?.toLowerCase() || '';
+      
+      if (errorMessage.includes('already') || 
+          errorMessage.includes('registered') || 
+          errorMessage.includes('exists')) {
+        console.log(`Email check result for ${email}: Exists`);
+        return true;
       }
     }
     
-    // If no error or any other error, this usually means the email exists
-    // (Supabase sends a reset email and returns success for security purposes)
-    console.log(`Email check result for ${email}: Likely exists`);
-    return true;
+    // If we get success response or any other error, the email likely doesn't exist
+    console.log(`Email check result for ${email}: Does not exist`);
+    return false;
     
   } catch (err) {
     console.error("Error checking if email exists:", err);
-    // In case of error, we assume the user doesn't exist for security reasons
+    // In case of error, assume the user doesn't exist for security reasons
     return false;
   }
 }
