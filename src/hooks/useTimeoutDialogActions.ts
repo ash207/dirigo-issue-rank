@@ -1,8 +1,7 @@
-
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { checkUserExists } from "@/services/newSignupService";
+import { checkUserExists } from "@/services/auth/signup/userExistence";
 
 interface UseTimeoutDialogActionsProps {
   email?: string;

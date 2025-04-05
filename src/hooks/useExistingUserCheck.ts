@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { checkUserExists } from "@/services/newSignupService";
+import { checkUserExists } from "@/services/auth/signup/userExistence";
 import { toast } from "@/hooks/use-toast";
 
 export function useExistingUserCheck(showTimeoutDialog: boolean, email: string) {

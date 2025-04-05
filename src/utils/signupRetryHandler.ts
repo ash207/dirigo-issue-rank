@@ -1,6 +1,6 @@
 
 import { AuthResponse } from "@/types/auth";
-import { checkUserExists, registerNewUser } from "@/services/newSignupService";
+import { checkUserExists, registerNewUser } from "@/services/auth/signup/userExistence";
 
 /**
  * Handles signup with automatic retry logic for timeouts
