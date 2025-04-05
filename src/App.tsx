@@ -21,7 +21,6 @@ import CleanSignupPage from "./pages/CleanSignupPage";
 import CompleteSignupPage from "./pages/CompleteSignupPage";
 import WelcomePage from "./pages/WelcomePage";
 import ReportsPage from "./pages/ReportsPage";
-import AdminUsersPage from "./pages/AdminUsersPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 
 const queryClient = new QueryClient();
@@ -48,7 +47,6 @@ function App() {
               <Route path="/welcome" element={<WelcomePage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/reports" element={<ReportsPage />} />
-              <Route path="/admin/users" element={<AdminUsersPage />} />
               <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
               <Route path="/about" element={<AboutPage />} />
               <Route path="/verify" element={<VerificationPage />} />
