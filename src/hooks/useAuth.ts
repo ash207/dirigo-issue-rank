@@ -99,9 +99,9 @@ export function useAuth() {
         resetForm();
         toast({
           title: "Account Created",
-          description: "Your account has been created. You can now sign in.",
+          description: "Your account has been created. Please check your email for verification.",
         });
-        navigate('/welcome', { state: { email } });
+        navigate('/email-sent', { state: { email } });
       }
     } catch (err: any) {
       console.error("Signup error:", err);

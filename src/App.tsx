@@ -19,6 +19,7 @@ import SignUpPage from "./pages/SignUpPage";
 import WelcomePage from "./pages/WelcomePage";
 import ReportsPage from "./pages/ReportsPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
+import EmailSentPage from "./pages/EmailSentPage";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,7 @@ function App() {
               <Route path="/issues/:id/edit" element={<EditIssuePage />} />
               <Route path="/sign-in" element={<SignInPage />} />
               <Route path="/sign-up" element={<SignUpPage />} />
+              <Route path="/email-sent" element={<EmailSentPage />} />
               <Route path="/welcome" element={<WelcomePage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/reports" element={<ReportsPage />} />

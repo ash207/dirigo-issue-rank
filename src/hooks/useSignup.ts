@@ -88,7 +88,9 @@ export function useSignup(): UseSignupReturn {
       } else if (data.user) {
         // Success
         toast.success("Account created successfully! Please check your email for verification.");
-        navigate('/welcome', { state: { email } });
+        
+        // Navigate to the email sent page with the email in the state
+        navigate('/email-sent', { state: { email } });
       }
     } catch (err: any) {
       console.error("Unexpected error during signup:", err);
