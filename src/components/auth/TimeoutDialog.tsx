@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { checkUserExists } from "@/services/newSignupService";
 
 interface TimeoutDialogProps {
   open: boolean;
@@ -19,9 +20,48 @@ interface TimeoutDialogProps {
 export const TimeoutDialog = ({ open, onOpenChange, onRetry, email }: TimeoutDialogProps) => {
   const navigate = useNavigate();
   const [isResending, setIsResending] = useState(false);
+  const [isChecking, setIsChecking] = useState(false);
   
   const handleClose = () => {
     onOpenChange(false);
+  };
+
+  const handleCheckAccount = async () => {
+    if (!email) {
+      toast({
+        title: "Error",
+        description: "No email address available to check",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsChecking(true);
+    
+    try {
+      const exists = await checkUserExists(email);
+      
+      if (exists) {
+        toast({
+          title: "Account Found",
+          description: "We detected that your account exists. Please check your email or try signing in."
+        });
+      } else {
+        toast({
+          title: "No Account Found",
+          description: "We couldn't find an account with this email. Please try signing up again."
+        });
+      }
+    } catch (err) {
+      console.error("Error checking account:", err);
+      toast({
+        title: "Error",
+        description: "Could not check account status. Please try again later.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsChecking(false);
+    }
   };
 
   const handleResendVerification = async () => {
@@ -44,8 +84,8 @@ export const TimeoutDialog = ({ open, onOpenChange, onRetry, email }: TimeoutDia
       // Add a timeout to the request
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => {
-          reject(new Error('Resend request timed out after 10 seconds'));
-        }, 10000);
+          reject(new Error('Resend request timed out after 8 seconds'));
+        }, 8000); // Use 8s timeout to detect server timeouts early
       });
       
       const resendPromise = supabase.auth.resend({
@@ -137,8 +177,8 @@ export const TimeoutDialog = ({ open, onOpenChange, onRetry, email }: TimeoutDia
           <p>What you can do now:</p>
           <ol className="list-decimal pl-5 space-y-2">
             <li>Check your inbox and spam folder for a verification email</li>
+            <li>Use the "Check Account" button to see if your account was created</li>
             <li>Use the "Resend Verification" button to try again</li>
-            <li>Try signing in with the credentials you just used</li>
             <li>If problems persist, please contact support</li>
           </ol>
         </div>
@@ -148,14 +188,24 @@ export const TimeoutDialog = ({ open, onOpenChange, onRetry, email }: TimeoutDia
           </Button>
           <div className="flex flex-col sm:flex-row gap-2">
             {email && (
-              <Button 
-                variant="secondary" 
-                onClick={handleResendVerification}
-                disabled={isResending}
-              >
-                <Mail className="mr-2 h-4 w-4" />
-                {isResending ? "Sending..." : "Resend Verification"}
-              </Button>
+              <>
+                <Button 
+                  variant="secondary" 
+                  onClick={handleCheckAccount}
+                  disabled={isChecking}
+                >
+                  <Info className="mr-2 h-4 w-4" />
+                  {isChecking ? "Checking..." : "Check Account"}
+                </Button>
+                <Button 
+                  variant="secondary" 
+                  onClick={handleResendVerification}
+                  disabled={isResending}
+                >
+                  <Mail className="mr-2 h-4 w-4" />
+                  {isResending ? "Sending..." : "Resend Verification"}
+                </Button>
+              </>
             )}
             <Button variant="outline" onClick={onRetry}>
               <RefreshCw className="mr-2 h-4 w-4" />

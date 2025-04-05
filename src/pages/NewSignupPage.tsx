@@ -1,7 +1,7 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { registerNewUser } from "@/services/newSignupService";
+import { registerNewUser, checkUserExists } from "@/services/newSignupService";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,7 +17,36 @@ const NewSignupPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showTimeoutDialog, setShowTimeoutDialog] = useState(false);
+  const [isCheckingExistingUser, setIsCheckingExistingUser] = useState(false);
   const navigate = useNavigate();
+
+  // This effect checks if a user account was created despite timeout
+  useEffect(() => {
+    if (showTimeoutDialog && email && !isCheckingExistingUser) {
+      setIsCheckingExistingUser(true);
+      
+      // Add a delay before checking to allow Supabase to complete the operation
+      const timer = setTimeout(async () => {
+        try {
+          const exists = await checkUserExists(email);
+          
+          if (exists) {
+            console.log("User account exists despite timeout error");
+            toast({
+              title: "Account may exist",
+              description: "We detected that your account might have been created. Please check your email or try signing in.",
+            });
+          }
+        } catch (err) {
+          console.error("Error checking if user exists:", err);
+        } finally {
+          setIsCheckingExistingUser(false);
+        }
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [showTimeoutDialog, email]);
 
   // Create a function to handle timeouts with retry logic
   const handleSignupWithRetry = async (retryCount = 0): Promise<any> => {
@@ -31,26 +60,57 @@ const NewSignupPage = () => {
     console.log(`Signup attempt for: ${email} with redirect to: https://dirigovotes.com/welcome${retryCount > 0 ? ` (retry ${retryCount})` : ''}`);
     
     try {
+      // Check if user already exists before attempting to create
+      if (retryCount > 0) {
+        const exists = await checkUserExists(email);
+        if (exists) {
+          console.log("User already exists, avoiding duplicate registration");
+          return { 
+            error: { 
+              code: 'user_exists', 
+              message: 'An account with this email already exists. Please check your email for verification instructions or try signing in.' 
+            } 
+          };
+        }
+      }
+      
       const result = await registerNewUser(email, password, "https://dirigovotes.com/welcome");
       
       if (result.error) {
         console.log(`Signup error (attempt ${retryCount})`, result.error);
         
-        // If it's a timeout error, retry automatically
-        // Fix: Check for timeout indicators without relying on the status property which might not exist
-        if (
+        // If it's a timeout error, retry automatically after a delay
+        const isTimeout = 
           result.error.code === 'email_timeout' || 
           result.error.message?.includes('timeout') || 
-          (result.error as any).status === 504 || // Use type assertion for optional status check
-          result.error.message?.includes('may have been created')
-        ) {
+          (result.error as any)?.status === 504 || 
+          result.error.message?.includes('may have been created');
+          
+        if (isTimeout) {
           console.log(`Retrying signup automatically (attempt ${retryCount + 1})`);
           
-          // Wait 2 seconds before retrying
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          // Increase delay for each retry attempt
+          const delayMs = (retryCount + 1) * 2000;
+          console.log(`Waiting ${delayMs}ms before retry`);
+          
+          // Wait before retrying
+          await new Promise(resolve => setTimeout(resolve, delayMs));
+          
+          // Check if user was created during timeout
+          const exists = await checkUserExists(email);
+          if (exists) {
+            console.log("User was created despite timeout, redirecting to welcome page");
+            return { data: { user: { email } }, error: null };
+          }
           
           // Retry with incremented count
           return handleSignupWithRetry(retryCount + 1);
+        }
+        
+        // If it's a user_exists error, treat it as a success
+        if (result.error.code === 'user_exists') {
+          console.log("User already exists, treating as success");
+          return { data: { user: { email } }, error: null };
         }
         
         return result;
@@ -102,6 +162,16 @@ const NewSignupPage = () => {
         
         if (error.code === 'max_retries') {
           // Already handled above
+          return;
+        }
+        
+        if (error.code === 'user_exists') {
+          // User already exists - this is actually a good thing
+          toast({
+            title: "Account already exists",
+            description: "An account with this email already exists. Please check your email or try signing in.",
+          });
+          navigate("/welcome", { state: { email } });
           return;
         }
         

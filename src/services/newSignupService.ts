@@ -13,12 +13,33 @@ export async function registerNewUser(email: string, password: string, redirectT
   try {
     console.log(`Registering new user with email: ${email} and redirect URL: ${redirectTo}`);
     
-    // We'll add a reasonably long timeout to the request
+    // Reduce timeout to avoid race conditions with server timeouts
+    // Server side likely has a 10s timeout, so we'll use 8s to detect it first
     const timeoutPromise = new Promise((_, reject) => {
       setTimeout(() => {
-        reject(new Error('Request timed out after 15 seconds'));
-      }, 15000);
+        reject({
+          error: {
+            code: 'email_timeout',
+            message: 'Email verification timed out. Your account may have been created, but the verification email could not be sent.'
+          }
+        });
+      }, 8000); // 8 seconds timeout to preempt server timeouts
     });
+    
+    // Check if user already exists before attempting signup
+    const { data: existingUser } = await supabase.auth.admin
+      .getUserByEmail(email)
+      .catch(() => ({ data: null }));
+    
+    if (existingUser) {
+      return {
+        data: null,
+        error: {
+          code: 'user_exists',
+          message: 'An account with this email already exists. Please try signing in or reset your password.'
+        }
+      };
+    }
     
     // Create the actual signup request
     const signupPromise = supabase.auth.signUp({
@@ -35,14 +56,7 @@ export async function registerNewUser(email: string, password: string, redirectT
     // Race the two promises
     const response = await Promise.race([
       signupPromise,
-      timeoutPromise.then(() => {
-        throw {
-          error: {
-            code: 'email_timeout',
-            message: 'Email verification timed out. Your account may have been created, but the verification email could not be sent.'
-          }
-        };
-      })
+      timeoutPromise
     ]) as Awaited<ReturnType<typeof supabase.auth.signUp>>;
     
     // Log result for debugging
@@ -93,5 +107,35 @@ export async function registerNewUser(email: string, password: string, redirectT
     }
     
     throw err;
+  }
+}
+
+/**
+ * Check if a user exists by email
+ * This helps prevent duplicate accounts during timeouts
+ * 
+ * @param email The email to check
+ * @returns True if user exists, false otherwise
+ */
+export async function checkUserExists(email: string): Promise<boolean> {
+  try {
+    // Try to sign in with an invalid password to check if user exists
+    // We use a short timeout to prevent long waits
+    const signInPromise = supabase.auth.signInWithPassword({
+      email,
+      password: 'check-user-exists-invalid-password',
+    });
+    
+    const timeoutPromise = new Promise((_, resolve) => {
+      setTimeout(() => resolve({ error: { message: 'timeout' } }), 5000);
+    });
+    
+    const result = await Promise.race([signInPromise, timeoutPromise]) as any;
+    
+    // If we get an "Invalid login credentials" error, the user exists
+    return result.error && result.error.message.includes('Invalid login credentials');
+  } catch (err) {
+    console.error("Error checking if user exists:", err);
+    return false;
   }
 }
