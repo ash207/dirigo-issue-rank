@@ -64,6 +64,19 @@ export function useNewSignup() {
       }
     } catch (err: any) {
       console.error("Signup error:", err);
+      
+      // Special handling for timeout errors
+      if (err.status === 504 || err.message?.includes('timeout')) {
+        toast({
+          title: "Signup may have succeeded",
+          description: "We couldn't confirm if your account was created due to a timeout. Please check your email or try signing in.",
+          variant: "default",
+        });
+        resetForm();
+        navigate('/welcome', { state: { email } });
+        return;
+      }
+      
       setErrorMessage(err.message || "An unexpected error occurred");
       toast({
         title: "Error",

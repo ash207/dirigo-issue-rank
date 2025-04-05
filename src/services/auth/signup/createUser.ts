@@ -16,7 +16,8 @@ export async function createUser(email: string, password: string): Promise<boole
     
     console.log(`Creating user with email: ${email}, redirecting to: ${redirectUrl}`);
     
-    const { data, error } = await supabase.auth.signUp({
+    // Set a timeout for the request to handle potential gateway timeouts
+    const signUpPromise = supabase.auth.signUp({
       email,
       password,
       options: {
@@ -27,8 +28,39 @@ export async function createUser(email: string, password: string): Promise<boole
       }
     });
     
+    // Create a timeout promise that rejects after 15 seconds
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => {
+        reject(new Error('The signup request timed out. Your account may have been created but we couldn\'t confirm it.'));
+      }, 15000); // 15 seconds timeout
+    });
+    
+    // Race between the signup request and the timeout
+    const { data, error } = await Promise.race([
+      signUpPromise,
+      timeoutPromise.then(() => {
+        throw {
+          status: 504,
+          message: 'Gateway timeout while creating account',
+          __isAuthError: true
+        };
+      })
+    ]) as any;
+    
     if (error) {
       console.error("Error creating user:", error);
+      
+      // Special handling for timeout errors
+      if (error.status === 504 || error.message?.includes('timeout')) {
+        toast({
+          title: "Signup may have succeeded",
+          description: "We couldn't confirm if your account was created due to a timeout. Please try signing in or check your email.",
+          variant: "default",
+        });
+        // Return true in case of timeout as the user might have been created
+        return true;
+      }
+      
       toast({
         title: "Error",
         description: error.message || "Failed to create account",
@@ -46,6 +78,18 @@ export async function createUser(email: string, password: string): Promise<boole
     return true;
   } catch (err: any) {
     console.error("Unexpected error creating user:", err);
+    
+    // Special handling for timeout errors
+    if (err.status === 504 || err.message?.includes('timeout')) {
+      toast({
+        title: "Signup may have succeeded",
+        description: "We couldn't confirm if your account was created due to a timeout. Please try signing in or check your email.",
+        variant: "default",
+      });
+      // Return true in case of timeout as the user might have been created
+      return true;
+    }
+    
     toast({
       title: "Error",
       description: err.message || "An unexpected error occurred",
