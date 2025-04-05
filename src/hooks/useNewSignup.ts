@@ -34,7 +34,7 @@ export function useNewSignup() {
     }
     
     try {
-      // Check if email already exists
+      // Step 1: First, check if email already exists
       setIsCheckingEmail(true);
       console.log(`Checking if email exists: ${email}`);
       const emailAlreadyExists = await emailExists(email);
@@ -42,12 +42,18 @@ export function useNewSignup() {
       
       console.log(`Email exists check result: ${emailAlreadyExists}`);
       
+      // Step 2: If email exists, stop and inform user
       if (emailAlreadyExists) {
         setErrorMessage("An account with this email already exists. Please try signing in.");
+        toast({
+          title: "Account Exists",
+          description: "An account with this email already exists. Please try signing in.",
+          variant: "destructive",
+        });
         return;
       }
       
-      // Create new user
+      // Step 3: Only if email doesn't exist, proceed with user creation
       setIsLoading(true);
       const success = await createUser(email, password);
       

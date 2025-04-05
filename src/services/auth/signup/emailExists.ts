@@ -12,30 +12,36 @@ export async function emailExists(email: string): Promise<boolean> {
     
     console.log(`Checking if email exists: ${email}`);
     
-    // Use signUp with a dummy password to check if the email exists
-    // This is more reliable than the reset password flow
-    const { error } = await supabase.auth.signUp({
+    // We'll use the signIn method to check if the email exists
+    // This is the most reliable way to check without side effects
+    const { error } = await supabase.auth.signInWithPassword({
       email,
-      password: "TemporaryPassword123!@#", // This won't be used if the email exists
+      password: "ThisIsNotTheRealPassword123!",  // Intentionally wrong password
     });
     
-    console.log(`Sign-up check response for ${email}:`, error?.message);
+    // Log the response for debugging
+    console.log(`Sign-in check response for ${email}:`, error?.message);
     
-    // If we get a message containing "already registered", the email exists
+    // If we get an "Invalid login credentials" error, the email exists
+    // but the password is wrong (which is what we want)
     if (error) {
       const errorMessage = error.message?.toLowerCase() || '';
       
-      if (errorMessage.includes('already') || 
-          errorMessage.includes('registered') || 
-          errorMessage.includes('exists')) {
+      // "Invalid login credentials" means email exists but password is wrong
+      if (errorMessage.includes('invalid login credentials')) {
         console.log(`Email check result for ${email}: Exists`);
         return true;
       }
+      
+      // Any other error likely means the email doesn't exist
+      console.log(`Email check result for ${email}: Does not exist (other error)`);
+      return false;
     }
     
-    // If we get success response or any other error, the email likely doesn't exist
-    console.log(`Email check result for ${email}: Does not exist`);
-    return false;
+    // If there's no error, the sign-in worked (shouldn't happen with our fake password)
+    // but if it did, it means the email exists
+    console.log(`Email check result for ${email}: Exists (sign-in succeeded)`);
+    return true;
     
   } catch (err) {
     console.error("Error checking if email exists:", err);

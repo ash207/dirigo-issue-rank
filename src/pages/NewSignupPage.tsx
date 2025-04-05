@@ -1,5 +1,4 @@
 
-import { TimeoutDialog } from "@/components/auth/TimeoutDialog";
 import { NewSignupForm } from "@/components/auth/NewSignupForm";
 import { useNewSignup } from "@/hooks/useNewSignup";
 
