@@ -46,6 +46,7 @@ const NewSignupPage = () => {
       
       if (error) {
         setErrorMessage(error.message);
+        setIsLoading(false);
         return;
       }
       
@@ -144,7 +145,7 @@ const NewSignupPage = () => {
             
             <div className="text-center text-sm">
               Already have an account?{" "}
-              <a href="/login" className="text-primary hover:underline">
+              <a href="/sign-in" className="text-primary hover:underline">
                 Log in
               </a>
             </div>

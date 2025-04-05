@@ -8,7 +8,11 @@ export async function registerNewUser(email: string, password: string) {
   console.log("Starting new signup process for:", email);
   
   try {
-    const redirectUrl = window.location.origin + '/welcome';
+    // Get the origin dynamically and ensure it matches what's set in Supabase
+    const origin = window.location.origin;
+    const redirectUrl = `${origin}/welcome`;
+    
+    console.log(`Using redirect URL: ${redirectUrl}`);
     
     const { data, error } = await supabase.auth.signUp({
       email,
