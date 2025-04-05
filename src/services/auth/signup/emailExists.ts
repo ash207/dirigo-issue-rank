@@ -1,0 +1,26 @@
+
+import { supabase } from "@/integrations/supabase/client";
+
+/**
+ * Check if an email is already registered
+ * @param email The email to check
+ * @returns Promise resolving to true if the email exists, false otherwise
+ */
+export async function emailExists(email: string): Promise<boolean> {
+  try {
+    // Use a standard sign-in with an invalid password to check if the user exists
+    // This will return a specific error if the user exists
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password: 'check-user-exists-intentionally-wrong',
+    });
+    
+    // If we get an invalid login credentials error, the user exists
+    // This error occurs when the email exists but the password is wrong
+    return error?.message?.includes('Invalid login credentials') || false;
+  } catch (err) {
+    console.error("Error checking if email exists:", err);
+    // In case of error, we assume the user doesn't exist for security reasons
+    return false;
+  }
+}
