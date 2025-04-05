@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { AlertDescription } from "@/components/ui/alert";
 import { Alert } from "@/components/ui/alert";
@@ -36,11 +37,18 @@ export const TimeoutDialog = ({ open, onOpenChange, onRetry, email }: TimeoutDia
     setIsResending(true);
     
     try {
-      // Use the production domain for redirect
+      // Always use the production domain for redirect
       const redirectUrl = `https://dirigovotes.com/welcome`;
       console.log(`Resending verification with redirect URL: ${redirectUrl}`);
       
-      const { error } = await supabase.auth.resend({
+      // Add a timeout to the request
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('Resend request timed out after 10 seconds'));
+        }, 10000);
+      });
+      
+      const resendPromise = supabase.auth.resend({
         type: 'signup',
         email,
         options: {
@@ -48,27 +56,56 @@ export const TimeoutDialog = ({ open, onOpenChange, onRetry, email }: TimeoutDia
         }
       });
       
+      // Race the two promises
+      const { error } = await Promise.race([
+        resendPromise,
+        timeoutPromise.then(() => {
+          throw new Error('Resend request timed out');
+        })
+      ]) as Awaited<ReturnType<typeof supabase.auth.resend>>;
+      
       if (error) {
         console.error("Error resending verification:", error);
-        toast({
-          title: "Error",
-          description: "Failed to resend verification email. Please try again later.",
-          variant: "destructive"
-        });
+        
+        // Check if it's a timeout specifically
+        if (error.message?.includes('timeout') || error.status === 504) {
+          toast({
+            title: "Timeout Error",
+            description: "The verification email request timed out. Please try again later or check your inbox as the email might still have been sent.",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: error.message || "Failed to resend verification email. Please try again later.",
+            variant: "destructive"
+          });
+        }
       } else {
+        console.log("Verification email resent successfully");
         toast({
           title: "Verification Email Sent",
           description: "A new verification email has been sent. Please check your inbox."
         });
         onOpenChange(false);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Unexpected error resending verification:", err);
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred. Please try again later.",
-        variant: "destructive"
-      });
+      
+      // Handle timeout specifically
+      if (err.message?.includes('timeout')) {
+        toast({
+          title: "Timeout Error",
+          description: "The verification email request timed out. Please try again later or check your inbox as the email might still have been sent.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: err.message || "An unexpected error occurred. Please try again later.",
+          variant: "destructive"
+        });
+      }
     } finally {
       setIsResending(false);
     }

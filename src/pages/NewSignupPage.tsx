@@ -19,6 +19,48 @@ const NewSignupPage = () => {
   const [showTimeoutDialog, setShowTimeoutDialog] = useState(false);
   const navigate = useNavigate();
 
+  // Create a function to handle timeouts with retry logic
+  const handleSignupWithRetry = async (retryCount = 0): Promise<any> => {
+    if (retryCount >= 2) {
+      // If we've already retried twice, show the timeout dialog
+      setShowTimeoutDialog(true);
+      setIsLoading(false);
+      return { error: { code: 'max_retries', message: 'Maximum retry attempts reached' } };
+    }
+    
+    console.log(`Signup attempt for: ${email} with redirect to: https://dirigovotes.com/welcome${retryCount > 0 ? ` (retry ${retryCount})` : ''}`);
+    
+    try {
+      const result = await registerNewUser(email, password, "https://dirigovotes.com/welcome");
+      
+      if (result.error) {
+        console.log(`Signup error (attempt ${retryCount})`, result.error);
+        
+        // If it's a timeout error, retry automatically
+        if (
+          result.error.code === 'email_timeout' || 
+          result.error.message?.includes('timeout') || 
+          result.error.status === 504
+        ) {
+          console.log(`Retrying signup automatically (attempt ${retryCount + 1})`);
+          
+          // Wait 2 seconds before retrying
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          // Retry with incremented count
+          return handleSignupWithRetry(retryCount + 1);
+        }
+        
+        return result;
+      }
+      
+      return result;
+    } catch (err) {
+      console.error(`Unexpected error during signup (attempt ${retryCount}):`, err);
+      return { error: err };
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -44,11 +86,11 @@ const NewSignupPage = () => {
     setIsLoading(true);
     
     try {
-      console.log(`Signup attempt for: ${email} with redirect to: https://dirigovotes.com/welcome`);
-      const { data, error } = await registerNewUser(email, password, "https://dirigovotes.com/welcome");
+      const { data, error } = await handleSignupWithRetry();
       
       if (error) {
-        console.log("Signup error:", error.code, error.message);
+        console.log("Final signup error:", error.code, error.message);
+        
         // Special handling for timeout errors
         if (error.code === 'email_timeout' || error.message?.includes("timeout") || error.message?.includes("may have been created")) {
           setShowTimeoutDialog(true);
@@ -56,7 +98,12 @@ const NewSignupPage = () => {
           return;
         }
         
-        setErrorMessage(error.message);
+        if (error.code === 'max_retries') {
+          // Already handled above
+          return;
+        }
+        
+        setErrorMessage(error.message || "An error occurred during signup");
         setIsLoading(false);
         return;
       }

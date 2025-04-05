@@ -13,7 +13,15 @@ export async function registerNewUser(email: string, password: string, redirectT
   try {
     console.log(`Registering new user with email: ${email} and redirect URL: ${redirectTo}`);
     
-    const response = await supabase.auth.signUp({
+    // We'll add a reasonably long timeout to the request
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => {
+        reject(new Error('Request timed out after 15 seconds'));
+      }, 15000);
+    });
+    
+    // Create the actual signup request
+    const signupPromise = supabase.auth.signUp({
       email,
       password,
       options: {
@@ -24,12 +32,31 @@ export async function registerNewUser(email: string, password: string, redirectT
       }
     });
     
+    // Race the two promises
+    const response = await Promise.race([
+      signupPromise,
+      timeoutPromise.then(() => {
+        throw {
+          error: {
+            code: 'email_timeout',
+            message: 'Email verification timed out. Your account may have been created, but the verification email could not be sent.'
+          }
+        };
+      })
+    ]) as Awaited<ReturnType<typeof supabase.auth.signUp>>;
+    
     // Log result for debugging
     if (response.error) {
       console.error("Registration error:", response.error);
       
-      // Return custom error for timeouts
-      if (response.error.message?.includes("timeout") || response.error.message?.includes("deadline exceeded")) {
+      // Return custom error for timeouts or network issues
+      if (
+        response.error.message?.includes("timeout") || 
+        response.error.message?.includes("deadline exceeded") ||
+        response.error.message?.includes("fetch") ||
+        response.error.message?.includes("network") ||
+        response.error.status === 504
+      ) {
         return {
           data: response.data,
           error: {
@@ -44,8 +71,27 @@ export async function registerNewUser(email: string, password: string, redirectT
     }
     
     return response;
-  } catch (err) {
+  } catch (err: any) {
     console.error("Unexpected error in registerNewUser:", err);
+    
+    // Check if this is a timeout or network related error
+    if (
+      err.message?.includes("timeout") || 
+      err.message?.includes("Network") ||
+      err.message?.includes("fetch") ||
+      err.code === 'email_timeout' ||
+      err.status === 504
+    ) {
+      return {
+        data: { user: null, session: null },
+        error: {
+          name: "AuthRetryableFetchError",
+          code: 'email_timeout',
+          message: 'Email verification timed out. Your account may have been created, but the verification email could not be sent.'
+        }
+      };
+    }
+    
     throw err;
   }
 }
