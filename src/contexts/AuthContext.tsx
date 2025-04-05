@@ -33,7 +33,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Effect to update profile status when user changes
   useEffect(() => {
     if (user) {
-      updateUserStatusIfVerified(user);
+      // Defer this to avoid auth state change callback conflicts
+      setTimeout(() => {
+        updateUserStatusIfVerified(user);
+      }, 0);
     }
   }, [user]);
 
@@ -58,22 +61,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       );
     } catch (error) {
       // Error is already handled in the signIn function
+      console.error("Sign-in error caught in context:", error);
     }
   };
 
   const handleSignUp = async (email: string, password: string) => {
     try {
+      const redirectUrl = window.location.origin + '/verify';
+      console.log(`Signup initiated with redirect URL: ${redirectUrl}`);
+      
       await signUp(
         email, 
         password,
-        window.location.origin + '/verify',
+        redirectUrl,
         (data) => {
+          console.log("Signup success in context:", data?.user?.id);
           toast({
             title: "Account Created",
             description: "Please check your email for a verification link.",
           });
         },
         (error) => {
+          console.error("Signup error in context:", error);
           toast({
             title: "Error",
             description: error.message || "Failed to create account",
@@ -83,6 +92,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       );
     } catch (error) {
       // Error is already handled in the signUp function
+      console.error("Unexpected error in signup context handler:", error);
     }
   };
 

@@ -26,10 +26,9 @@ export async function signUp(
           await wait(1000 * currentRetry); // Wait longer for each retry
         }
         
-        // Set a client-side timeout to catch supabase timeouts
         console.log(`Attempt ${currentRetry + 1}: Initiating signup request to Supabase`);
         
-        // Set a client-side timeout to catch supabase timeouts
+        // Use a Promise.race to implement client-side timeout
         const signUpPromise = supabase.auth.signUp({
           email,
           password,
@@ -42,9 +41,7 @@ export async function signUp(
           }
         });
         
-        console.log(`Attempt ${currentRetry + 1}: Request sent, waiting for response with 30s timeout`);
-        
-        // Create a timeout promise with increased duration (30 seconds instead of 15)
+        // Create a timeout promise
         const timeoutPromise = new Promise((_, reject) => {
           setTimeout(() => {
             console.log(`Attempt ${currentRetry + 1}: Client timeout after 30 seconds`);
@@ -53,20 +50,27 @@ export async function signUp(
         });
         
         // Race the signup against the timeout
-        const { data, error } = await Promise.race([
+        const result = await Promise.race([
           signUpPromise,
           timeoutPromise.then(() => {
             throw new Error("Request timed out. Please try again.");
           })
-        ]) as any;
+        ]);
+        
+        // Properly handle the response
+        const { data, error } = result as any;
         
         if (error) {
           console.error(`Attempt ${currentRetry + 1}: Supabase returned an error:`, error);
           throw error;
         }
         
-        // If we reach here, the signup was successful
-        console.log(`Attempt ${currentRetry + 1}: Signup successful! User ID:`, data?.user?.id);
+        console.log(`Attempt ${currentRetry + 1}: Signup successful! User data:`, data);
+        
+        // Ensure we have session data - this is critical!
+        if (!data?.user) {
+          console.warn(`Attempt ${currentRetry + 1}: Signup successful but no user data returned`);
+        }
         
         // Add a delay to ensure Supabase completes background operations
         await wait(1000);
@@ -76,15 +80,12 @@ export async function signUp(
         
       } catch (error: any) {
         console.error(`Signup attempt ${currentRetry + 1} failed:`, error);
-        console.log(`Error details - Code: ${error.code}, Status: ${error.status}, Message: ${error.message}`);
         
-        // Additional detailed logging for network errors
-        if (error.status === 504) {
-          console.error("504 Gateway Timeout received from Supabase server");
-        }
-        
-        if (error.message?.includes("fetch")) {
-          console.error("Network fetch error details:", error);
+        // Detailed logging for troubleshooting
+        if (error.code || error.status || error.message) {
+          console.log(`Error details - Code: ${error.code || 'undefined'}, Status: ${error.status || 'undefined'}, Message: ${error.message || 'undefined'}`);
+        } else {
+          console.log("Error object doesn't contain standard error properties:", error);
         }
         
         lastError = error;
@@ -122,13 +123,7 @@ export async function signUp(
     throw lastError || new Error("Failed to create account after multiple attempts");
     
   } catch (error: any) {
-    console.error("All signup attempts failed:", error);
-    console.log("Final error details:", {
-      code: error.code,
-      status: error.status,
-      message: error.message,
-      stack: error.stack
-    });
+    console.error("Final signup error:", error);
     
     // Provide helpful error messages based on error type
     let errorMessage = "Failed to create account";
@@ -147,6 +142,5 @@ export async function signUp(
     
     console.log("Returning user-friendly error:", errorMessage);
     onError({ ...error, message: errorMessage });
-    throw error;
   }
 }

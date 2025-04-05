@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardContent, CardFooter } from "@/components/ui/card";
 import { AtSign, Lock, AlertCircle, RefreshCw } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -55,12 +55,16 @@ export const SignUpForm = ({ onTimeoutError }: SignUpFormProps) => {
       console.log(`Signup request completed for ${values.email}`);
       // Success message will be shown by the AuthContext
     } catch (error: any) {
-      console.error(`Sign-up error (attempt #${retryCount}):`, error);
-      console.log("Error details in form:", {
-        code: error.code,
-        message: error.message,
-        status: error.status
-      });
+      console.error(`Sign-up error (attempt #${attemptCount}):`, error);
+      
+      // Log detailed error info for debugging
+      if (error.code || error.status || error.message) {
+        console.log("Error details in form:", {
+          code: error.code || 'undefined',
+          message: error.message || 'undefined',
+          status: error.status || 'undefined'
+        });
+      }
       
       // Check for the special error code we added
       if (error.code === "potential_success_with_timeout") {
