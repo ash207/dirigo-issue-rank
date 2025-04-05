@@ -1,12 +1,17 @@
 
 import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { 
-  checkEmailExists, 
-  createUser, 
-  SignupState,
-  SignupResult
-} from "@/services/auth/AuthService";
+import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+
+// Define the SignupState enum since AuthService was removed
+export enum SignupState {
+  IDLE = "idle",
+  CHECKING_EMAIL = "checking_email",
+  CREATING_USER = "creating_user",
+  SUCCESS = "success",
+  ERROR = "error"
+}
 
 export function useAuth() {
   const [email, setEmail] = useState("");
@@ -52,27 +57,51 @@ export function useAuth() {
     }
     
     try {
-      // Step 1: Check if email exists
-      setState(SignupState.CHECKING_EMAIL);
-      const emailExists = await checkEmailExists(email);
+      // Immediately attempt to sign up without checking email existence first
+      setState(SignupState.CREATING_USER);
       
-      if (emailExists) {
-        setError("An account with this email already exists. Please try signing in.");
+      // Create user with signUp method
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/welcome`,
+          data: {
+            email_confirmed: true, // Skip email confirmation
+          }
+        }
+      });
+      
+      if (error) {
+        // Handle existing user error
+        if (error.message?.toLowerCase().includes("already") || 
+            error.message?.toLowerCase().includes("exists")) {
+          toast({
+            title: "Account Already Exists",
+            description: "An account with this email already exists. Please try signing in.",
+          });
+          
+          setState(SignupState.SUCCESS);
+          navigate('/sign-in', { state: { email } });
+          return;
+        }
+        
+        // Handle other errors
+        console.error("Signup error:", error);
+        setError(error.message || "Failed to create account");
         setState(SignupState.ERROR);
         return;
       }
       
-      // Step 2: Create user
-      setState(SignupState.CREATING_USER);
-      const result = await createUser(email, password);
-      
-      if (result.success) {
+      // Successfully created user or email already exists
+      if (data && data.user) {
         setState(SignupState.SUCCESS);
         resetForm();
+        toast({
+          title: "Account Created",
+          description: "Your account has been created. You can now sign in.",
+        });
         navigate('/welcome', { state: { email } });
-      } else {
-        setError(result.error || "Failed to create account");
-        setState(SignupState.ERROR);
       }
     } catch (err: any) {
       console.error("Signup error:", err);

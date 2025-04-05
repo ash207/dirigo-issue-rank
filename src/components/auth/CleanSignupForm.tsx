@@ -10,7 +10,15 @@ import { AtSign, Lock, AlertCircle, Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { SignupState } from "@/services/auth/AuthService";
+
+// Define the SignupState enum since AuthService was removed
+export enum SignupState {
+  IDLE = "idle",
+  CHECKING_EMAIL = "checking_email",
+  CREATING_USER = "creating_user",
+  SUCCESS = "success",
+  ERROR = "error"
+}
 
 // Define form validation schema
 const signUpSchema = z.object({

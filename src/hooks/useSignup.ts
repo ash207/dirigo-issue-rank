@@ -1,10 +1,17 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { AuthResponse, SignupState } from "@/types/auth";
-import { validateSignupForm } from "@/utils/authValidation";
-import { handleSignupWithRetry } from "@/utils/signupRetryHandler";
-import { handleSignupResponse } from "@/utils/signupResponseHandler";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+
+export interface SignupState {
+  email: string;
+  password: string;
+  confirmPassword: string;
+  isLoading: boolean;
+  errorMessage: string | null;
+  showTimeoutDialog: boolean;
+}
 
 interface UseSignupReturn extends SignupState {
   setEmail: (email: string) => void;
@@ -26,6 +33,19 @@ export function useSignup(): UseSignupReturn {
   const [isCheckingExistingUser, setIsCheckingExistingUser] = useState(false);
   const navigate = useNavigate();
 
+  // Validate form fields
+  const validateSignupForm = (
+    email: string, 
+    password: string, 
+    confirmPassword: string
+  ): string | null => {
+    if (!email) return "Email is required";
+    if (!password) return "Password is required";
+    if (password.length < 6) return "Password must be at least 6 characters";
+    if (password !== confirmPassword) return "Passwords do not match";
+    return null;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -42,24 +62,34 @@ export function useSignup(): UseSignupReturn {
     setIsLoading(true);
     
     try {
-      const result = await handleSignupWithRetry(email, password);
-      
-      // Handle the case where result might be undefined
-      if (!result) {
-        setErrorMessage("An unknown error occurred during signup");
-        setIsLoading(false);
-        return;
-      }
-      
-      // Process the signup response
-      handleSignupResponse({
-        result,
+      // Create user with Supabase
+      const { data, error } = await supabase.auth.signUp({
         email,
-        navigate,
-        setErrorMessage,
-        setShowTimeoutDialog
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/welcome`,
+        }
       });
       
+      if (error) {
+        // Handle timeouts
+        if (error.status === 504 || error.message?.includes("timeout")) {
+          setShowTimeoutDialog(true);
+          setErrorMessage("Request timed out. Your account may have been created. Please check your email or try signing in.");
+        } 
+        // Handle existing users
+        else if (error.message?.includes("already") || error.message?.includes("exists")) {
+          setErrorMessage("An account with this email already exists. Please try signing in.");
+        } 
+        // Handle other errors
+        else {
+          setErrorMessage(error.message || "Failed to create account");
+        }
+      } else if (data.user) {
+        // Success
+        toast.success("Account created successfully! Please check your email for verification.");
+        navigate('/welcome', { state: { email } });
+      }
     } catch (err: any) {
       console.error("Unexpected error during signup:", err);
       setErrorMessage(err.message || "An unexpected error occurred");
