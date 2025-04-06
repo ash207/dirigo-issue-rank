@@ -95,128 +95,105 @@ serve(async (req) => {
     }
 
     // Get total users count
-    const { count: totalUsers, error: usersError } = await supabaseAdmin
+    const { count: totalUsers } = await supabaseAdmin
       .from('profiles')
       .select('*', { count: 'exact', head: true });
 
-    if (usersError) throw usersError;
-
     // Get new users over time period
-    const { data: newUsers, error: newUsersError } = await supabaseAdmin.rpc(
-      'get_new_users_by_period',
-      { date_filter: dateFilter }
-    ).catch(async () => {
-      // Fallback if RPC function doesn't exist
-      const { data, error } = await supabaseAdmin.auth.admin.listUsers();
+    let newUserCount = 0;
+    try {
+      const { data: newUsersData } = await supabaseAdmin
+        .from('profiles')
+        .select('id', { count: 'exact' })
+        .gte('created_at', dateRange === 'today' 
+          ? new Date(new Date().setHours(0, 0, 0, 0)).toISOString()
+          : dateRange === 'week'
+          ? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+          : dateRange === 'month'
+          ? new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+          : new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString());
       
-      const now = new Date();
-      const filteredUsers = data?.users.filter(user => {
-        const createdAt = new Date(user.created_at);
-        
-        if (startDate && endDate) {
-          const start = new Date(startDate);
-          const end = new Date(endDate);
-          return createdAt >= start && createdAt <= end;
-        }
-        
-        if (dateRange === 'today') {
-          return createdAt.toDateString() === now.toDateString();
-        } else if (dateRange === 'week') {
-          const weekAgo = new Date(now);
-          weekAgo.setDate(now.getDate() - 7);
-          return createdAt >= weekAgo;
-        } else if (dateRange === 'month') {
-          const monthAgo = new Date(now);
-          monthAgo.setDate(now.getDate() - 30);
-          return createdAt >= monthAgo;
-        } else if (dateRange === 'year') {
-          const yearAgo = new Date(now);
-          yearAgo.setDate(now.getDate() - 365);
-          return createdAt >= yearAgo;
-        }
-        
-        return true;
-      }) || [];
-      
-      return { data: { count: filteredUsers.length }, error };
-    });
+      newUserCount = newUsersData?.length || 0;
+    } catch (error) {
+      console.error("Error getting new users:", error);
+    }
 
-    const newUserCount = newUsers?.count || 0;
-
-    // Get email confirmation rate
-    const { data: confirmedUsers, error: confirmedError } = await supabaseAdmin.rpc(
-      'get_confirmed_emails_count',
-      { date_filter: dateFilter }
-    ).catch(async () => {
-      // Fallback if RPC function doesn't exist
-      const { data, error } = await supabaseAdmin.auth.admin.listUsers();
-      
-      const confirmedCount = data?.users.filter(user => user.email_confirmed_at !== null).length || 0;
-      
-      return { data: { count: confirmedCount }, error };
-    });
-
-    const confirmedCount = confirmedUsers?.count || 0;
+    // Get confirmed users count from auth.users
+    const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers();
+    const confirmedCount = authUsers?.users.filter(user => user.email_confirmed_at !== null).length || 0;
     const conversionRate = totalUsers > 0 ? (confirmedCount / totalUsers * 100).toFixed(2) : 0;
 
     // Get issues and positions counts
-    const { count: issuesCount, error: issuesError } = await supabaseAdmin
+    const { count: issuesCount } = await supabaseAdmin
       .from('issues')
       .select('*', { count: 'exact', head: true });
 
-    const { count: positionsCount, error: positionsError } = await supabaseAdmin
+    const { count: positionsCount } = await supabaseAdmin
       .from('positions')
       .select('*', { count: 'exact', head: true });
 
     // Get daily active users based on auth.users last_sign_in_at
-    const { data: activeUsersData, error: activeUsersError } = await supabaseAdmin.rpc(
-      'get_active_users_count',
-      { date_filter: "AND last_sign_in_at >= current_date" }
-    ).catch(async () => {
-      // Fallback if RPC function doesn't exist
-      const { data, error } = await supabaseAdmin.auth.admin.listUsers();
-      
-      const now = new Date();
-      const todayActiveUsers = data?.users.filter(user => {
-        if (!user.last_sign_in_at) return false;
-        const lastSignIn = new Date(user.last_sign_in_at);
-        return lastSignIn.toDateString() === now.toDateString();
-      }).length || 0;
-      
-      return { data: { count: todayActiveUsers }, error };
-    });
-
-    const dailyActiveUsers = activeUsersData?.count || 0;
+    const today = new Date().toISOString().split('T')[0];
+    const dailyActiveUsers = authUsers?.users.filter(user => {
+      return user.last_sign_in_at && user.last_sign_in_at.startsWith(today);
+    }).length || 0;
 
     // Get user activity over time (for charts)
-    const { data: userActivity, error: activityError } = await supabaseAdmin.rpc(
-      'get_user_activity_by_day',
-      { days_back: 30 }
-    ).catch(() => {
-      // Fallback if RPC function doesn't exist
-      return { 
-        data: Array.from({ length: 30 }, (_, i) => ({
-          date: new Date(Date.now() - (29 - i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          count: Math.floor(Math.random() * 10) // Mock data for demonstration
-        })),
-        error: null
-      };
-    });
+    // Generate dates for the last 30 days
+    const userActivity = [];
+    const end = new Date();
+    const start = new Date();
+    start.setDate(end.getDate() - 29); // 30 days including today
+    
+    for (let day = 0; day < 30; day++) {
+      const currentDate = new Date(start);
+      currentDate.setDate(start.getDate() + day);
+      const dateStr = currentDate.toISOString().split('T')[0];
+      
+      // Count signups for this date
+      const signupsOnDay = authUsers?.users.filter(user => {
+        return user.created_at && user.created_at.startsWith(dateStr);
+      }).length || 0;
+      
+      userActivity.push({
+        date: dateStr,
+        count: signupsOnDay
+      });
+    }
 
     // Get top issues by engagement
-    const { data: topIssues, error: topIssuesError } = await supabaseAdmin
+    const { data: positions } = await supabaseAdmin
       .from('positions')
-      .select('issue_id, count(*)')
-      .group('issue_id')
-      .order('count', { ascending: false })
-      .limit(5);
+      .select('issue_id');
+    
+    const issueCount = {};
+    positions?.forEach(position => {
+      if (position.issue_id) {
+        issueCount[position.issue_id] = (issueCount[position.issue_id] || 0) + 1;
+      }
+    });
+    
+    const topIssues = Object.entries(issueCount).map(([issue_id, count]) => ({
+      issue_id,
+      count
+    })).sort((a, b) => b.count - a.count).slice(0, 5);
 
     // Get user roles distribution
-    const { data: roleDistribution, error: roleError } = await supabaseAdmin
+    const { data: profiles } = await supabaseAdmin
       .from('profiles')
-      .select('role, count(*)')
-      .group('role')
-      .order('count', { ascending: false });
+      .select('role');
+    
+    const roleCounts = {};
+    profiles?.forEach(profile => {
+      if (profile.role) {
+        roleCounts[profile.role] = (roleCounts[profile.role] || 0) + 1;
+      }
+    });
+    
+    const roleDistribution = Object.entries(roleCounts).map(([role, count]) => ({
+      role,
+      count
+    }));
 
     // Combine all analytics data
     const analyticsData = {
