@@ -1,7 +1,7 @@
 
 import { AuthError } from '@supabase/supabase-js';
 import { supabase } from "@/integrations/supabase/client";
-import { logError } from '../errorLoggingService';
+import { logError, ErrorType } from '../errorLoggingService';
 
 export async function signIn(
   email: string, 
@@ -17,8 +17,9 @@ export async function signIn(
 
     if (error) {
       // Log the error
+      const errorType: ErrorType = error.message.includes('timeout') ? 'auth_timeout' : 'auth_error';
       await logError({
-        error_type: error.message.includes('timeout') ? 'auth_timeout' : 'auth_error',
+        error_type: errorType,
         error_message: error.message,
         component: 'SignIn',
         user_id: data?.user?.id

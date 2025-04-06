@@ -1,6 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { logError } from '../errorLoggingService';
+import { logError, ErrorType } from '../errorLoggingService';
 
 export async function signOut(onSuccess: () => void, onError: (error: any) => void) {
   try {
@@ -8,8 +8,9 @@ export async function signOut(onSuccess: () => void, onError: (error: any) => vo
     
     if (error) {
       // Log the error
+      const errorType: ErrorType = 'auth_error';
       await logError({
-        error_type: 'auth_error',
+        error_type: errorType,
         error_message: error.message,
         component: 'SignOut'
       });

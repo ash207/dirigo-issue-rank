@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type ErrorType = 
   | 'auth_timeout'
+  | 'auth_error'
   | 'api_error'
   | 'validation_error'
   | 'network_error'
@@ -23,6 +24,17 @@ export interface ErrorLogData {
   };
 }
 
+// Create the system_errors table if it doesn't exist
+const createSystemErrorsTable = async () => {
+  const { error } = await supabase.rpc('create_system_errors_table_if_not_exists');
+  if (error) {
+    console.error("Error creating system_errors table:", error);
+  }
+};
+
+// Call the function to ensure the table exists
+createSystemErrorsTable();
+
 export const logError = async (errorData: ErrorLogData): Promise<void> => {
   try {
     // Get browser information
@@ -34,16 +46,16 @@ export const logError = async (errorData: ErrorLogData): Promise<void> => {
       ...errorData.browser_info
     };
 
-    // Insert error into the database
-    const { error } = await supabase
-      .from('system_errors')
-      .insert({
+    // Insert error into the database using a Supabase function instead of direct table access
+    const { error } = await supabase.functions.invoke('log-system-error', {
+      body: {
         error_type: errorData.error_type,
         error_message: errorData.error_message,
         component: errorData.component,
         user_id: errorData.user_id,
         browser_info: browserInfo
-      });
+      }
+    });
 
     if (error) {
       console.error("Failed to log error to database:", error);

@@ -1,3 +1,4 @@
+
 import * as React from "react"
 import * as RechartsPrimitive from "recharts"
 
@@ -353,6 +354,196 @@ function getPayloadConfigFromPayload(
     : config[key as keyof typeof config]
 }
 
+// Add custom chart components
+const AreaChart = ({ 
+  data, 
+  index, 
+  categories, 
+  colors = ["primary"], 
+  valueFormatter, 
+  showLegend = false,
+  showXAxis = true,
+  showYAxis = true,
+  showGrid = true,
+  className,
+  ...props 
+}: {
+  data: any[];
+  index: string;
+  categories: string[];
+  colors?: string[];
+  valueFormatter?: (value: number) => string;
+  showLegend?: boolean;
+  showXAxis?: boolean;
+  showYAxis?: boolean;
+  showGrid?: boolean;
+  className?: string;
+  [key: string]: any;
+}) => {
+  return (
+    <ChartContainer
+      config={{
+        // Initialize config for each category with its respective color
+        ...Object.fromEntries(
+          categories.map((category, i) => [
+            category,
+            { color: colors[i % colors.length] || colors[0] }
+          ])
+        ),
+      }}
+      className={cn("h-80", className)}
+      {...props}
+    >
+      <RechartsPrimitive.AreaChart data={data}>
+        {showGrid && (
+          <RechartsPrimitive.CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+        )}
+        {showXAxis && (
+          <RechartsPrimitive.XAxis
+            dataKey={index}
+            className="text-xs text-muted-foreground"
+            tickLine={false}
+            axisLine={false}
+            padding={{ left: 10, right: 10 }}
+          />
+        )}
+        {showYAxis && (
+          <RechartsPrimitive.YAxis
+            className="text-xs text-muted-foreground"
+            tickLine={false}
+            axisLine={false}
+            tickFormatter={valueFormatter}
+          />
+        )}
+        <ChartTooltip
+          content={
+            <ChartTooltipContent
+              formatter={(value: any) => 
+                valueFormatter ? valueFormatter(value) : value
+              }
+            />
+          }
+        />
+        {showLegend && (
+          <RechartsPrimitive.Legend
+            content={<ChartLegendContent />}
+            className="text-xs text-muted-foreground"
+          />
+        )}
+        {categories.map((category, i) => (
+          <RechartsPrimitive.Area
+            key={category}
+            type="monotone"
+            dataKey={category}
+            fill={`hsl(var(--${colors[i % colors.length] || colors[0]}))`}
+            stroke={`hsl(var(--${colors[i % colors.length] || colors[0]}))`}
+            fillOpacity={0.2}
+          />
+        ))}
+      </RechartsPrimitive.AreaChart>
+    </ChartContainer>
+  );
+};
+
+const BarChart = ({ 
+  data, 
+  index, 
+  categories, 
+  colors = ["primary"], 
+  valueFormatter, 
+  showLegend = false,
+  showXAxis = true,
+  showYAxis = true,
+  showGrid = true,
+  layout = "vertical",
+  className,
+  ...props 
+}: {
+  data: any[];
+  index: string;
+  categories: string[];
+  colors?: string[];
+  valueFormatter?: (value: number) => string;
+  showLegend?: boolean;
+  showXAxis?: boolean;
+  showYAxis?: boolean;
+  showGrid?: boolean;
+  layout?: "vertical" | "horizontal";
+  className?: string;
+  [key: string]: any;
+}) => {
+  const isVertical = layout === "vertical";
+  
+  return (
+    <ChartContainer
+      config={{
+        // Initialize config for each category with its respective color
+        ...Object.fromEntries(
+          categories.map((category, i) => [
+            category,
+            { color: colors[i % colors.length] || colors[0] }
+          ])
+        ),
+      }}
+      className={cn("h-80", className)}
+      {...props}
+    >
+      <RechartsPrimitive.BarChart 
+        data={data}
+        layout={layout}
+      >
+        {showGrid && (
+          <RechartsPrimitive.CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+        )}
+        {showXAxis && (
+          <RechartsPrimitive.XAxis
+            dataKey={isVertical ? undefined : index}
+            type={isVertical ? "number" : "category"}
+            className="text-xs text-muted-foreground"
+            tickLine={false}
+            axisLine={false}
+            padding={{ left: 10, right: 10 }}
+            tickFormatter={isVertical ? valueFormatter : undefined}
+          />
+        )}
+        {showYAxis && (
+          <RechartsPrimitive.YAxis
+            className="text-xs text-muted-foreground"
+            dataKey={isVertical ? index : undefined}
+            type={isVertical ? "category" : "number"}
+            tickLine={false}
+            axisLine={false}
+            tickFormatter={isVertical ? undefined : valueFormatter}
+          />
+        )}
+        <ChartTooltip
+          content={
+            <ChartTooltipContent
+              formatter={(value: any) => 
+                valueFormatter ? valueFormatter(value) : value
+              }
+            />
+          }
+        />
+        {showLegend && (
+          <RechartsPrimitive.Legend
+            content={<ChartLegendContent />}
+            className="text-xs text-muted-foreground"
+          />
+        )}
+        {categories.map((category, i) => (
+          <RechartsPrimitive.Bar
+            key={category}
+            dataKey={category}
+            fill={`hsl(var(--${colors[i % colors.length] || colors[0]}))`}
+            radius={[4, 4, 0, 0]}
+          />
+        ))}
+      </RechartsPrimitive.BarChart>
+    </ChartContainer>
+  );
+};
+
 export {
   ChartContainer,
   ChartTooltip,
@@ -360,4 +551,6 @@ export {
   ChartLegend,
   ChartLegendContent,
   ChartStyle,
+  AreaChart,
+  BarChart
 }
