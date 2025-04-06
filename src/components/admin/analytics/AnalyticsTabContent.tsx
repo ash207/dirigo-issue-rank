@@ -5,10 +5,12 @@ import { AnalyticsOverview } from "./AnalyticsOverview";
 import { AnalyticsCharts } from "./AnalyticsCharts";
 import { AnalyticsActions } from "./AnalyticsActions";
 import { AnalyticsDataTable } from "./AnalyticsDataTable";
+import { ErrorMetricsSection } from "./ErrorMetricsSection";
 import { AnalyticsData, DateRange, fetchAnalyticsData } from "@/services/analyticsService";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export function AnalyticsTabContent() {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
@@ -17,6 +19,7 @@ export function AnalyticsTabContent() {
   const [filter, setFilter] = useState({
     dateRange: 'week' as DateRange
   });
+  const [activeTab, setActiveTab] = useState("overview");
 
   const loadAnalyticsData = useCallback(async () => {
     setIsLoading(true);
@@ -57,7 +60,15 @@ export function AnalyticsTabContent() {
     dailyActiveUsers: 0,
     conversionRate: 0,
     issuesCount: 0,
-    positionsCount: 0
+    positionsCount: 0,
+    totalErrors: 0,
+    uniqueUserErrors: 0
+  };
+
+  const emptyErrorMetrics = {
+    errorTimeline: [],
+    topErrorComponents: [],
+    errorsByType: []
   };
 
   return (
@@ -83,21 +94,41 @@ export function AnalyticsTabContent() {
         </Alert>
       )}
       
-      <AnalyticsOverview
-        metrics={analyticsData?.overviewMetrics || emptyMetrics}
-        isLoading={isLoading}
-      />
-      
-      <AnalyticsCharts
-        userActivity={analyticsData?.userActivity || []}
-        roleDistribution={analyticsData?.roleDistribution || []}
-        isLoading={isLoading}
-      />
-      
-      <AnalyticsDataTable
-        data={analyticsData}
-        isLoading={isLoading}
-      />
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="errors">Error Monitoring</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="overview" className="space-y-6">
+          <AnalyticsOverview
+            metrics={analyticsData?.overviewMetrics || emptyMetrics}
+            isLoading={isLoading}
+          />
+          
+          <AnalyticsCharts
+            userActivity={analyticsData?.userActivity || []}
+            roleDistribution={analyticsData?.roleDistribution || []}
+            isLoading={isLoading}
+          />
+          
+          <AnalyticsDataTable
+            data={analyticsData}
+            isLoading={isLoading}
+          />
+        </TabsContent>
+        
+        <TabsContent value="errors" className="space-y-6">
+          <ErrorMetricsSection
+            metrics={analyticsData?.errorMetrics || emptyErrorMetrics}
+            overviewMetrics={{
+              totalErrors: analyticsData?.overviewMetrics?.totalErrors || 0,
+              uniqueUserErrors: analyticsData?.overviewMetrics?.uniqueUserErrors || 0
+            }}
+            isLoading={isLoading}
+          />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

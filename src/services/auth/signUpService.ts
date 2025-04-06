@@ -1,5 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { logError } from '../errorLoggingService';
 
 export async function signUp(
   email: string, 
@@ -24,6 +25,14 @@ export async function signUp(
     
     if (error) {
       console.error("Supabase returned an error during signup:", error);
+      
+      // Log the error
+      await logError({
+        error_type: error.message.includes('timeout') ? 'auth_timeout' : 'auth_error',
+        error_message: error.message,
+        component: 'SignUp'
+      });
+      
       throw error;
     }
     
@@ -34,6 +43,13 @@ export async function signUp(
     
   } catch (error: any) {
     console.error("Final signup error:", error);
+    
+    // Log the error
+    await logError({
+      error_type: error.status === 504 || error.message?.includes("timeout") ? 'auth_timeout' : 'auth_error',
+      error_message: error.message || "Unknown signup error",
+      component: 'SignUp'
+    });
     
     // Provide helpful error messages based on error type
     let errorMessage = "Failed to create account";

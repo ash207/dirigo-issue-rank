@@ -16,6 +16,8 @@ export type OverviewMetrics = {
   conversionRate: number | string;
   issuesCount: number;
   positionsCount: number;
+  totalErrors?: number;
+  uniqueUserErrors?: number;
 };
 
 export type UserActivityData = {
@@ -33,11 +35,33 @@ export type RoleDistribution = {
   count: number;
 };
 
+export type ErrorTimelineData = {
+  date: string;
+  count: number;
+};
+
+export type TopErrorComponent = {
+  component: string;
+  count: number;
+};
+
+export type ErrorTypeData = {
+  type: string;
+  count: number;
+};
+
+export type ErrorMetrics = {
+  errorTimeline: ErrorTimelineData[];
+  topErrorComponents: TopErrorComponent[];
+  errorsByType: ErrorTypeData[];
+};
+
 export type AnalyticsData = {
   overviewMetrics: OverviewMetrics;
   userActivity: UserActivityData[];
   topIssues: TopIssue[];
   roleDistribution: RoleDistribution[];
+  errorMetrics?: ErrorMetrics;
 };
 
 export const fetchAnalyticsData = async (filter: AnalyticsFilter): Promise<AnalyticsData> => {
@@ -77,13 +101,23 @@ export const fetchAnalyticsData = async (filter: AnalyticsFilter): Promise<Analy
         conversionRate: 0,
         issuesCount: 0,
         positionsCount: 0,
+        totalErrors: 0,
+        uniqueUserErrors: 0,
       },
       userActivity: Array.from({ length: 30 }, (_, i) => ({
         date: new Date(Date.now() - (29 - i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         count: 0
       })),
       topIssues: [],
-      roleDistribution: []
+      roleDistribution: [],
+      errorMetrics: {
+        errorTimeline: Array.from({ length: 30 }, (_, i) => ({
+          date: new Date(Date.now() - (29 - i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          count: 0
+        })),
+        topErrorComponents: [],
+        errorsByType: []
+      }
     };
   }
 };

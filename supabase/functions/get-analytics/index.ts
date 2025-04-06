@@ -14,6 +14,12 @@ import {
   getTopIssues,
   getRoleDistribution
 } from "./contentMetrics.ts";
+import {
+  getErrorMetrics,
+  getErrorTimeline,
+  getTopErrorComponents,
+  getErrorsByType
+} from "./errorMetrics.ts";
 
 // CORS headers for all responses
 export const corsHeaders = {
@@ -44,6 +50,12 @@ serve(async (req) => {
     const userActivity = await getUserActivity(supabaseAdmin, dateRange, startDate, endDate);
     const topIssues = await getTopIssues(supabaseAdmin, dateRange, startDate, endDate);
     const roleDistribution = await getRoleDistribution(supabaseAdmin);
+    
+    // Get error metrics
+    const errorMetrics = await getErrorMetrics(supabaseAdmin, dateRange, startDate, endDate);
+    const errorTimeline = await getErrorTimeline(supabaseAdmin, dateRange, startDate, endDate);
+    const topErrorComponents = await getTopErrorComponents(supabaseAdmin, dateRange, startDate, endDate);
+    const errorsByType = await getErrorsByType(supabaseAdmin, dateRange, startDate, endDate);
 
     // Combine all analytics data
     const analyticsData = {
@@ -54,10 +66,17 @@ serve(async (req) => {
         conversionRate,
         issuesCount,
         positionsCount,
+        totalErrors: errorMetrics.totalErrors,
+        uniqueUserErrors: errorMetrics.uniqueUserErrors,
       },
       userActivity,
       topIssues,
       roleDistribution,
+      errorMetrics: {
+        errorTimeline,
+        topErrorComponents,
+        errorsByType
+      }
     };
 
     return new Response(
