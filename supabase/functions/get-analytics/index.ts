@@ -12,7 +12,8 @@ import {
   getContentCounts,
   getUserActivity,
   getTopIssues,
-  getRoleDistribution
+  getRoleDistribution,
+  getSiteIssuesSummary
 } from "./contentMetrics.ts";
 
 // CORS headers for all responses
@@ -44,6 +45,7 @@ serve(async (req) => {
     const userActivity = await getUserActivity(supabaseAdmin, dateRange, startDate, endDate);
     const topIssues = await getTopIssues(supabaseAdmin, dateRange, startDate, endDate);
     const roleDistribution = await getRoleDistribution(supabaseAdmin);
+    const siteIssuesSummary = await getSiteIssuesSummary(supabaseAdmin, dateRange, startDate, endDate);
 
     // Combine all analytics data
     const analyticsData = {
@@ -58,6 +60,7 @@ serve(async (req) => {
       userActivity,
       topIssues,
       roleDistribution,
+      siteIssuesSummary,
     };
 
     return new Response(
