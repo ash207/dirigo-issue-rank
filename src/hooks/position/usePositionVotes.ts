@@ -7,7 +7,8 @@ export const usePositionVotes = (issueId: string | undefined, userId: string | u
     userVotedPosition, 
     positionVotes, 
     setUserVotedPosition, 
-    setPositionVotes 
+    setPositionVotes,
+    isActiveUser
   } = useFetchVotes(issueId, userId, isAuthenticated);
   
   const { handleVote } = useVoteHandler(
@@ -17,10 +18,11 @@ export const usePositionVotes = (issueId: string | undefined, userId: string | u
     userVotedPosition, 
     setUserVotedPosition,
     positionVotes,
-    setPositionVotes
+    setPositionVotes,
+    isActiveUser
   );
 
-  return { userVotedPosition, positionVotes, handleVote };
+  return { userVotedPosition, positionVotes, handleVote, isActiveUser };
 };
 
 export default usePositionVotes;

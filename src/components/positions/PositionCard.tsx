@@ -19,6 +19,7 @@ interface PositionCardProps {
   userVotedPosition: string | null;
   onVote: (positionId: string) => void;
   isAuthenticated: boolean;
+  isActiveUser?: boolean;
   currentUserId?: string;
   author_id?: string;
   onPositionUpdated?: () => void;
@@ -35,6 +36,7 @@ const PositionCard = ({
   userVotedPosition,
   onVote,
   isAuthenticated,
+  isActiveUser = true,
   author_id,
   currentUserId,
   onPositionUpdated,
@@ -69,6 +71,8 @@ const PositionCard = ({
             votes={votes}
             userVoted={userVotedPosition === id}
             onVote={() => onVote(id)}
+            isActiveUser={isActiveUser}
+            isAuthenticated={isAuthenticated}
           />
         </div>
       </CardContent>

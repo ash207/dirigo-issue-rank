@@ -14,6 +14,7 @@ interface PositionTabsProps {
   onPositionUpdated: () => void;
   loadMore: () => void;
   issueId: string;
+  isActiveUser?: boolean;
 }
 
 const PositionTabs = ({
@@ -26,7 +27,8 @@ const PositionTabs = ({
   currentUserId,
   onPositionUpdated,
   loadMore,
-  issueId
+  issueId,
+  isActiveUser = true
 }: PositionTabsProps) => {
   return (
     <Tabs defaultValue="top">
@@ -48,6 +50,7 @@ const PositionTabs = ({
           onPositionUpdated={onPositionUpdated}
           loadMore={loadMore}
           issueId={issueId}
+          isActiveUser={isActiveUser}
         />
       </TabsContent>
 
@@ -63,6 +66,7 @@ const PositionTabs = ({
           onPositionUpdated={onPositionUpdated}
           loadMore={loadMore}
           issueId={issueId}
+          isActiveUser={isActiveUser}
         />
       </TabsContent>
 
@@ -81,6 +85,7 @@ const PositionTabs = ({
           onPositionUpdated={onPositionUpdated}
           loadMore={loadMore}
           issueId={issueId}
+          isActiveUser={isActiveUser}
         />
       </TabsContent>
     </Tabs>

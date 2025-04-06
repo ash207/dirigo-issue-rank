@@ -31,7 +31,7 @@ const IssueDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
-  const { userVotedPosition, positionVotes, handleVote } = usePositionVotes(id, user?.id, isAuthenticated);
+  const { userVotedPosition, positionVotes, handleVote, isActiveUser } = usePositionVotes(id, user?.id, isAuthenticated);
   const [loading, setLoading] = useState(true);
   const [showAddPosition, setShowAddPosition] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -147,6 +147,7 @@ const IssueDetail = () => {
               onVote={handleVote}
               currentUserId={user?.id}
               onPositionUpdated={handleRefreshPositions}
+              isActiveUser={isActiveUser}
             />
           )}
           

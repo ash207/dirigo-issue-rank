@@ -1,9 +1,7 @@
 
-import { useCallback, useState, useEffect } from "react";
-import CreatePositionForm from "./CreatePositionForm";
-import CreatePositionButton from "./CreatePositionButton";
+import { useState } from "react";
 import PositionTabs from "./PositionTabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import CreatePositionButton from "./CreatePositionButton";
 import { Position } from "@/types/positions";
 
 interface PositionsListProps {
@@ -11,63 +9,43 @@ interface PositionsListProps {
   issueId: string;
   isAuthenticated: boolean;
   userVotedPosition: string | null;
-  positionVotes?: Record<string, number>;
+  positionVotes: Record<string, number>;
   onVote: (positionId: string) => void;
+  onAddPosition?: () => void;
   currentUserId?: string;
   onPositionUpdated?: () => void;
+  isActiveUser?: boolean;
 }
 
 const PositionsList = ({ 
-  positions: initialPositions,
+  positions, 
   issueId,
   isAuthenticated,
   userVotedPosition,
-  positionVotes = {},
+  positionVotes,
   onVote,
+  onAddPosition,
   currentUserId,
-  onPositionUpdated
+  onPositionUpdated,
+  isActiveUser = true
 }: PositionsListProps) => {
-  const [positions, setPositions] = useState<Position[]>(initialPositions);
-  const [visibleCount, setVisibleCount] = useState(3);
-  const [isOpen, setIsOpen] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(5);
   
-  // Update positions when initialPositions changes or vote counts change
-  useEffect(() => {
-    // Merge current vote counts from positionVotes with positions data
-    const updatedPositions = initialPositions.map(position => ({
-      ...position,
-      votes: positionVotes[position.id] !== undefined ? positionVotes[position.id] : position.votes
-    }));
-    
-    setPositions(updatedPositions);
-    console.log("PositionsList updated with votes:", positionVotes, updatedPositions);
-  }, [initialPositions, positionVotes]);
-
-  const refreshPositions = useCallback(() => {
-    // In a real app, this would fetch updated positions from the API
-    // For now, we just update the local state with the initial positions
-    setPositions([...initialPositions]);
-    if (onPositionUpdated) {
-      onPositionUpdated();
-    }
-  }, [initialPositions, onPositionUpdated]);
-
   const loadMore = () => {
     setVisibleCount(prev => prev + 5);
   };
 
-  const handlePositionCreated = () => {
-    refreshPositions();
-    setIsOpen(false);
-  };
-
   return (
-    <>
-      <div className="mb-4">
+    <div className="mt-4 space-y-4 pb-8">
+      <div className="flex justify-between items-center">
         <h2 className="text-xl font-bold">Positions</h2>
+        <CreatePositionButton 
+          isAuthenticated={isAuthenticated} 
+          onAddPosition={onAddPosition}
+        />
       </div>
       
-      <PositionTabs
+      <PositionTabs 
         positions={positions}
         visibleCount={visibleCount}
         userVotedPosition={userVotedPosition}
@@ -75,35 +53,12 @@ const PositionsList = ({
         onVote={onVote}
         isAuthenticated={isAuthenticated}
         currentUserId={currentUserId}
-        onPositionUpdated={refreshPositions}
+        onPositionUpdated={onPositionUpdated || (() => {})}
         loadMore={loadMore}
         issueId={issueId}
+        isActiveUser={isActiveUser}
       />
-
-      <div className="mt-6">
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogTrigger asChild>
-            <div>
-              <CreatePositionButton 
-                isAuthenticated={isAuthenticated} 
-                onClick={() => setIsOpen(true)} 
-              />
-            </div>
-          </DialogTrigger>
-          {isOpen && (
-            <DialogContent className="sm:max-w-[500px]">
-              <DialogHeader>
-                <DialogTitle>Add Your Position on This Issue</DialogTitle>
-              </DialogHeader>
-              <CreatePositionForm 
-                issueId={issueId} 
-                onSuccess={handlePositionCreated} 
-              />
-            </DialogContent>
-          )}
-        </Dialog>
-      </div>
-    </>
+    </div>
   );
 };
 

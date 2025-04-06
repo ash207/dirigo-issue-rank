@@ -15,6 +15,7 @@ interface PositionsTabContentProps {
   onPositionUpdated: () => void;
   loadMore: () => void;
   issueId: string;
+  isActiveUser?: boolean;
 }
 
 const PositionsTabContent = ({
@@ -27,7 +28,8 @@ const PositionsTabContent = ({
   currentUserId,
   onPositionUpdated,
   loadMore,
-  issueId
+  issueId,
+  isActiveUser = true
 }: PositionsTabContentProps) => {
   if (positions.length === 0) {
     return (
@@ -57,6 +59,7 @@ const PositionsTabContent = ({
           currentUserId={currentUserId}
           onPositionUpdated={onPositionUpdated}
           issueId={issueId}
+          isActiveUser={isActiveUser}
         />
       ))}
       

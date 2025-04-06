@@ -10,7 +10,8 @@ export const useVoteHandler = (
   userVotedPosition: string | null,
   setUserVotedPosition: (positionId: string | null) => void,
   positionVotes: Record<string, number>,
-  setPositionVotes: (votes: Record<string, number>) => void
+  setPositionVotes: (votes: Record<string, number>) => void,
+  isActiveUser: boolean = false
 ) => {
   const updatePositionVote = (positionId: string, newCount: number) => {
     setPositionVotes({
@@ -20,21 +21,61 @@ export const useVoteHandler = (
   };
 
   const handleVote = async (positionId: string) => {
-    if (!isAuthenticated || !userId || !issueId) return;
+    if (!isAuthenticated || !userId || !issueId) {
+      toast.error("You must be signed in to vote");
+      return;
+    }
+    
+    if (!isActiveUser) {
+      toast.error("Your account needs to be verified to vote. Please check your email.");
+      return;
+    }
     
     // For mock data with non-UUID IDs, simulate voting without database calls
     if (!isValidUUID(issueId) || !isValidUUID(positionId)) {
       console.log("Using mock voting for non-UUID IDs", { issueId, positionId });
-      setUserVotedPosition(positionId);
-      toast.success("Your vote has been recorded! (Mock)");
+      
+      // If already voted for this position, unvote
+      if (userVotedPosition === positionId) {
+        setUserVotedPosition(null);
+        toast.success("Your vote has been removed! (Mock)");
+      } else {
+        setUserVotedPosition(positionId);
+        toast.success("Your vote has been recorded! (Mock)");
+      }
       return;
     }
     
     try {
       if (userVotedPosition) {
         if (userVotedPosition === positionId) {
-          // User is trying to unvote - not allowed in this implementation
-          toast.info("You can't remove your vote once cast");
+          // User is trying to unvote - now allowed
+          const { data: oldPosition } = await supabase
+            .from('positions')
+            .select('votes')
+            .eq('id', userVotedPosition)
+            .single();
+            
+          if (oldPosition) {
+            const newCount = Math.max(0, oldPosition.votes - 1);
+            await supabase
+              .from('positions')
+              .update({ votes: newCount })
+              .eq('id', userVotedPosition);
+            
+            // Update local state for the position
+            updatePositionVote(userVotedPosition, newCount);
+          }
+          
+          // Delete the vote record
+          await supabase
+            .from('user_votes')
+            .delete()
+            .eq('user_id', userId)
+            .eq('issue_id', issueId);
+          
+          setUserVotedPosition(null);
+          toast.success("Your vote has been removed!");
           return;
         } else {
           // User is changing their vote
