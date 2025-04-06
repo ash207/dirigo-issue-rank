@@ -24,16 +24,27 @@ export interface ErrorLogData {
   };
 }
 
-// Create the system_errors table if it doesn't exist
-const createSystemErrorsTable = async () => {
-  const { error } = await supabase.rpc('create_system_errors_table_if_not_exists');
-  if (error) {
-    console.error("Error creating system_errors table:", error);
+// Instead of using RPC, we'll directly check if we can access the table
+// This is just a detection mechanism - the table is created in migrations
+const ensureErrorTableExists = async () => {
+  try {
+    // Try to select from the table to check if it exists
+    // We only need to check, not actually fetch data
+    const { error } = await supabase
+      .from('system_errors')
+      .select('id')
+      .limit(1);
+    
+    if (error) {
+      console.warn("system_errors table check: ", error.message);
+    }
+  } catch (err) {
+    console.error("Error checking system_errors table:", err);
   }
 };
 
-// Call the function to ensure the table exists
-createSystemErrorsTable();
+// Call the function to ensure the table exists (just a check)
+ensureErrorTableExists();
 
 export const logError = async (errorData: ErrorLogData): Promise<void> => {
   try {
