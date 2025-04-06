@@ -10,6 +10,7 @@ import AdminEmailSender from "@/components/admin/AdminEmailSender";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { UserManagementTable } from "@/components/admin/UserManagementTable";
+import { AnalyticsTabContent } from "@/components/admin/analytics/AnalyticsTabContent";
 
 const AdminDashboardPage = () => {
   const navigate = useNavigate();
@@ -32,6 +33,7 @@ const AdminDashboardPage = () => {
           <TabsList className="mb-6">
             <TabsTrigger value="emails">Email Management</TabsTrigger>
             <TabsTrigger value="users">User Management</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
           
           <TabsContent value="emails" className="space-y-6">
@@ -64,6 +66,10 @@ const AdminDashboardPage = () => {
             </Card>
             
             <UserManagementTable />
+          </TabsContent>
+          
+          <TabsContent value="analytics" className="space-y-6">
+            <AnalyticsTabContent />
           </TabsContent>
         </Tabs>
       </div>
