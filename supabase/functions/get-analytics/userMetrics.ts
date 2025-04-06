@@ -32,9 +32,11 @@ export async function getNewUsers(supabaseAdmin, dateRange, startDate, endDate) 
       }
     }
     
-    const { data: newUsersData, error } = await supabaseAdmin
+    // The issue was here - we were using select with count but not properly getting the count
+    // We're now using count() directly to get the number of new users
+    const { count, error } = await supabaseAdmin
       .from('profiles')
-      .select('id', { count: 'exact' })
+      .select('*', { count: 'exact', head: true })
       .filter(dateFilter);
     
     if (error) {
@@ -42,7 +44,7 @@ export async function getNewUsers(supabaseAdmin, dateRange, startDate, endDate) 
       return 0;
     }
     
-    return newUsersData?.length || 0;
+    return count || 0;
   } catch (error) {
     console.error("Error getting new users:", error);
     return 0;
