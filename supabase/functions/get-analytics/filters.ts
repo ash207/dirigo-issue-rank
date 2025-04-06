@@ -1,4 +1,3 @@
-
 // Parse request body for filter parameters
 export async function parseFilterParams(req) {
   let dateRange = 'week'; // Default to week
@@ -17,26 +16,6 @@ export async function parseFilterParams(req) {
   }
 
   return { dateRange, startDate, endDate };
-}
-
-// Build SQL date filter based on date range
-export function buildDateFilter(dateRange, startDate, endDate) {
-  if (startDate && endDate) {
-    return `AND created_at >= '${startDate}' AND created_at <= '${endDate}'`;
-  }
-  
-  switch (dateRange) {
-    case 'today':
-      return "AND created_at >= current_date";
-    case 'week':
-      return "AND created_at >= current_date - interval '7 days'";
-    case 'month':
-      return "AND created_at >= current_date - interval '30 days'";
-    case 'year':
-      return "AND created_at >= current_date - interval '365 days'";
-    default:
-      return "AND created_at >= current_date - interval '7 days'";
-  }
 }
 
 // Build date filter function for JS filtering
@@ -81,5 +60,25 @@ export function getDateFilterFunction(dateRange, startDate, endDate) {
       const weekAgoTime = weekAgo.getTime();
       return (date) => new Date(date).getTime() >= weekAgoTime;
     }
+  }
+}
+
+// Build SQL date filter based on date range - keeping this for backwards compatibility
+export function buildDateFilter(dateRange, startDate, endDate) {
+  if (startDate && endDate) {
+    return `AND created_at >= '${startDate}' AND created_at <= '${endDate}'`;
+  }
+  
+  switch (dateRange) {
+    case 'today':
+      return "AND created_at >= current_date";
+    case 'week':
+      return "AND created_at >= current_date - interval '7 days'";
+    case 'month':
+      return "AND created_at >= current_date - interval '30 days'";
+    case 'year':
+      return "AND created_at >= current_date - interval '365 days'";
+    default:
+      return "AND created_at >= current_date - interval '7 days'";
   }
 }
