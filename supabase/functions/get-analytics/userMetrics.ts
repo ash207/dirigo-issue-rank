@@ -11,33 +11,53 @@ export async function getTotalUsers(supabaseAdmin) {
 // Get new users over time period
 export async function getNewUsers(supabaseAdmin, dateRange, startDate, endDate) {
   try {
-    let dateFilter;
+    let query;
     
     if (startDate && endDate) {
-      dateFilter = `created_at >= '${startDate}' AND created_at <= '${endDate}'`;
+      query = supabaseAdmin
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', startDate)
+        .lte('created_at', endDate);
     } else {
       switch (dateRange) {
         case 'today':
-          dateFilter = "created_at >= current_date";
+          query = supabaseAdmin
+            .from('profiles')
+            .select('*', { count: 'exact', head: true })
+            .gte('created_at', new Date().toISOString().split('T')[0]);
           break;
         case 'week':
-          dateFilter = "created_at >= current_date - interval '7 days'";
+          // Get date from 7 days ago
+          const weekAgo = new Date();
+          weekAgo.setDate(weekAgo.getDate() - 7);
+          query = supabaseAdmin
+            .from('profiles')
+            .select('*', { count: 'exact', head: true })
+            .gte('created_at', weekAgo.toISOString());
           break;
         case 'month':
-          dateFilter = "created_at >= current_date - interval '30 days'";
+          // Get date from 30 days ago
+          const monthAgo = new Date();
+          monthAgo.setDate(monthAgo.getDate() - 30);
+          query = supabaseAdmin
+            .from('profiles')
+            .select('*', { count: 'exact', head: true })
+            .gte('created_at', monthAgo.toISOString());
           break;
         case 'year':
         default:
-          dateFilter = "created_at >= current_date - interval '365 days'";
+          // Get date from 365 days ago
+          const yearAgo = new Date();
+          yearAgo.setDate(yearAgo.getDate() - 365);
+          query = supabaseAdmin
+            .from('profiles')
+            .select('*', { count: 'exact', head: true })
+            .gte('created_at', yearAgo.toISOString());
       }
     }
     
-    // The issue was here - we were using select with count but not properly getting the count
-    // We're now using count() directly to get the number of new users
-    const { count, error } = await supabaseAdmin
-      .from('profiles')
-      .select('*', { count: 'exact', head: true })
-      .filter(dateFilter);
+    const { count, error } = await query;
     
     if (error) {
       console.error("Error getting new users:", error);
