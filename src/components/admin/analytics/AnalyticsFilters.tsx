@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DateRange } from "@/services/analyticsService";
 import { Button } from "@/components/ui/button";
 import { 
@@ -38,6 +38,7 @@ export function AnalyticsFilters({ onFilterChange, isLoading }: AnalyticsFilters
       setStartDate(undefined);
       setEndDate(undefined);
       
+      // Immediately trigger filter change for non-custom ranges
       onFilterChange({ 
         dateRange: range 
       });

@@ -45,15 +45,14 @@ async function authenticateRequest(req, supabaseAdmin) {
 }
 
 // Parse request body for filter parameters
-function parseFilterParams(req) {
-  let body;
+async function parseFilterParams(req) {
   let dateRange = 'week'; // Default to week
   let startDate = null;
   let endDate = null;
   
   if (req.body) {
     try {
-      body = req.json();
+      const body = await req.json();
       dateRange = body.dateRange || 'week';
       startDate = body.startDate || null;
       endDate = body.endDate || null;
@@ -95,28 +94,38 @@ async function getTotalUsers(supabaseAdmin) {
 }
 
 // Get new users over time period
-async function getNewUsers(supabaseAdmin, dateRange) {
+async function getNewUsers(supabaseAdmin, dateRange, startDate, endDate) {
   try {
-    let startDate;
-    switch (dateRange) {
-      case 'today':
-        startDate = new Date(new Date().setHours(0, 0, 0, 0)).toISOString();
-        break;
-      case 'week':
-        startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-        break;
-      case 'month':
-        startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-        break;
-      case 'year':
-      default:
-        startDate = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString();
+    let dateFilter;
+    
+    if (startDate && endDate) {
+      dateFilter = `created_at >= '${startDate}' AND created_at <= '${endDate}'`;
+    } else {
+      switch (dateRange) {
+        case 'today':
+          dateFilter = "created_at >= current_date";
+          break;
+        case 'week':
+          dateFilter = "created_at >= current_date - interval '7 days'";
+          break;
+        case 'month':
+          dateFilter = "created_at >= current_date - interval '30 days'";
+          break;
+        case 'year':
+        default:
+          dateFilter = "created_at >= current_date - interval '365 days'";
+      }
     }
     
-    const { data: newUsersData } = await supabaseAdmin
+    const { data: newUsersData, error } = await supabaseAdmin
       .from('profiles')
       .select('id', { count: 'exact' })
-      .gte('created_at', startDate);
+      .filter(dateFilter);
+    
+    if (error) {
+      console.error("Error getting new users:", error);
+      return 0;
+    }
     
     return newUsersData?.length || 0;
   } catch (error) {
@@ -141,33 +150,88 @@ function getDailyActiveUsers(authUsers) {
 }
 
 // Get issues and positions counts
-async function getContentCounts(supabaseAdmin) {
+async function getContentCounts(supabaseAdmin, dateRange, startDate, endDate) {
+  let dateFilter = '';
+  
+  if (startDate && endDate) {
+    dateFilter = `created_at >= '${startDate}' AND created_at <= '${endDate}'`;
+  } else {
+    switch (dateRange) {
+      case 'today':
+        dateFilter = "created_at >= current_date";
+        break;
+      case 'week':
+        dateFilter = "created_at >= current_date - interval '7 days'";
+        break;
+      case 'month':
+        dateFilter = "created_at >= current_date - interval '30 days'";
+        break;
+      case 'year':
+      default:
+        dateFilter = "created_at >= current_date - interval '365 days'";
+    }
+  }
+
   const { count: issuesCount } = await supabaseAdmin
     .from('issues')
-    .select('*', { count: 'exact', head: true });
+    .select('*', { count: 'exact', head: true })
+    .filter(dateFilter);
 
   const { count: positionsCount } = await supabaseAdmin
     .from('positions')
-    .select('*', { count: 'exact', head: true });
+    .select('*', { count: 'exact', head: true })
+    .filter(dateFilter);
   
   return { issuesCount: issuesCount || 0, positionsCount: positionsCount || 0 };
 }
 
 // Get user activity over time (for charts)
-function getUserActivity(authUsers) {
-  const userActivity = [];
-  const end = new Date();
-  const start = new Date();
-  start.setDate(end.getDate() - 29); // 30 days including today
+async function getUserActivity(supabaseAdmin, dateRange, startDate, endDate) {
+  let startDateObj;
+  let numDays;
   
-  for (let day = 0; day < 30; day++) {
-    const currentDate = new Date(start);
-    currentDate.setDate(start.getDate() + day);
+  if (startDate && endDate) {
+    startDateObj = new Date(startDate);
+    const endDateObj = new Date(endDate);
+    numDays = Math.ceil((endDateObj.getTime() - startDateObj.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    numDays = Math.min(numDays, 90); // Cap at 90 days to prevent performance issues
+  } else {
+    const today = new Date();
+    
+    switch (dateRange) {
+      case 'today':
+        startDateObj = new Date(today);
+        numDays = 1;
+        break;
+      case 'week':
+        startDateObj = new Date(today);
+        startDateObj.setDate(today.getDate() - 6);
+        numDays = 7;
+        break;
+      case 'month':
+        startDateObj = new Date(today);
+        startDateObj.setDate(today.getDate() - 29);
+        numDays = 30;
+        break;
+      case 'year':
+      default:
+        startDateObj = new Date(today);
+        startDateObj.setDate(today.getDate() - 364);
+        numDays = 365;
+    }
+  }
+  
+  const userActivity = [];
+  const { data: profiles } = await supabaseAdmin.from('profiles').select('created_at');
+  
+  for (let day = 0; day < numDays; day++) {
+    const currentDate = new Date(startDateObj);
+    currentDate.setDate(startDateObj.getDate() + day);
     const dateStr = currentDate.toISOString().split('T')[0];
     
     // Count signups for this date
-    const signupsOnDay = authUsers?.users.filter(user => {
-      return user.created_at && user.created_at.startsWith(dateStr);
+    const signupsOnDay = profiles?.filter(profile => {
+      return profile.created_at && profile.created_at.startsWith(dateStr);
     }).length || 0;
     
     userActivity.push({
@@ -180,10 +244,32 @@ function getUserActivity(authUsers) {
 }
 
 // Get top issues by engagement
-async function getTopIssues(supabaseAdmin) {
+async function getTopIssues(supabaseAdmin, dateRange, startDate, endDate) {
+  let dateFilter = '';
+  
+  if (startDate && endDate) {
+    dateFilter = `created_at >= '${startDate}' AND created_at <= '${endDate}'`;
+  } else {
+    switch (dateRange) {
+      case 'today':
+        dateFilter = "created_at >= current_date";
+        break;
+      case 'week':
+        dateFilter = "created_at >= current_date - interval '7 days'";
+        break;
+      case 'month':
+        dateFilter = "created_at >= current_date - interval '30 days'";
+        break;
+      case 'year':
+      default:
+        dateFilter = "created_at >= current_date - interval '365 days'";
+    }
+  }
+
   const { data: positions } = await supabaseAdmin
     .from('positions')
-    .select('issue_id');
+    .select('issue_id, created_at')
+    .filter(dateFilter);
   
   const issueCount = {};
   positions?.forEach(position => {
@@ -236,12 +322,12 @@ serve(async (req) => {
     // Get analytics data
     const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers();
     const totalUsers = await getTotalUsers(supabaseAdmin);
-    const newUserCount = await getNewUsers(supabaseAdmin, dateRange);
+    const newUserCount = await getNewUsers(supabaseAdmin, dateRange, startDate, endDate);
     const conversionRate = await getConversionRate(supabaseAdmin, totalUsers);
-    const { issuesCount, positionsCount } = await getContentCounts(supabaseAdmin);
+    const { issuesCount, positionsCount } = await getContentCounts(supabaseAdmin, dateRange, startDate, endDate);
     const dailyActiveUsers = getDailyActiveUsers(authUsers);
-    const userActivity = getUserActivity(authUsers);
-    const topIssues = await getTopIssues(supabaseAdmin);
+    const userActivity = await getUserActivity(supabaseAdmin, dateRange, startDate, endDate);
+    const topIssues = await getTopIssues(supabaseAdmin, dateRange, startDate, endDate);
     const roleDistribution = await getRoleDistribution(supabaseAdmin);
 
     // Combine all analytics data
