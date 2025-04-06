@@ -3,12 +3,12 @@ import { Button } from "@/components/ui/button";
 
 interface CreatePositionButtonProps {
   isAuthenticated: boolean;
-  onClick: () => void;
+  onAddPosition?: () => void;
 }
 
-const CreatePositionButton = ({ isAuthenticated, onClick }: CreatePositionButtonProps) => {
+const CreatePositionButton = ({ isAuthenticated, onAddPosition }: CreatePositionButtonProps) => {
   if (isAuthenticated) {
-    return <Button onClick={onClick}>Add Your Position</Button>;
+    return <Button onClick={onAddPosition}>Add Your Position</Button>;
   }
 
   return (
