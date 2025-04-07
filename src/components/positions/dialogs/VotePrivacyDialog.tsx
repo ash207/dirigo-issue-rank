@@ -31,9 +31,9 @@ const VotePrivacyDialog = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Choose your vote privacy</DialogTitle>
+          <DialogTitle>Vote Privacy Options</DialogTitle>
           <DialogDescription>
-            Select how you want your vote for {positionTitle} to be recorded.
+            Choose how your vote for <span className="font-medium">{positionTitle}</span> will be recorded and who can see it.
           </DialogDescription>
         </DialogHeader>
 
@@ -43,39 +43,42 @@ const VotePrivacyDialog = ({
             onValueChange={(value) => setSelectedPrivacy(value as VotePrivacyLevel)}
             className="space-y-4"
           >
-            <div className="flex items-start space-x-3 space-y-0">
+            <div className="flex items-start space-x-3 space-y-0 p-2 rounded-md hover:bg-muted/50">
               <RadioGroupItem value="public" id="public" />
               <div className="grid gap-1.5">
-                <Label htmlFor="public" className="font-medium">Public</Label>
+                <Label htmlFor="public" className="font-medium">Public Vote</Label>
                 <p className="text-sm text-muted-foreground">
-                  Your vote will be visible to others and can be changed later.
+                  Your vote will be visible to others. Your name may appear in public voting records.
+                  You can change or remove your vote at any time.
                 </p>
               </div>
             </div>
             
-            <div className="flex items-start space-x-3 space-y-0">
+            <div className="flex items-start space-x-3 space-y-0 p-2 rounded-md hover:bg-muted/50">
               <RadioGroupItem value="private" id="private" />
               <div className="grid gap-1.5">
-                <Label htmlFor="private" className="font-medium">Private</Label>
+                <Label htmlFor="private" className="font-medium">Private Vote</Label>
                 <p className="text-sm text-muted-foreground">
-                  Only you can see your vote, but it can be changed later.
+                  Only you can see that you voted. Your vote is still counted in the totals,
+                  but no one else will know how you voted. You can change or remove your vote later.
                 </p>
               </div>
             </div>
             
-            <div className="flex items-start space-x-3 space-y-0">
+            <div className="flex items-start space-x-3 space-y-0 p-2 rounded-md hover:bg-muted/50">
               <RadioGroupItem value="super_anonymous" id="super_anonymous" />
               <div className="grid gap-1.5">
                 <Label htmlFor="super_anonymous" className="font-medium">Super Anonymous</Label>
                 <p className="text-sm text-muted-foreground">
-                  Your vote cannot be traced back to you, but it cannot be changed later.
+                  Your vote cannot be traced back to you at all. Not even the system will store a connection
+                  between you and your vote. <span className="font-medium text-amber-600">Important: You cannot change or remove this vote later.</span>
                 </p>
               </div>
             </div>
           </RadioGroup>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="flex gap-2 sm:gap-0">
           <Button 
             variant="outline" 
             onClick={() => onOpenChange(false)}
@@ -85,7 +88,7 @@ const VotePrivacyDialog = ({
           <Button 
             onClick={handleSubmit}
           >
-            Vote
+            Vote with {selectedPrivacy === 'public' ? 'Public' : selectedPrivacy === 'private' ? 'Private' : 'Super Anonymous'} Setting
           </Button>
         </DialogFooter>
       </DialogContent>

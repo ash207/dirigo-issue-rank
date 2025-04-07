@@ -89,6 +89,16 @@ const PositionCard = ({
     }
   };
 
+  const handleUpArrowClick = () => {
+    if (!isAuthenticated) {
+      toast.error("Please sign in to view voting options");
+      return;
+    }
+    
+    // Always open the privacy dialog when up arrow is clicked
+    setIsVotePrivacyDialogOpen(true);
+  };
+
   const handlePrivacySelected = (privacyLevel: VotePrivacyLevel) => {
     if (onVote) {
       onVote(id, privacyLevel);
@@ -123,6 +133,7 @@ const PositionCard = ({
             voteCount={voteCount}
             isVoted={isVoted}
             onClick={handleVoteClick}
+            onUpClick={handleUpArrowClick}
             disabled={isVoting || (isOwner && !isVoted)}
             positionTitle={title}
             isActiveUser={isActiveUser}
