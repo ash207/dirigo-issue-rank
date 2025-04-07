@@ -3,6 +3,12 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { isValidUUID } from "./useVoteValidation";
 
+// Define explicit types to avoid deep type instantiation
+interface PositionVoteCount {
+  position_id: string;
+  vote_count: number;
+}
+
 export const useFetchVotes = (issueId: string | undefined, userId: string | undefined, isAuthenticated: boolean) => {
   const [userVotedPosition, setUserVotedPosition] = useState<string | null>(null);
   const [positionVotes, setPositionVotes] = useState<Record<string, number>>({});
@@ -71,20 +77,20 @@ export const useFetchVotes = (issueId: string | undefined, userId: string | unde
           });
         }
         
-        // Get vote counts using the RPC function
+        // Get vote counts using the RPC function - avoid deep type instantiation
         try {
-          // Explicitly type the RPC response to avoid deep type instantiation
-          type VoteCountItem = { position_id: string; vote_count: number };
-          
           const { data, error } = await supabase
-            .rpc('get_position_vote_counts', { p_issue_id: issueId });
+            .rpc('get_position_vote_counts', { p_issue_id: issueId }) as { 
+              data: PositionVoteCount[] | null, 
+              error: Error | null 
+            };
             
           if (error) {
             console.error("Error fetching vote counts:", error);
           } else if (data) {
-            // Safely process the data with explicit typing
-            (data as VoteCountItem[]).forEach(item => {
-              if (item && item.position_id && typeof item.vote_count === 'number') {
+            // Use the explicit type to process data safely
+            data.forEach(item => {
+              if (item.position_id && typeof item.vote_count === 'number') {
                 votesMap[item.position_id] = item.vote_count;
               }
             });
