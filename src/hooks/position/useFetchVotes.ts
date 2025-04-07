@@ -59,6 +59,38 @@ export const useFetchVotes = (
     fetchUserStatus();
   }, [isAuthenticated, userId]);
 
+  // Fetch positions for the issue to track available positions
+  useEffect(() => {
+    const fetchPositions = async () => {
+      if (!issueId || !isValidUUID(issueId)) {
+        setPositionIds([]);
+        return;
+      }
+      
+      try {
+        const { data, error } = await supabase
+          .from('positions')
+          .select('id')
+          .eq('issue_id', issueId);
+          
+        if (error) {
+          console.error("Error fetching positions:", error);
+          return;
+        }
+        
+        if (data) {
+          const ids = data.map(position => position.id);
+          setPositionIds(ids);
+          console.log("Fetched position IDs:", ids);
+        }
+      } catch (error) {
+        console.error("Error in fetchPositions:", error);
+      }
+    };
+    
+    fetchPositions();
+  }, [issueId, lastVoteTime]);
+
   // Check if user has cast a ghost vote on this issue
   useEffect(() => {
     const checkGhostVoteStatus = async () => {
@@ -69,33 +101,34 @@ export const useFetchVotes = (
       }
       
       try {
+        // Use the edge function to check if this user has a ghost vote on this issue
         const result = await checkVoteTracking(userId, issueId);
+        console.log("Ghost vote check result:", result);
         
-        // The result now contains the position_id if available
-        if (result.exists) {
-          setHasGhostVoted(true);
-          setGhostVotedPositionId(result.position_id || null);
+        // If the position doesn't exist in our current positions list, 
+        // or the API tells us it doesn't exist in the database, reset the ghost vote status
+        if (result.exists && result.position_id) {
+          const positionExists = positionIds.includes(result.position_id) && result.position_exists;
           
-          // Check if the position_id still exists in the current positions list
-          if (result.position_id && positionIds.length > 0) {
-            const positionExists = positionIds.includes(result.position_id);
-            
-            if (!positionExists) {
-              console.log("Ghost voted position no longer exists, allowing new votes");
-              // If the position doesn't exist, reset ghost vote status
-              setHasGhostVoted(false);
-            }
+          if (positionExists) {
+            // Valid ghost vote exists
+            setHasGhostVoted(true);
+            setGhostVotedPositionId(result.position_id);
+          } else {
+            // Ghost vote is for a position that no longer exists or is not in this issue
+            console.log("Ghost voted position no longer exists, allowing new votes");
+            setHasGhostVoted(false);
+            setGhostVotedPositionId(null);
           }
         } else {
+          // No ghost vote exists
           setHasGhostVoted(false);
           setGhostVotedPositionId(null);
         }
         
-        console.log("Ghost vote status checked:", { 
-          exists: result.exists, 
-          positionId: result.position_id,
-          currentPositions: positionIds,
-          hasGhostVoted: result.exists && (result.position_id ? positionIds.includes(result.position_id) : true)
+        console.log("Ghost vote status updated:", { 
+          hasGhostVoted: result.exists && (result.position_id ? positionIds.includes(result.position_id) : false), 
+          ghostVotedPositionId: result.position_id
         });
       } catch (error) {
         console.error("Error checking ghost vote status:", error);
@@ -119,28 +152,11 @@ export const useFetchVotes = (
       }
       
       try {
-        // Get all positions for this issue
-        const positionsResult = await supabase
-          .from('positions')
-          .select('id')
-          .eq('issue_id', issueId);
-          
-        if (positionsResult.error) {
-          console.error("Error fetching positions:", positionsResult.error);
-          return;
-        }
-        
-        // Store position IDs for checking ghost vote validity
-        if (positionsResult.data) {
-          const ids = positionsResult.data.map(position => position.id);
-          setPositionIds(ids);
-        }
-        
         // Initialize votes map with all positions set to 0 votes
         const votesMap: Record<string, number> = {};
-        if (positionsResult.data) {
-          for (const position of positionsResult.data) {
-            votesMap[position.id] = 0;
+        if (positionIds.length > 0) {
+          for (const positionId of positionIds) {
+            votesMap[positionId] = 0;
           }
         }
         
@@ -193,7 +209,7 @@ export const useFetchVotes = (
     };
     
     fetchVoteData();
-  }, [issueId, userId, isAuthenticated, lastVoteTime]);
+  }, [issueId, userId, isAuthenticated, lastVoteTime, positionIds]);
 
   // Expose a method to force refresh vote data
   const refreshVotes = () => {

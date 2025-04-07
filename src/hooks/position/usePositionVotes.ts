@@ -22,6 +22,9 @@ export const usePositionVotes = (issueId: string) => {
     ghostVotedPositionId
   } = useFetchVotes(issueId, user?.id, isAuthenticated);
 
+  // Additional log to debug ghost vote status
+  console.log("Ghost vote status in usePositionVotes:", { hasGhostVoted, ghostVotedPositionId });
+
   const {
     handleVote,
     isVoting,

@@ -67,7 +67,7 @@ export const useVoteHandler = (
 
     // If user has already cast a ghost vote on this issue, check if it's for the same position
     // If the ghost vote was for a different position that still exists, they cannot vote
-    if (hasGhostVoted && ghostVotedPositionId && ghostVotedPositionId !== positionId) {
+    if (hasGhostVoted && ghostVotedPositionId !== positionId) {
       toast.error("You've already cast a ghost vote on this issue and cannot vote on other positions");
       return;
     }
@@ -106,11 +106,13 @@ export const useVoteHandler = (
       
       // If user wants to place a ghost vote, we need to check if they already voted on this issue
       if (privacyLevel === 'ghost' && !isRemovingVote) {
+        // Always check the current ghost vote status directly from the database 
+        // to ensure we have the most up-to-date information
         const voteStatus = await checkVoteTracking(validUserId, validIssueId);
         
-        // Only prevent the vote if there's an existing ghost vote for a DIFFERENT position
-        if (voteStatus.exists && voteStatus.position_id && voteStatus.position_id !== positionId) {
-          toast.error("You've already cast a ghost vote on this issue and cannot change it");
+        // If there's already a ghost vote for this issue (regardless of position), prevent the vote
+        if (voteStatus.exists) {
+          toast.error("You've already cast a ghost vote on this issue and cannot cast another");
           setIsVoting(false);
           resetVoteDialog();
           return;

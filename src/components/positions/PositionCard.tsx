@@ -118,6 +118,12 @@ const PositionCard = ({
   };
 
   const handlePrivacySelected = (privacyLevel: VotePrivacyLevel) => {
+    // Additional safeguard to prevent ghost votes if user already has a ghost vote
+    if (privacyLevel === 'ghost' && hasGhostVoted && !isGhostVotedPosition) {
+      toast.error("You've already cast a ghost vote on this issue and cannot vote on other positions");
+      return;
+    }
+    
     if (onVote) {
       onVote(id, privacyLevel);
     }

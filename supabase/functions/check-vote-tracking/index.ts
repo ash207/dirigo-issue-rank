@@ -76,6 +76,33 @@ serve(async (req) => {
         )
       }
       
+      // Check if there's already a ghost vote for this user on this issue
+      const { data: existingTracking, error: trackingCheckError } = await supabaseClient
+        .from('user_vote_tracking')
+        .select('id')
+        .eq('user_id', user_id)
+        .eq('issue_id', issue_id)
+        .maybeSingle()
+        
+      if (trackingCheckError) {
+        console.error('Error checking existing tracking:', trackingCheckError)
+        throw trackingCheckError
+      }
+      
+      // If there's already tracking, return an error
+      if (existingTracking) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'User already has a ghost vote on this issue', 
+            exists: true
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 409, // Conflict
+          }
+        )
+      }
+      
       // Insert the tracking record
       const { error } = await supabaseClient
         .from('user_vote_tracking')
@@ -112,7 +139,7 @@ serve(async (req) => {
       throw error
     }
     
-    // If tracking record exists, verify that the position still exists
+    // If tracking record exists, verify that the position still exists and belongs to this issue
     let positionExists = false
     let positionId = null
     
@@ -120,8 +147,9 @@ serve(async (req) => {
       positionId = data.position_id
       const { data: positionData, error: positionError } = await supabaseClient
         .from('positions')
-        .select('id')
+        .select('id, issue_id')
         .eq('id', data.position_id)
+        .eq('issue_id', issue_id) // Make sure the position belongs to the specified issue
         .maybeSingle()
       
       if (positionError && positionError.code !== 'PGRST116') {
@@ -133,7 +161,7 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({ 
-        exists: !!data && positionExists, 
+        exists: !!data, 
         position_id: positionId,
         position_exists: positionExists
       }),
