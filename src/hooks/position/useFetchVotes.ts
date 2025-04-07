@@ -40,7 +40,7 @@ export const useFetchVotes = (issueId: string | undefined, userId: string | unde
     fetchUserStatus();
   }, [isAuthenticated, userId]);
 
-  // Fetch the user's voted position and all positions' vote counts
+  // Fetch votes data
   useEffect(() => {
     const fetchVoteData = async () => {
       if (!issueId) return;
@@ -73,18 +73,19 @@ export const useFetchVotes = (issueId: string | undefined, userId: string | unde
         
         // Get vote counts using the RPC function
         try {
+          // Using a direct query to get vote counts
           const { data: voteCounts, error: voteCountsError } = await supabase
             .rpc('get_position_vote_counts', { p_issue_id: issueId });
             
           if (voteCountsError) {
             console.error("Error fetching vote counts:", voteCountsError);
-          } else if (voteCounts && Array.isArray(voteCounts)) {
+          } else if (voteCounts) {
             // Update vote counts from the RPC result
-            voteCounts.forEach(item => {
-              if (item && typeof item.position_id === 'string' && typeof item.vote_count === 'number') {
+            for (const item of voteCounts) {
+              if (item && item.position_id && typeof item.vote_count === 'number') {
                 votesMap[item.position_id] = item.vote_count;
               }
-            });
+            }
           }
         } catch (error) {
           console.error("Error in vote counts RPC:", error);
@@ -102,10 +103,10 @@ export const useFetchVotes = (issueId: string | undefined, userId: string | unde
               .eq('issue_id', issueId)
               .maybeSingle();
             
-            if (userVoteError && userVoteError.code !== 'PGRST116') {
+            if (userVoteError) {
               console.error("Error fetching user vote:", userVoteError);
-            } else if (userVote) {
-              setUserVotedPosition(userVote.position_id || null);
+            } else if (userVote && userVote.position_id) {
+              setUserVotedPosition(userVote.position_id);
             } else {
               setUserVotedPosition(null);
             }
