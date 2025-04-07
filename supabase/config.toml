@@ -36,4 +36,3 @@ file_size_limit = "50MiB"
 verify_jwt = true
 [edge_functions.delete-vote-tracking]
 verify_jwt = true
-

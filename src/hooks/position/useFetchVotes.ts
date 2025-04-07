@@ -90,25 +90,26 @@ export const useFetchVotes = (issueId: string | undefined, userId: string | unde
           }
           
           // If no regular vote found, check if there's a tracking record for super_anonymous vote
-          // Use a raw SQL query for the user_vote_tracking table since it might not be in TypeScript types
-          const { data: voteTracking, error: trackingError } = await supabase
-            .rpc('check_vote_tracking', { 
-              p_user_id: userId, 
-              p_issue_id: issueId 
+          // Use the edge function instead of direct RPC
+          try {
+            const { data, error } = await supabase.functions.invoke("check-vote-tracking", {
+              body: { user_id: userId, issue_id: issueId }
             });
             
-          if (trackingError) {
-            console.error("Error fetching vote tracking:", trackingError);
-            return;
-          }
-          
-          // If tracking record exists but no actual vote record with user_id,
-          // it means there is a super_anonymous vote, but we don't know which position
-          if (voteTracking && voteTracking.exists) {
-            // We don't know which position was voted for with super_anonymous
-            // Local UI will not highlight any position, but unvoting will be possible
-            // through the tracking record
-            console.log("Super anonymous vote detected but position unknown");
+            if (error) {
+              console.error("Error invoking check-vote-tracking:", error);
+              return;
+            }
+            
+            // Check if vote tracking exists
+            if (data && data.exists === true) {
+              // We don't know which position was voted for with super_anonymous
+              // Local UI will not highlight any position, but unvoting will be possible
+              // through the tracking record
+              console.log("Super anonymous vote detected but position unknown");
+            }
+          } catch (error) {
+            console.error("Error checking vote tracking:", error);
           }
         }
       } catch (error) {
@@ -127,3 +128,4 @@ export const useFetchVotes = (issueId: string | undefined, userId: string | unde
     isActiveUser
   };
 };
+

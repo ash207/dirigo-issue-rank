@@ -78,12 +78,15 @@ export const useVoteHandler = (
               .eq('user_id', userId)
               .eq('issue_id', issueId);
           } else {
-            // Use RPC function to delete tracking since table may not be in TypeScript types
-            await supabase
-              .rpc('delete_vote_tracking', {
-                p_user_id: userId,
-                p_issue_id: issueId
-              });
+            // Use edge function instead of direct RPC
+            const { error } = await supabase.functions.invoke("delete-vote-tracking", {
+              body: { user_id: userId, issue_id: issueId }
+            });
+            
+            if (error) {
+              console.error("Error deleting vote tracking:", error);
+              throw error;
+            }
           }
           
           setUserVotedPosition(null);
@@ -217,3 +220,4 @@ export const useVoteHandler = (
     handleVote
   };
 };
+
