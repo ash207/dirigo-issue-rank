@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import PositionCardMenu from "./PositionCardMenu";
@@ -27,6 +28,7 @@ interface PositionCardProps {
   isVoted?: boolean;
   onVote?: (positionId: string, privacyLevel?: VotePrivacyLevel) => void;
   isVoting?: boolean;
+  hasGhostVoted?: boolean;
 }
 
 const PositionCard = ({
@@ -44,7 +46,8 @@ const PositionCard = ({
   voteCount = 0,
   isVoted = false,
   onVote,
-  isVoting = false
+  isVoting = false,
+  hasGhostVoted = false
 }: PositionCardProps) => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -60,7 +63,8 @@ const PositionCard = ({
       isOwner,
       isVoted,
       isVoting,
-      disabled: isVoting || (isOwner && !isVoted)
+      hasGhostVoted,
+      disabled: isVoting || (isOwner && !isVoted) || hasGhostVoted
     }
   });
 
@@ -72,6 +76,11 @@ const PositionCard = ({
     
     if (!isActiveUser) {
       toast.error("Your account needs to be active to vote");
+      return;
+    }
+    
+    if (hasGhostVoted && !isVoted) {
+      toast.error("You've already cast a ghost vote on this issue and cannot vote on other positions");
       return;
     }
     
@@ -87,6 +96,11 @@ const PositionCard = ({
   const handleUpArrowClick = () => {
     if (!isAuthenticated) {
       toast.error("Please sign in to view voting options");
+      return;
+    }
+    
+    if (hasGhostVoted && !isVoted) {
+      toast.error("You've already cast a ghost vote on this issue and cannot vote on other positions");
       return;
     }
     
@@ -127,7 +141,7 @@ const PositionCard = ({
             isVoted={isVoted}
             onClick={handleVoteClick}
             onUpClick={handleUpArrowClick}
-            disabled={isVoting || (isOwner && !isVoted)}
+            disabled={isVoting || (isOwner && !isVoted) || (hasGhostVoted && !isVoted)}
             positionTitle={title}
             isActiveUser={isActiveUser}
             isAuthenticated={isAuthenticated}

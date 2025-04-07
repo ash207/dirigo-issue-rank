@@ -34,7 +34,8 @@ const PositionsList = ({
     userVotedPosition,
     handleVote,
     isVoting,
-    isActiveUser: activeVoteUser
+    isActiveUser: activeVoteUser,
+    hasGhostVoted
   } = usePositionVotes(issueId);
   
   // Add debug logging for vote states
@@ -42,7 +43,8 @@ const PositionsList = ({
     positionVotes, 
     userVotedPosition, 
     isVoting, 
-    activeVoteUser 
+    activeVoteUser,
+    hasGhostVoted
   });
   
   const loadMore = () => {
@@ -53,6 +55,12 @@ const PositionsList = ({
     <div className="mt-4 space-y-4 pb-8">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-bold">Positions</h2>
+        
+        {hasGhostVoted && (
+          <div className="text-amber-600 text-sm">
+            You've cast a ghost vote on this issue.
+          </div>
+        )}
       </div>
       
       <PositionTabs 
@@ -68,6 +76,7 @@ const PositionsList = ({
         userVotedPosition={userVotedPosition}
         onVote={handleVote}
         isVoting={isVoting}
+        hasGhostVoted={hasGhostVoted}
       />
       
       {/* Position button placed below the positions list */}

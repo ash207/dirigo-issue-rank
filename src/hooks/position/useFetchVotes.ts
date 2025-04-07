@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { isValidUUID } from "./useVoteValidation";
+import { checkVoteTracking } from "./useVoteServices";
 
 /**
  * Interface for vote count records returned by the RPC function
@@ -23,6 +24,7 @@ export const useFetchVotes = (
   const [positionVotes, setPositionVotes] = useState<Record<string, number>>({});
   const [isActiveUser, setIsActiveUser] = useState(false);
   const [lastVoteTime, setLastVoteTime] = useState(0);
+  const [hasGhostVoted, setHasGhostVoted] = useState(false);
 
   // Fetch the user's profile status
   useEffect(() => {
@@ -54,6 +56,28 @@ export const useFetchVotes = (
     
     fetchUserStatus();
   }, [isAuthenticated, userId]);
+
+  // Check if user has cast a ghost vote on this issue
+  useEffect(() => {
+    const checkGhostVoteStatus = async () => {
+      if (!isAuthenticated || !userId || !issueId || !isValidUUID(issueId)) {
+        setHasGhostVoted(false);
+        return;
+      }
+      
+      try {
+        const hasGhostVote = await checkVoteTracking(userId, issueId);
+        setHasGhostVoted(hasGhostVote);
+        
+        console.log("Ghost vote status checked:", hasGhostVote);
+      } catch (error) {
+        console.error("Error checking ghost vote status:", error);
+        setHasGhostVoted(false);
+      }
+    };
+    
+    checkGhostVoteStatus();
+  }, [issueId, userId, isAuthenticated, lastVoteTime]);
 
   // Fetch votes data
   useEffect(() => {
@@ -148,6 +172,7 @@ export const useFetchVotes = (
     setUserVotedPosition,
     setPositionVotes,
     isActiveUser,
-    refreshVotes
+    refreshVotes,
+    hasGhostVoted
   };
 };

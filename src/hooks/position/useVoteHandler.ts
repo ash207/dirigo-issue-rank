@@ -23,7 +23,8 @@ export const useVoteHandler = (
   positionVotes: Record<string, number>,
   setPositionVotes: React.Dispatch<React.SetStateAction<Record<string, number>>>,
   isActiveUser: boolean = false,
-  refreshVotes?: () => void
+  refreshVotes?: () => void,
+  hasGhostVoted: boolean = false
 ) => {
   const { isVoting, setIsVoting } = useVoteState();
   const {
@@ -41,17 +42,25 @@ export const useVoteHandler = (
     userId, 
     isAuthenticated, 
     userVotedPosition, 
-    isActiveUser 
+    isActiveUser,
+    hasGhostVoted
   });
 
   // Handle vote functionality
   const handleVote = async (positionId: string, privacyLevel?: VotePrivacyLevel) => {
-    console.log("handleVote called:", { positionId, privacyLevel, issueId });
+    console.log("handleVote called:", { positionId, privacyLevel, issueId, hasGhostVoted });
     
     // Validate vote parameters
     const validation = validateVoteParams(userId, issueId, isAuthenticated, isActiveUser);
     if (!validation.isValid) {
       toast.error(validation.errorMessage);
+      return;
+    }
+
+    // If user has already cast a ghost vote on this issue, they cannot vote on any position
+    // Unless they are removing their current public vote
+    if (hasGhostVoted && (!userVotedPosition || userVotedPosition !== positionId)) {
+      toast.error("You've already cast a ghost vote on this issue and cannot vote on other positions");
       return;
     }
 
@@ -78,7 +87,8 @@ export const useVoteHandler = (
         positionId, 
         userId, 
         privacyLevel,
-        issueId
+        issueId,
+        hasGhostVoted
       });
       
       // We can safely cast userId and issueId here since we've validated them
@@ -164,6 +174,7 @@ export const useVoteHandler = (
     isVoting,
     showPrivacyDialog,
     setShowPrivacyDialog,
-    pendingVotePositionId
+    pendingVotePositionId,
+    hasGhostVoted
   };
 };

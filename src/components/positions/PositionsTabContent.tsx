@@ -18,6 +18,7 @@ interface PositionsTabContentProps {
   userVotedPosition?: string | null;
   onVote?: (positionId: string, privacyLevel?: VotePrivacyLevel) => void;
   isVoting?: boolean;
+  hasGhostVoted?: boolean;
 }
 
 const PositionsTabContent = ({
@@ -32,7 +33,8 @@ const PositionsTabContent = ({
   positionVotes = {},
   userVotedPosition = null,
   onVote,
-  isVoting = false
+  isVoting = false,
+  hasGhostVoted = false
 }: PositionsTabContentProps) => {
   if (positions.length === 0) {
     return (
@@ -64,6 +66,7 @@ const PositionsTabContent = ({
           isVoted={userVotedPosition === position.id}
           onVote={onVote}
           isVoting={isVoting}
+          hasGhostVoted={hasGhostVoted && userVotedPosition !== position.id}
         />
       ))}
       
