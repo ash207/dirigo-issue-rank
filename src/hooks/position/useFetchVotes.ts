@@ -73,19 +73,21 @@ export const useFetchVotes = (issueId: string | undefined, userId: string | unde
         
         // Get vote counts using the RPC function
         try {
-          // Using a direct query to get vote counts
+          // Explicitly type the RPC response to avoid deep type instantiation
+          type VoteCountItem = { position_id: string; vote_count: number };
+          
           const { data, error } = await supabase
             .rpc('get_position_vote_counts', { p_issue_id: issueId });
             
           if (error) {
             console.error("Error fetching vote counts:", error);
           } else if (data) {
-            // Update vote counts from the RPC result
-            for (const item of data) {
+            // Safely process the data with explicit typing
+            (data as VoteCountItem[]).forEach(item => {
               if (item && item.position_id && typeof item.vote_count === 'number') {
                 votesMap[item.position_id] = item.vote_count;
               }
-            }
+            });
           }
         } catch (error) {
           console.error("Error in vote counts RPC:", error);
