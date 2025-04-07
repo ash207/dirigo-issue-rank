@@ -95,23 +95,24 @@ export const useFetchVotes = (
         
         // Get vote counts using the RPC function - avoid deep type instantiation
         try {
-          // Fetch the data without type assertion on the call
-          const voteCountsResult = await supabase
-            .rpc('get_position_vote_counts', { p_issue_id: issueId });
+          // Fetch the data without type assertions first
+          const response = await supabase.rpc('get_position_vote_counts', { 
+            p_issue_id: issueId 
+          });
           
-          // Safely handle the response
-          if (voteCountsResult.error) {
-            console.error("Error fetching vote counts:", voteCountsResult.error);
-          } else if (voteCountsResult.data) {
-            // Cast the data after retrieval to avoid excessive type nesting
-            const voteCounts = voteCountsResult.data as PositionVoteCount[];
+          if (response.error) {
+            console.error("Error fetching vote counts:", response.error);
+          } else {
+            // Safely handle the data with explicit type casting after retrieval
+            const voteCounts = response.data as any[];
             
-            // Use the explicit type to process data safely
-            voteCounts.forEach(item => {
-              if (item.position_id && typeof item.vote_count === 'number') {
-                votesMap[item.position_id] = item.vote_count;
-              }
-            });
+            if (Array.isArray(voteCounts)) {
+              voteCounts.forEach(item => {
+                if (item && item.position_id && typeof item.vote_count === 'number') {
+                  votesMap[item.position_id] = item.vote_count;
+                }
+              });
+            }
           }
         } catch (error) {
           console.error("Error in vote counts RPC:", error);
