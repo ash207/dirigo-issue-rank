@@ -74,14 +74,14 @@ export const useFetchVotes = (issueId: string | undefined, userId: string | unde
         // Get vote counts using the RPC function
         try {
           // Using a direct query to get vote counts
-          const { data: voteCounts, error: voteCountsError } = await supabase
+          const { data, error } = await supabase
             .rpc('get_position_vote_counts', { p_issue_id: issueId });
             
-          if (voteCountsError) {
-            console.error("Error fetching vote counts:", voteCountsError);
-          } else if (voteCounts) {
+          if (error) {
+            console.error("Error fetching vote counts:", error);
+          } else if (data) {
             // Update vote counts from the RPC result
-            for (const item of voteCounts) {
+            for (const item of data) {
               if (item && item.position_id && typeof item.vote_count === 'number') {
                 votesMap[item.position_id] = item.vote_count;
               }
