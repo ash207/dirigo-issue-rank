@@ -1,3 +1,11 @@
+
 // This file now serves as a placeholder since voting functionality has been removed
-// It can be deleted if no longer needed for imports elsewhere
-export {};
+export const handleMockVote = (
+  userVotedPosition: string | null,
+  positionId: string,
+  positionVotes: Record<string, number>,
+  setUserVotedPosition: (positionId: string | null) => void,
+  setPositionVotes: React.Dispatch<React.SetStateAction<Record<string, number>>>
+) => {
+  console.log("Vote functionality has been removed");
+};
