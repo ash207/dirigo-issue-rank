@@ -34,7 +34,44 @@ serve(async (req) => {
       )
     }
 
-    // Check if the user has a vote tracking record for this issue
+    if (req.method === 'PUT') {
+      // This is a request to insert a tracking record
+      const { position_id } = body
+      
+      if (!position_id) {
+        return new Response(
+          JSON.stringify({ error: 'Position ID is required for tracking insertion' }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 400,
+          }
+        )
+      }
+      
+      // Insert the tracking record
+      const { error } = await supabaseClient
+        .from('user_vote_tracking')
+        .insert({
+          user_id,
+          issue_id,
+          position_id
+        })
+      
+      if (error) {
+        console.error('Error inserting vote tracking:', error)
+        throw error
+      }
+      
+      return new Response(
+        JSON.stringify({ success: true }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        }
+      )
+    }
+    
+    // This is a GET request to check if tracking exists
     const { data, error } = await supabaseClient
       .from('user_vote_tracking')
       .select('user_id')

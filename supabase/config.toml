@@ -2,37 +2,36 @@
 project_id = "zqgyndjnnphgxjygoxcp"
 
 [api]
+enabled = true
 port = 54321
 schemas = ["public", "storage", "graphql_public"]
-extra_search_path = ["public", "extensions"]
-max_rows = 1000
 
 [db]
 port = 54322
-shadow_port = 54320
-major_version = 15
 
 [studio]
+enabled = true
 port = 54323
+api_url = "http://localhost"
 
 [inbucket]
+enabled = true
 port = 54324
-smtp_port = 54325
-pop3_port = 54326
 
 [auth]
+enabled = true
 site_url = "http://localhost:3000"
-additional_redirect_urls = ["https://localhost:3000"]
-jwt_expiry = 3600
-enable_refresh_token_rotation = true
-refresh_token_reuse_interval = 10
-enable_signup = true
 
 [storage]
-file_size_limit = "50MiB"
+enabled = true
 
 [edge_functions]
-[edge_functions.check-vote-tracking]
-verify_jwt = true
-[edge_functions.delete-vote-tracking]
-verify_jwt = true
+enabled = true
+
+[[edge_functions.routes]]
+path = "/check-vote-tracking"
+function = "check-vote-tracking"
+
+[[edge_functions.routes]]
+path = "/delete-vote-tracking"
+function = "delete-vote-tracking"

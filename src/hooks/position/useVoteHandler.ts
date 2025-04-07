@@ -85,18 +85,27 @@ export const useVoteHandler = (
       
       // If user wants to place a ghost vote, we need to check if they already voted on this issue
       if (privacyLevel === 'ghost' && !isRemovingVote) {
-        // Check if user has already cast a ghost vote on this issue
-        const { data: hasVoted, error: checkError } = await supabase.rpc('check_vote_tracking', {
-          p_user_id: userId,
-          p_issue_id: issueId
+        // Check if user has already cast a ghost vote on this issue using our edge function
+        const response = await fetch(`${supabase.functions.url}/check-vote-tracking`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabase.auth.getSession().then(res => res.data.session?.access_token)}`
+          },
+          body: JSON.stringify({
+            user_id: userId,
+            issue_id: issueId
+          })
         });
         
-        if (checkError) {
-          console.error("Error checking vote tracking:", checkError);
+        const result = await response.json();
+        
+        if (!response.ok) {
+          console.error("Error checking vote tracking:", result.error);
           throw new Error("Failed to verify your voting status");
         }
         
-        if (hasVoted) {
+        if (result.exists) {
           toast.error("You've already cast a ghost vote on this issue and cannot change it");
           setIsVoting(false);
           return;
@@ -133,17 +142,23 @@ export const useVoteHandler = (
             throw new Error("Failed to record your ghost vote");
           }
           
-          // Record that this user has cast a ghost vote on this issue
-          const { error: trackError } = await supabase
-            .from('user_vote_tracking')
-            .insert({
+          // Record that this user has cast a ghost vote on this issue using our edge function
+          const trackResponse = await fetch(`${supabase.functions.url}/check-vote-tracking`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${supabase.auth.getSession().then(res => res.data.session?.access_token)}`
+            },
+            body: JSON.stringify({
               user_id: userId,
               issue_id: issueId,
               position_id: positionId
-            });
-            
-          if (trackError) {
-            console.error("Error tracking ghost vote:", trackError);
+            })
+          });
+          
+          if (!trackResponse.ok) {
+            const trackResult = await trackResponse.json();
+            console.error("Error tracking ghost vote:", trackResult.error);
             // Don't throw here as the vote was already counted
             toast.warning("Your vote was counted but tracking information wasn't saved");
           }
@@ -163,14 +178,22 @@ export const useVoteHandler = (
             throw new Error("Failed to record your vote");
           }
           
-          // If there was a ghost vote tracking record, remove it
-          const { error: deleteError } = await supabase.rpc('delete_vote_tracking', {
-            p_user_id: userId,
-            p_issue_id: issueId
+          // If there was a ghost vote tracking record, remove it using our edge function
+          const deleteResponse = await fetch(`${supabase.functions.url}/delete-vote-tracking`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${supabase.auth.getSession().then(res => res.data.session?.access_token)}`
+            },
+            body: JSON.stringify({
+              user_id: userId,
+              issue_id: issueId
+            })
           });
           
-          if (deleteError) {
-            console.error("Error removing ghost vote tracking:", deleteError);
+          if (!deleteResponse.ok) {
+            const deleteResult = await deleteResponse.json();
+            console.error("Error removing ghost vote tracking:", deleteResult.error);
             // Don't throw here as the vote was already recorded
           }
         }
