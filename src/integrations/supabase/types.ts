@@ -164,6 +164,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          issue_id: string | null
           position_id: string
           privacy_level: string
           updated_at: string
@@ -172,6 +173,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          issue_id?: string | null
           position_id: string
           privacy_level: string
           updated_at?: string
@@ -180,12 +182,20 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          issue_id?: string | null
           position_id?: string
           privacy_level?: string
           updated_at?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "position_votes_issue_id_fkey"
+            columns: ["issue_id"]
+            isOneToOne: false
+            referencedRelation: "issues"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "position_votes_position_id_fkey"
             columns: ["position_id"]
@@ -341,6 +351,15 @@ export type Database = {
       increment_counter: {
         Args: { x: number }
         Returns: number
+      }
+      insert_position_vote: {
+        Args: {
+          p_position_id: string
+          p_user_id: string
+          p_privacy_level: string
+          p_issue_id: string
+        }
+        Returns: undefined
       }
     }
     Enums: {

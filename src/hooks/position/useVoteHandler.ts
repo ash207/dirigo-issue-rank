@@ -31,7 +31,7 @@ export const useVoteHandler = (
 
   // Handle vote functionality
   const handleVote = async (positionId: string, privacyLevel?: VotePrivacyLevel) => {
-    console.log("handleVote called:", { positionId, privacyLevel });
+    console.log("handleVote called:", { positionId, privacyLevel, issueId });
     
     // If not authenticated, show toast and return
     if (!isAuthenticated) {
@@ -46,8 +46,13 @@ export const useVoteHandler = (
     }
 
     // If no userId or issueId, show error and return
-    if (!userId || !issueId) {
-      toast.error("Unable to process vote at this time");
+    if (!userId) {
+      toast.error("Unable to process vote: User ID is missing");
+      return;
+    }
+    
+    if (!issueId) {
+      toast.error("Unable to process vote: Issue ID is missing");
       return;
     }
 
@@ -74,7 +79,8 @@ export const useVoteHandler = (
         isRemovingVote, 
         positionId, 
         userId, 
-        privacyLevel 
+        privacyLevel,
+        issueId
       });
       
       // If user already voted on a different position, remove that vote first
@@ -117,7 +123,7 @@ export const useVoteHandler = (
               position_id: positionId,
               user_id: userId,
               privacy_level: privacyLevel,
-              issue_id: issueId
+              issue_id: issueId // Ensure issue_id is included
             });
           
           if (error) {
