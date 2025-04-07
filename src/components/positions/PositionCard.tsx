@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import PositionCardMenu from "./PositionCardMenu";
@@ -5,8 +6,7 @@ import DeletePositionDialog from "./dialogs/DeletePositionDialog";
 import EditPositionDialog from "./dialogs/EditPositionDialog";
 import ReportPositionDialog from "./dialogs/ReportPositionDialog";
 import PositionVoteButton from "./PositionVoteButton";
-import VotePrivacyDialog from "./dialogs/VotePrivacyDialog";
-import type VotePrivacyLevel from "./dialogs/VotePrivacyDialog";
+import VotePrivacyDialog, { VotePrivacyLevel } from "./dialogs/VotePrivacyDialog";
 
 interface PositionCardProps {
   id: string;

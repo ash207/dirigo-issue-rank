@@ -63,29 +63,31 @@ export const useFetchVotes = (issueId: string | undefined, userId: string | unde
           return;
         }
         
-        // Get vote counts using the RPC function
-        const { data: voteCounts, error: voteCountsError } = await supabase
-          .rpc('get_position_vote_counts', { p_issue_id: issueId });
-          
-        if (voteCountsError) {
-          console.error("Error fetching vote counts:", voteCountsError);
-          return;
+        // Initialize votes map with all positions set to 0 votes
+        const votesMap: Record<string, number> = {};
+        if (positions) {
+          positions.forEach(position => {
+            votesMap[position.id] = 0;
+          });
         }
         
-        // Convert to a map for easier use
-        const votesMap: Record<string, number> = {};
-        positions.forEach(position => {
-          // Set default count to 0
-          votesMap[position.id] = 0;
-        });
-        
-        // Update vote counts from the RPC result
-        if (voteCounts && Array.isArray(voteCounts)) {
-          voteCounts.forEach(item => {
-            if (item && item.position_id) {
-              votesMap[item.position_id] = item.vote_count;
-            }
-          });
+        // Get vote counts using the RPC function
+        try {
+          const { data: voteCounts, error: voteCountsError } = await supabase
+            .rpc('get_position_vote_counts', { p_issue_id: issueId });
+            
+          if (voteCountsError) {
+            console.error("Error fetching vote counts:", voteCountsError);
+          } else if (voteCounts && Array.isArray(voteCounts)) {
+            // Update vote counts from the RPC result
+            voteCounts.forEach(item => {
+              if (item && typeof item.position_id === 'string' && typeof item.vote_count === 'number') {
+                votesMap[item.position_id] = item.vote_count;
+              }
+            });
+          }
+        } catch (error) {
+          console.error("Error in vote counts RPC:", error);
         }
         
         setPositionVotes(votesMap);
@@ -104,6 +106,8 @@ export const useFetchVotes = (issueId: string | undefined, userId: string | unde
               console.error("Error fetching user vote:", userVoteError);
             } else if (userVote) {
               setUserVotedPosition(userVote.position_id || null);
+            } else {
+              setUserVotedPosition(null);
             }
           } catch (error) {
             console.error("Error fetching user vote:", error);

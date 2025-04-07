@@ -4,7 +4,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { VotePrivacyLevel } from "./VotePrivacyDialog";
+
+// Export type separately for use in other files
+export type VotePrivacyLevel = 'public' | 'private' | 'super_anonymous';
 
 interface VotePrivacyDialogProps {
   open: boolean;
@@ -13,7 +15,7 @@ interface VotePrivacyDialogProps {
   positionTitle?: string;
 }
 
-export const VotePrivacyDialog = ({
+const VotePrivacyDialog = ({
   open,
   onOpenChange,
   onPrivacySelected,
