@@ -96,8 +96,8 @@ export const useVoteHandler = (
         toast.success("Vote removed");
       } else {
         // Cast a new vote based on privacy level
-        if (privacyLevel === 'super_anonymous') {
-          // For super anonymous votes, use a direct INSERT for now
+        if (privacyLevel === 'ghost') {
+          // For ghost votes, use a direct INSERT for now
           const { data, error } = await supabase
             .from('anonymous_vote_counts')
             .upsert({
@@ -110,7 +110,7 @@ export const useVoteHandler = (
           
           if (error) throw error;
         } else {
-          // For public or private votes, create a vote record
+          // For public votes, create a vote record
           const { error } = await supabase
             .from('position_votes')
             .insert({

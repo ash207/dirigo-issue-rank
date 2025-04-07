@@ -6,7 +6,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 
 // Export type separately for use in other files
-export type VotePrivacyLevel = 'public' | 'private' | 'super_anonymous';
+export type VotePrivacyLevel = 'public' | 'ghost';
 
 interface VotePrivacyDialogProps {
   open: boolean;
@@ -55,20 +55,9 @@ const VotePrivacyDialog = ({
             </div>
             
             <div className="flex items-start space-x-3 space-y-0 p-2 rounded-md hover:bg-muted/50">
-              <RadioGroupItem value="private" id="private" />
+              <RadioGroupItem value="ghost" id="ghost" />
               <div className="grid gap-1.5">
-                <Label htmlFor="private" className="font-medium">Private Vote</Label>
-                <p className="text-sm text-muted-foreground">
-                  Only you can see that you voted. Your vote is still counted in the totals,
-                  but no one else will know how you voted. You can change or remove your vote later.
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex items-start space-x-3 space-y-0 p-2 rounded-md hover:bg-muted/50">
-              <RadioGroupItem value="super_anonymous" id="super_anonymous" />
-              <div className="grid gap-1.5">
-                <Label htmlFor="super_anonymous" className="font-medium">Super Anonymous</Label>
+                <Label htmlFor="ghost" className="font-medium">Ghost Vote</Label>
                 <p className="text-sm text-muted-foreground">
                   Your vote cannot be traced back to you at all. Not even the system will store a connection
                   between you and your vote. <span className="font-medium text-amber-600">Important: You cannot change or remove this vote later.</span>
@@ -88,7 +77,7 @@ const VotePrivacyDialog = ({
           <Button 
             onClick={handleSubmit}
           >
-            Vote with {selectedPrivacy === 'public' ? 'Public' : selectedPrivacy === 'private' ? 'Private' : 'Super Anonymous'} Setting
+            Vote with {selectedPrivacy === 'public' ? 'Public' : 'Ghost'} Setting
           </Button>
         </DialogFooter>
       </DialogContent>

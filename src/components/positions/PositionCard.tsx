@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import PositionCardMenu from "./PositionCardMenu";
@@ -52,10 +51,8 @@ const PositionCard = ({
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
   const [isVotePrivacyDialogOpen, setIsVotePrivacyDialogOpen] = useState(false);
   
-  // Fix the owner check to handle undefined values correctly
   const isOwner = author_id && currentUserId ? author_id === currentUserId : false;
 
-  // Add console log for debugging
   console.log({
     buttonState: {
       isAuthenticated,
@@ -80,10 +77,8 @@ const PositionCard = ({
     
     if (onVote) {
       if (isVoted) {
-        // If already voted, remove the vote (no privacy dialog needed)
         onVote(id);
       } else {
-        // If not voted yet, show privacy dialog
         setIsVotePrivacyDialogOpen(true);
       }
     }
@@ -95,7 +90,6 @@ const PositionCard = ({
       return;
     }
     
-    // Always open the privacy dialog when up arrow is clicked
     setIsVotePrivacyDialogOpen(true);
   };
 
@@ -127,7 +121,6 @@ const PositionCard = ({
           Posted by {author.name}
         </div>
 
-        {/* Only render the vote button if onVote is provided */}
         {onVote && (
           <PositionVoteButton
             voteCount={voteCount}
