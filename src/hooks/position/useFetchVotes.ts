@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { isValidUUID } from "./useVoteValidation";
@@ -94,25 +95,19 @@ export const useFetchVotes = (
         
         // Get vote counts using the RPC function - avoid deep type instantiation
         try {
-          // Use explicit type annotation for the RPC call
-          interface RPCResponse {
-            data: PositionVoteCount[] | null;
-            error: Error | null;
-          }
-          
-          // Cast the response to our known type
+          // Fetch the data without type assertion on the call
           const voteCountsResult = await supabase
             .rpc('get_position_vote_counts', { p_issue_id: issueId });
           
           // Safely handle the response
-          const error = voteCountsResult.error;
-          const data = voteCountsResult.data as PositionVoteCount[] | null;
+          if (voteCountsResult.error) {
+            console.error("Error fetching vote counts:", voteCountsResult.error);
+          } else if (voteCountsResult.data) {
+            // Cast the data after retrieval to avoid excessive type nesting
+            const voteCounts = voteCountsResult.data as PositionVoteCount[];
             
-          if (error) {
-            console.error("Error fetching vote counts:", error);
-          } else if (data) {
             // Use the explicit type to process data safely
-            data.forEach(item => {
+            voteCounts.forEach(item => {
               if (item.position_id && typeof item.vote_count === 'number') {
                 votesMap[item.position_id] = item.vote_count;
               }
