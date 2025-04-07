@@ -103,18 +103,15 @@ export const useVoteHandler = (
       } else {
         // Cast a new vote based on privacy level
         if (privacyLevel === 'ghost') {
-          // For ghost votes, use a direct INSERT for now
-          const { data, error } = await supabase
-            .from('anonymous_vote_counts')
-            .upsert({
-              position_id: positionId,
-              count: 1
-            }, {
-              onConflict: 'position_id',
-              ignoreDuplicates: false
-            });
+          // For ghost votes, use a direct INSERT without ON CONFLICT
+          const { data, error } = await supabase.rpc('increment_anonymous_vote', {
+            p_position_id: positionId
+          });
           
-          if (error) throw error;
+          if (error) {
+            console.error("Database error for ghost vote:", error);
+            throw new Error("Failed to record your ghost vote");
+          }
         } else {
           // For public votes, create a vote record
           const { error } = await supabase
