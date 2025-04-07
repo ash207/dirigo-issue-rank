@@ -2,6 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { isValidUUID } from "./useVoteValidation";
+import { VotePrivacyLevel } from "@/components/positions/dialogs/VotePrivacyDialog";
 
 export const useVoteHandler = (
   issueId: string | undefined, 
@@ -20,7 +21,7 @@ export const useVoteHandler = (
     });
   };
 
-  const handleVote = async (positionId: string) => {
+  const handleVote = async (positionId: string, privacyLevel?: VotePrivacyLevel) => {
     if (!isAuthenticated || !userId || !issueId) {
       toast.error("You must be signed in to vote");
       return;
@@ -33,7 +34,7 @@ export const useVoteHandler = (
     
     // For mock data with non-UUID IDs, simulate voting without database calls
     if (!isValidUUID(issueId) || !isValidUUID(positionId)) {
-      console.log("Using mock voting for non-UUID IDs", { issueId, positionId });
+      console.log("Using mock voting for non-UUID IDs", { issueId, positionId, privacyLevel });
       
       // If already voted for this position, unvote
       if (userVotedPosition === positionId) {
@@ -110,7 +111,8 @@ export const useVoteHandler = (
             .insert({
               user_id: userId,
               issue_id: issueId,
-              position_id: positionId
+              position_id: positionId,
+              privacy_level: privacyLevel || 'public'
             });
           
           if (error) throw error;
@@ -143,7 +145,8 @@ export const useVoteHandler = (
           .insert({
             user_id: userId,
             issue_id: issueId,
-            position_id: positionId
+            position_id: positionId,
+            privacy_level: privacyLevel || 'public'
           });
         
         if (error) throw error;

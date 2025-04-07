@@ -26,6 +26,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { VotePrivacyLevel } from "@/components/positions/dialogs/VotePrivacyDialog";
 
 const IssueDetail = () => {
   const { id } = useParams();
@@ -118,6 +119,10 @@ const IssueDetail = () => {
     navigate(`/issues/edit/${issue.id}`);
   };
 
+  const handleVoteWithPrivacy = (positionId: string, privacyLevel?: VotePrivacyLevel) => {
+    handleVote(positionId, privacyLevel);
+  };
+
   return (
     <Layout>
       <div className="container mx-auto max-w-4xl">
@@ -144,7 +149,7 @@ const IssueDetail = () => {
               isAuthenticated={isAuthenticated}
               userVotedPosition={userVotedPosition}
               positionVotes={positionVotes}
-              onVote={handleVote}
+              onVote={handleVoteWithPrivacy}
               currentUserId={user?.id}
               onPositionUpdated={handleRefreshPositions}
               isActiveUser={isActiveUser}

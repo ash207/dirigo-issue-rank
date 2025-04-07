@@ -6,6 +6,7 @@ import PositionVoteButton from "./PositionVoteButton";
 import DeletePositionDialog from "./dialogs/DeletePositionDialog";
 import EditPositionDialog from "./dialogs/EditPositionDialog";
 import ReportPositionDialog from "./dialogs/ReportPositionDialog";
+import { VotePrivacyLevel } from "./dialogs/VotePrivacyDialog";
 
 interface PositionCardProps {
   id: string;
@@ -17,7 +18,7 @@ interface PositionCardProps {
   };
   votes: number;
   userVotedPosition: string | null;
-  onVote: (positionId: string) => void;
+  onVote: (positionId: string, privacyLevel?: VotePrivacyLevel) => void;
   isAuthenticated: boolean;
   isActiveUser?: boolean;
   currentUserId?: string;
@@ -50,9 +51,9 @@ const PositionCard = ({
   // Check if current user is the author of this position
   const isOwner = author_id && currentUserId && author_id === currentUserId;
 
-  // Handle vote
-  const handleVote = () => {
-    onVote(id);
+  // Handle vote with privacy
+  const handleVote = (privacyLevel?: VotePrivacyLevel) => {
+    onVote(id, privacyLevel);
   };
 
   return (
