@@ -302,6 +302,30 @@ export type Database = {
           },
         ]
       }
+      user_vote_tracking: {
+        Row: {
+          created_at: string
+          id: string
+          issue_id: string
+          position_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          issue_id: string
+          position_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          issue_id?: string
+          position_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       ranking_results: {
@@ -322,9 +346,17 @@ export type Database = {
       }
     }
     Functions: {
+      check_vote_tracking: {
+        Args: { p_user_id: string; p_issue_id: string }
+        Returns: boolean
+      }
       decrement_counter: {
         Args: { x: number }
         Returns: number
+      }
+      delete_vote_tracking: {
+        Args: { p_user_id: string; p_issue_id: string }
+        Returns: undefined
       }
       get_position_vote_counts: {
         Args: { p_issue_id: string }

@@ -83,6 +83,26 @@ export const useVoteHandler = (
         issueId
       });
       
+      // If user wants to place a ghost vote, we need to check if they already voted on this issue
+      if (privacyLevel === 'ghost' && !isRemovingVote) {
+        // Check if user has already cast a ghost vote on this issue
+        const { data: hasVoted, error: checkError } = await supabase.rpc('check_vote_tracking', {
+          p_user_id: userId,
+          p_issue_id: issueId
+        });
+        
+        if (checkError) {
+          console.error("Error checking vote tracking:", checkError);
+          throw new Error("Failed to verify your voting status");
+        }
+        
+        if (hasVoted) {
+          toast.error("You've already cast a ghost vote on this issue and cannot change it");
+          setIsVoting(false);
+          return;
+        }
+      }
+      
       // If user already voted on a different position, remove that vote first
       if (userVotedPosition && userVotedPosition !== positionId) {
         await removeExistingVote(userVotedPosition, userId);
@@ -112,6 +132,21 @@ export const useVoteHandler = (
             console.error("Database error for ghost vote:", error);
             throw new Error("Failed to record your ghost vote");
           }
+          
+          // Record that this user has cast a ghost vote on this issue
+          const { error: trackError } = await supabase
+            .from('user_vote_tracking')
+            .insert({
+              user_id: userId,
+              issue_id: issueId,
+              position_id: positionId
+            });
+            
+          if (trackError) {
+            console.error("Error tracking ghost vote:", trackError);
+            // Don't throw here as the vote was already counted
+            toast.warning("Your vote was counted but tracking information wasn't saved");
+          }
         } else {
           // For public votes, create a vote record
           const { error } = await supabase
@@ -126,6 +161,17 @@ export const useVoteHandler = (
           if (error) {
             console.error("Database error:", error);
             throw new Error("Failed to record your vote");
+          }
+          
+          // If there was a ghost vote tracking record, remove it
+          const { error: deleteError } = await supabase.rpc('delete_vote_tracking', {
+            p_user_id: userId,
+            p_issue_id: issueId
+          });
+          
+          if (deleteError) {
+            console.error("Error removing ghost vote tracking:", deleteError);
+            // Don't throw here as the vote was already recorded
           }
         }
 
