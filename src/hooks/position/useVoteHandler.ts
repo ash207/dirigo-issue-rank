@@ -15,10 +15,11 @@ export const useVoteHandler = (
   isActiveUser: boolean = false
 ) => {
   const updatePositionVote = (positionId: string, newCount: number) => {
-    setPositionVotes({
-      ...positionVotes,
+    console.log(`Updating vote count for position ${positionId} to ${newCount}`);
+    setPositionVotes(prevVotes => ({
+      ...prevVotes,
       [positionId]: newCount
-    });
+    }));
   };
 
   const handleVote = async (positionId: string, privacyLevel?: VotePrivacyLevel) => {
@@ -220,4 +221,3 @@ export const useVoteHandler = (
     handleVote
   };
 };
-

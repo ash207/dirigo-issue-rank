@@ -128,4 +128,3 @@ export const useFetchVotes = (issueId: string | undefined, userId: string | unde
     isActiveUser
   };
 };
-
