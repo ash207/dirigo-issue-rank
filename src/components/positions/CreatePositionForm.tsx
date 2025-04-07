@@ -19,11 +19,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Dialog,
-  DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 
 const formSchema = z.object({
@@ -40,7 +37,6 @@ interface CreatePositionFormProps {
 
 const CreatePositionForm = ({ issueId, onSuccess }: CreatePositionFormProps) => {
   const { user } = useAuth();
-  const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const form = useForm<FormValues>({
@@ -76,7 +72,6 @@ const CreatePositionForm = ({ issueId, onSuccess }: CreatePositionFormProps) => 
       
       toast.success("Position created successfully!");
       form.reset();
-      setIsOpen(false);
       if (onSuccess) onSuccess();
     } catch (error) {
       console.error("Error creating position:", error);
@@ -87,58 +82,53 @@ const CreatePositionForm = ({ issueId, onSuccess }: CreatePositionFormProps) => 
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button>Add Your Position</Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>Add Your Position on This Issue</DialogTitle>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Position Title</FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="Summary of your position"
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="content"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Your Position</FormLabel>
-                  <FormControl>
-                    <Textarea 
-                      placeholder="Explain your viewpoint in detail..."
-                      className="min-h-[150px]"
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? "Submitting..." : "Submit Position"}
-            </Button>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+    <>
+      <DialogHeader>
+        <DialogTitle>Add Your Position on This Issue</DialogTitle>
+      </DialogHeader>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 mt-4">
+          <FormField
+            control={form.control}
+            name="title"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Position Title</FormLabel>
+                <FormControl>
+                  <Input 
+                    placeholder="Summary of your position"
+                    {...field} 
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <FormField
+            control={form.control}
+            name="content"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Your Position</FormLabel>
+                <FormControl>
+                  <Textarea 
+                    placeholder="Explain your viewpoint in detail..."
+                    className="min-h-[150px]"
+                    {...field} 
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? "Submitting..." : "Submit Position"}
+          </Button>
+        </form>
+      </Form>
+    </>
   );
 };
 

@@ -12,7 +12,7 @@ import IssueLoadingState from "@/components/issues/IssueLoadingState";
 import IssueErrorState from "@/components/issues/IssueErrorState";
 import EmptyPositionsState from "@/components/positions/EmptyPositionsState";
 import CreatePositionForm from "@/components/positions/CreatePositionForm";
-import { Dialog, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useIssueActions } from "@/hooks/useIssueActions";
 import {
   AlertDialog,
@@ -128,35 +128,32 @@ const IssueDetail = () => {
           />
         </div>
         
+        {positions.length === 0 ? (
+          <EmptyPositionsState 
+            issueId={id || ""} 
+            onAddPosition={() => setShowAddPosition(true)}
+          />
+        ) : (
+          <PositionsList 
+            positions={positions}
+            issueId={id || ""}
+            isAuthenticated={isAuthenticated}
+            currentUserId={user?.id}
+            onPositionUpdated={handleRefreshPositions}
+            onAddPosition={() => setShowAddPosition(true)}
+          />
+        )}
+        
+        {/* Dialog for creating a new position */}
         <Dialog open={showAddPosition} onOpenChange={setShowAddPosition}>
-          {positions.length === 0 ? (
-            <EmptyPositionsState 
-              issueId={id || ""} 
-              onAddPosition={() => setShowAddPosition(true)}
-            />
-          ) : (
-            <PositionsList 
-              positions={positions}
-              issueId={id || ""}
-              isAuthenticated={isAuthenticated}
-              currentUserId={user?.id}
-              onPositionUpdated={handleRefreshPositions}
-              onAddPosition={() => setShowAddPosition(true)}
-            />
-          )}
-          
-          {isAuthenticated && (
-            <DialogTrigger className="hidden">
-              Open Form
-            </DialogTrigger>
-          )}
-          
-          {showAddPosition && (
-            <CreatePositionForm 
-              issueId={id || ""} 
-              onSuccess={handleRefreshPositions}
-            />
-          )}
+          <DialogContent className="sm:max-w-[500px]">
+            {isAuthenticated && showAddPosition && (
+              <CreatePositionForm 
+                issueId={id || ""} 
+                onSuccess={handleRefreshPositions}
+              />
+            )}
+          </DialogContent>
         </Dialog>
         
         <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>

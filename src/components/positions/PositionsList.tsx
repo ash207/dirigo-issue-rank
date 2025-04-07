@@ -41,10 +41,6 @@ const PositionsList = ({
     <div className="mt-4 space-y-4 pb-8">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-bold">Positions</h2>
-        <CreatePositionButton 
-          isAuthenticated={isAuthenticated} 
-          onAddPosition={onAddPosition}
-        />
       </div>
       
       <PositionTabs 
@@ -61,6 +57,14 @@ const PositionsList = ({
         onVote={handleVote}
         isVoting={isVoting}
       />
+      
+      {/* Position button moved to below the positions list */}
+      <div className="mt-4">
+        <CreatePositionButton 
+          isAuthenticated={isAuthenticated} 
+          onAddPosition={onAddPosition || (() => {})}
+        />
+      </div>
     </div>
   );
 };
