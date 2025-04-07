@@ -88,16 +88,18 @@ export const useFetchVotes = (
         
         // Get vote counts using the RPC function with explicit typing
         try {
-          // Explicitly type the RPC call to prevent deep type inference
-          const voteCountsResult = await supabase
-            .rpc<VoteCount[]>('get_position_vote_counts', { p_issue_id: issueId });
+          const { data, error } = await supabase.rpc('get_position_vote_counts', { 
+            p_issue_id: issueId 
+          });
           
-          if (voteCountsResult.error) {
-            console.error("Error fetching vote counts:", voteCountsResult.error);
-          } else if (voteCountsResult.data) {
+          if (error) {
+            console.error("Error fetching vote counts:", error);
+          } else if (data) {
             // Process data with known structure
-            for (const item of voteCountsResult.data) {
-              votesMap[item.position_id] = item.vote_count;
+            for (const item of data) {
+              if (item && typeof item.position_id === 'string' && typeof item.vote_count === 'number') {
+                votesMap[item.position_id] = item.vote_count;
+              }
             }
           }
         } catch (error) {
@@ -113,7 +115,6 @@ export const useFetchVotes = (
               .from('position_votes')
               .select('position_id')
               .eq('user_id', userId)
-              .eq('issue_id', issueId)
               .maybeSingle();
             
             if (userVoteResult.error) {
