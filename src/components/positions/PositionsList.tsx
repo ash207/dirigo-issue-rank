@@ -26,6 +26,9 @@ const PositionsList = ({
 }: PositionsListProps) => {
   const [visibleCount, setVisibleCount] = useState(5);
   
+  // Add debug logging
+  console.log("PositionsList props:", { issueId, positions, isAuthenticated, currentUserId });
+  
   const {
     positionVotes,
     userVotedPosition,
@@ -33,6 +36,14 @@ const PositionsList = ({
     isVoting,
     isActiveUser: activeVoteUser
   } = usePositionVotes(issueId);
+  
+  // Add debug logging for vote states
+  console.log("Vote state:", { 
+    positionVotes, 
+    userVotedPosition, 
+    isVoting, 
+    activeVoteUser 
+  });
   
   const loadMore = () => {
     setVisibleCount(prev => prev + 5);

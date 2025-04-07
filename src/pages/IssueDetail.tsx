@@ -1,3 +1,4 @@
+
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -31,6 +32,9 @@ const IssueDetail = () => {
   const [loading, setLoading] = useState(true);
   const [showAddPosition, setShowAddPosition] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  
+  // Debug log auth status
+  console.log("Auth status:", { isAuthenticated, userId: user?.id });
   
   const { deleteIssue, isDeleting } = useIssueActions(user?.id);
 
@@ -99,6 +103,7 @@ const IssueDetail = () => {
   };
 
   const handleRefreshPositions = () => {
+    console.log("Refreshing positions");
     positionsQuery.refetch();
     setShowAddPosition(false);
   };
@@ -140,6 +145,7 @@ const IssueDetail = () => {
             currentUserId={user?.id}
             onPositionUpdated={handleRefreshPositions}
             onAddPosition={() => setShowAddPosition(true)}
+            isActiveUser={true} // Make sure this is set correctly
           />
         )}
         

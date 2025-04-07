@@ -8,6 +8,9 @@ import { VotePrivacyLevel } from "@/components/positions/dialogs/VotePrivacyDial
 export const usePositionVotes = (issueId: string) => {
   const { user, isAuthenticated } = useAuth();
   
+  // Debug log
+  console.log("UsePositionVotes hook:", { issueId, userId: user?.id, isAuthenticated });
+  
   const {
     userVotedPosition,
     positionVotes,

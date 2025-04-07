@@ -35,6 +35,9 @@ const PositionVoteButton = ({
     tooltipText = "You cannot vote on your own position";
   }
 
+  // Add console log for debugging
+  console.log("Vote button state:", { isVoted, disabled, tooltipText });
+
   return (
     <TooltipProvider>
       <Tooltip>
@@ -48,6 +51,8 @@ const PositionVoteButton = ({
             )}
             onClick={onClick}
             disabled={disabled}
+            aria-label={tooltipText}
+            type="button"
           >
             <ThumbsUp className={cn(
               "h-4 w-4",

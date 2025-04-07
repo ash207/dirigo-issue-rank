@@ -52,7 +52,20 @@ const PositionCard = ({
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
   const [isVotePrivacyDialogOpen, setIsVotePrivacyDialogOpen] = useState(false);
   
-  const isOwner = author_id && currentUserId && author_id === currentUserId;
+  // Fix the owner check to handle undefined values correctly
+  const isOwner = author_id && currentUserId ? author_id === currentUserId : false;
+
+  // Add console log for debugging
+  console.log({
+    buttonState: {
+      isAuthenticated,
+      isActiveUser,
+      isOwner,
+      isVoted,
+      isVoting,
+      disabled: isVoting || (isOwner && !isVoted)
+    }
+  });
 
   const handleVoteClick = () => {
     if (!isAuthenticated) {
@@ -104,6 +117,7 @@ const PositionCard = ({
           Posted by {author.name}
         </div>
 
+        {/* Only render the vote button if onVote is provided */}
         {onVote && (
           <PositionVoteButton
             voteCount={voteCount}

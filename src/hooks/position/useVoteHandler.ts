@@ -20,8 +20,19 @@ export const useVoteHandler = (
   const [showPrivacyDialog, setShowPrivacyDialog] = useState<boolean>(false);
   const [pendingVotePositionId, setPendingVotePositionId] = useState<string | null>(null);
 
+  // Debug log
+  console.log("useVoteHandler:", { 
+    issueId, 
+    userId, 
+    isAuthenticated, 
+    userVotedPosition, 
+    isActiveUser 
+  });
+
   // Handle vote functionality
   const handleVote = async (positionId: string, privacyLevel?: VotePrivacyLevel) => {
+    console.log("handleVote called:", { positionId, privacyLevel });
+    
     // If not authenticated, show toast and return
     if (!isAuthenticated) {
       toast.error("Please sign in to vote on positions");
@@ -40,25 +51,39 @@ export const useVoteHandler = (
       return;
     }
 
-    // Check if we're handling a vote continuation after privacy selection
-    if (!privacyLevel) {
-      // No privacy level specified, show the privacy dialog
+    // If we have a userVotedPosition that equals the positionId, it means we're removing a vote
+    const isRemovingVote = userVotedPosition === positionId;
+    
+    // If we're removing a vote, we don't need a privacy level
+    if (isRemovingVote) {
+      privacyLevel = undefined;
+    }
+    // If we need a privacy level but don't have one, show the dialog
+    else if (!privacyLevel) {
+      // No privacy level specified, but we need one for a new vote
       setPendingVotePositionId(positionId);
       setShowPrivacyDialog(true);
       return;
     }
 
-    // Now we have a privacy level, proceed with vote
+    // Now we can proceed with the vote operation
     setIsVoting(true);
 
     try {
+      console.log("Processing vote:", { 
+        isRemovingVote, 
+        positionId, 
+        userId, 
+        privacyLevel 
+      });
+      
       // If user already voted on a different position, remove that vote first
       if (userVotedPosition && userVotedPosition !== positionId) {
         await removeExistingVote(userVotedPosition, userId);
       }
 
-      // If this is the same position user already voted on, remove the vote (toggle behavior)
-      if (userVotedPosition === positionId) {
+      // If removing existing vote
+      if (isRemovingVote) {
         await removeExistingVote(positionId, userId);
         
         // Update local state
@@ -127,6 +152,8 @@ export const useVoteHandler = (
 
   // Helper function to remove existing vote
   const removeExistingVote = async (positionId: string, userId: string) => {
+    console.log("Removing vote:", { positionId, userId });
+    
     // Direct deletion of vote record
     const { error } = await supabase
       .from('position_votes')
