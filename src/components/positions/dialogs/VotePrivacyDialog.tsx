@@ -85,7 +85,7 @@ const VotePrivacyDialog = ({
                   Super Anonymous
                 </Label>
                 <p className="text-sm text-muted-foreground">
-                  Your vote will be completely private, hidden from all users including Dirigo Votes admins.
+                  Your vote will be completely private. Not even Dirigo Votes admins will be able to see which position you voted for, only that you voted on this issue.
                 </p>
               </div>
             </div>

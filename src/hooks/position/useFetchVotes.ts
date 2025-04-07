@@ -71,12 +71,13 @@ export const useFetchVotes = (issueId: string | undefined, userId: string | unde
         
         // Only fetch user vote if authenticated
         if (isAuthenticated && userId) {
+          // First check regular votes
           const { data: userVote, error: userVoteError } = await supabase
             .from('user_votes')
             .select('position_id')
             .eq('user_id', userId)
             .eq('issue_id', issueId)
-            .single();
+            .maybeSingle();
           
           if (userVoteError && userVoteError.code !== 'PGRST116') { // PGRST116 means no rows returned
             console.error("Error fetching user vote:", userVoteError);
@@ -85,6 +86,30 @@ export const useFetchVotes = (issueId: string | undefined, userId: string | unde
           
           if (userVote) {
             setUserVotedPosition(userVote.position_id);
+            return;
+          }
+          
+          // If no regular vote found, check if there's a tracking record for super_anonymous vote
+          const { data: voteTracking, error: trackingError } = await supabase
+            .from('user_vote_tracking')
+            .select('issue_id')
+            .eq('user_id', userId)
+            .eq('issue_id', issueId)
+            .maybeSingle();
+            
+          if (trackingError && trackingError.code !== 'PGRST116') {
+            console.error("Error fetching vote tracking:", trackingError);
+            return;
+          }
+          
+          // If tracking record exists but no actual vote record with user_id,
+          // it means there is a super_anonymous vote, but we don't know which position
+          // In this case, we can't show which position is voted, but we know the user voted
+          if (voteTracking) {
+            // We don't know which position was voted for with super_anonymous
+            // Local UI will not highlight any position, but unvoting will be possible
+            // through the tracking record
+            console.log("Super anonymous vote detected but position unknown");
           }
         }
       } catch (error) {
