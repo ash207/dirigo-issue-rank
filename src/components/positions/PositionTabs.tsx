@@ -2,14 +2,13 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Position } from "@/types/positions";
 import PositionsTabContent from "./PositionsTabContent";
-import { VotePrivacyLevel } from "./dialogs/VotePrivacyDialog";
 
 interface PositionTabsProps {
   positions: Position[];
   visibleCount: number;
   userVotedPosition: string | null;
   positionVotes: Record<string, number>;
-  onVote: (positionId: string, privacyLevel?: VotePrivacyLevel) => void;
+  onVote: (positionId: string) => void;
   isAuthenticated: boolean;
   currentUserId?: string;
   onPositionUpdated: () => void;
@@ -31,14 +30,6 @@ const PositionTabs = ({
   issueId,
   isActiveUser = true
 }: PositionTabsProps) => {
-  // Helper function to get actual votes from the positionVotes object
-  const getPositionWithVotes = (position: Position) => {
-    return {
-      ...position,
-      votes: positionVotes[position.id] !== undefined ? positionVotes[position.id] : position.votes
-    };
-  };
-
   return (
     <Tabs defaultValue="top">
       <TabsList>
@@ -49,7 +40,7 @@ const PositionTabs = ({
 
       <TabsContent value="top">
         <PositionsTabContent
-          positions={positions.map(getPositionWithVotes).sort((a, b) => b.votes - a.votes)}
+          positions={positions.sort((a, b) => b.votes - a.votes)}
           visibleCount={visibleCount}
           userVotedPosition={userVotedPosition}
           positionVotes={positionVotes}
@@ -65,7 +56,7 @@ const PositionTabs = ({
 
       <TabsContent value="new">
         <PositionsTabContent
-          positions={positions.map(getPositionWithVotes)}
+          positions={positions}
           visibleCount={visibleCount}
           userVotedPosition={userVotedPosition}
           positionVotes={positionVotes}
@@ -81,13 +72,10 @@ const PositionTabs = ({
 
       <TabsContent value="verified">
         <PositionsTabContent
-          positions={positions
-            .filter(p => 
-              p.author.verificationLevel === "voter" || 
-              p.author.verificationLevel === "official"
-            )
-            .map(getPositionWithVotes)
-          }
+          positions={positions.filter(p => 
+            p.author.verificationLevel === "voter" || 
+            p.author.verificationLevel === "official"
+          )}
           visibleCount={visibleCount}
           userVotedPosition={userVotedPosition}
           positionVotes={positionVotes}
