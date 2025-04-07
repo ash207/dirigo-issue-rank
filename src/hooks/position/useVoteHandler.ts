@@ -17,7 +17,8 @@ export const useVoteHandler = (
   setUserVotedPosition: (positionId: string | null) => void,
   positionVotes: Record<string, number>,
   setPositionVotes: React.Dispatch<React.SetStateAction<Record<string, number>>>,
-  isActiveUser: boolean = false
+  isActiveUser: boolean = false,
+  refreshVotes?: () => void
 ) => {
   const handleVote = async (positionId: string, privacyLevel?: VotePrivacyLevel) => {
     if (!isAuthenticated || !userId || !issueId) {
@@ -77,6 +78,12 @@ export const useVoteHandler = (
           setPositionVotes
         );
         setUserVotedPosition(positionId);
+      }
+      
+      // Refresh votes data after operation completes
+      if (refreshVotes) {
+        console.log("Refreshing votes after vote operation");
+        refreshVotes();
       }
     } catch (error: any) {
       console.error("Error saving vote:", error);

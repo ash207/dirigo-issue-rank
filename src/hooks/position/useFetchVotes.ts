@@ -7,6 +7,7 @@ export const useFetchVotes = (issueId: string | undefined, userId: string | unde
   const [userVotedPosition, setUserVotedPosition] = useState<string | null>(null);
   const [positionVotes, setPositionVotes] = useState<Record<string, number>>({});
   const [isActiveUser, setIsActiveUser] = useState(false);
+  const [lastVoteTime, setLastVoteTime] = useState<number>(0);
 
   // Fetch the user's profile status
   useEffect(() => {
@@ -121,13 +122,19 @@ export const useFetchVotes = (issueId: string | undefined, userId: string | unde
     };
     
     fetchVotes();
-  }, [isAuthenticated, userId, issueId]);
+  }, [isAuthenticated, userId, issueId, lastVoteTime]);
+
+  // Expose a method to force refresh after vote operations
+  const refreshVotes = () => {
+    setLastVoteTime(Date.now());
+  };
 
   return {
     userVotedPosition,
     positionVotes,
     setUserVotedPosition,
     setPositionVotes,
-    isActiveUser
+    isActiveUser,
+    refreshVotes
   };
 };
