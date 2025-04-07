@@ -30,7 +30,8 @@ const PositionsList = ({
     positionVotes,
     userVotedPosition,
     handleVote,
-    isVoting
+    isVoting,
+    isActiveUser: activeVoteUser
   } = usePositionVotes(issueId);
   
   const loadMore = () => {
@@ -51,7 +52,7 @@ const PositionsList = ({
         onPositionUpdated={onPositionUpdated || (() => {})}
         loadMore={loadMore}
         issueId={issueId}
-        isActiveUser={isActiveUser}
+        isActiveUser={isActiveUser && activeVoteUser}
         positionVotes={positionVotes}
         userVotedPosition={userVotedPosition}
         onVote={handleVote}

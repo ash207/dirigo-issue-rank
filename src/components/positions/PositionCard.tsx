@@ -7,6 +7,7 @@ import EditPositionDialog from "./dialogs/EditPositionDialog";
 import ReportPositionDialog from "./dialogs/ReportPositionDialog";
 import PositionVoteButton from "./PositionVoteButton";
 import VotePrivacyDialog, { VotePrivacyLevel } from "./dialogs/VotePrivacyDialog";
+import { toast } from "sonner";
 
 interface PositionCardProps {
   id: string;
@@ -54,10 +55,22 @@ const PositionCard = ({
   const isOwner = author_id && currentUserId && author_id === currentUserId;
 
   const handleVoteClick = () => {
+    if (!isAuthenticated) {
+      toast.error("Please sign in to vote");
+      return;
+    }
+    
+    if (!isActiveUser) {
+      toast.error("Your account needs to be active to vote");
+      return;
+    }
+    
     if (onVote) {
       if (isVoted) {
+        // If already voted, remove the vote (no privacy dialog needed)
         onVote(id);
       } else {
+        // If not voted yet, show privacy dialog
         setIsVotePrivacyDialogOpen(true);
       }
     }
@@ -67,6 +80,7 @@ const PositionCard = ({
     if (onVote) {
       onVote(id, privacyLevel);
     }
+    setIsVotePrivacyDialogOpen(false);
   };
 
   return (
@@ -97,6 +111,8 @@ const PositionCard = ({
             onClick={handleVoteClick}
             disabled={isVoting || (isOwner && !isVoted)}
             positionTitle={title}
+            isActiveUser={isActiveUser}
+            isAuthenticated={isAuthenticated}
           />
         )}
       </CardFooter>

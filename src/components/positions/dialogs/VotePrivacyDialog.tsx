@@ -25,7 +25,6 @@ const VotePrivacyDialog = ({
 
   const handleSubmit = () => {
     onPrivacySelected(selectedPrivacy);
-    onOpenChange(false);
   };
 
   return (
