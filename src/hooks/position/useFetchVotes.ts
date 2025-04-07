@@ -115,6 +115,7 @@ export const useFetchVotes = (
               .from('position_votes')
               .select('position_id')
               .eq('user_id', userId)
+              .eq('issue_id', issueId)
               .maybeSingle();
             
             if (userVoteResult.error) {

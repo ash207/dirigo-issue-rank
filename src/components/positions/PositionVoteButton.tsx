@@ -60,7 +60,7 @@ const PositionVoteButton = ({
                 isVoted && "bg-blue-600 hover:bg-blue-700"
               )}
               onClick={onClick}
-              disabled={!isAuthenticated ? false : disabled}
+              disabled={disabled || (!isAuthenticated && !isVoted)}
               aria-label={tooltipText}
               type="button"
             >
@@ -77,7 +77,7 @@ const PositionVoteButton = ({
         </Tooltip>
       </TooltipProvider>
 
-      {/* New Up Arrow Button */}
+      {/* Up Arrow Button */}
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>

@@ -107,7 +107,8 @@ export const castPublicVote = async (
         user_id: userId,
         privacy_level: privacyLevel,
         issue_id: issueId
-      });
+      })
+      .select();
     
     if (error) {
       console.error("Database error:", error);

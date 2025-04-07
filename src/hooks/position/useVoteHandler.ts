@@ -92,6 +92,7 @@ export const useVoteHandler = (
         if (voteExists) {
           toast.error("You've already cast a ghost vote on this issue and cannot change it");
           setIsVoting(false);
+          resetVoteDialog();
           return;
         }
       }
@@ -99,6 +100,12 @@ export const useVoteHandler = (
       // If user already voted on a different position, remove that vote first
       if (userVotedPosition && userVotedPosition !== positionId) {
         await removeVote(userVotedPosition, validUserId);
+        
+        // Update local state for previous vote
+        setPositionVotes(prev => ({
+          ...prev,
+          [userVotedPosition]: Math.max(0, (prev[userVotedPosition] || 0) - 1)
+        }));
       }
 
       // If removing existing vote
