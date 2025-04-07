@@ -4,6 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { isValidUUID } from "./useVoteValidation";
 
 /**
+ * Interface for vote count records returned by the RPC function
+ */
+interface VoteCount {
+  position_id: string;
+  vote_count: number;
+}
+
+/**
  * Custom hook for fetching and managing votes for positions on an issue
  */
 export const useFetchVotes = (
@@ -78,23 +86,18 @@ export const useFetchVotes = (
           }
         }
         
-        // Get vote counts using the RPC function
+        // Get vote counts using the RPC function with explicit typing
         try {
-          // Call RPC without type assertions
+          // Explicitly type the RPC call to prevent deep type inference
           const voteCountsResult = await supabase
-            .rpc('get_position_vote_counts', { p_issue_id: issueId });
+            .rpc<VoteCount[]>('get_position_vote_counts', { p_issue_id: issueId });
           
           if (voteCountsResult.error) {
             console.error("Error fetching vote counts:", voteCountsResult.error);
-          } else if (voteCountsResult.data && Array.isArray(voteCountsResult.data)) {
-            // Process data safely with type guards
+          } else if (voteCountsResult.data) {
+            // Process data with known structure
             for (const item of voteCountsResult.data) {
-              const positionId = item?.position_id;
-              const voteCount = item?.vote_count;
-              
-              if (typeof positionId === 'string' && typeof voteCount === 'number') {
-                votesMap[positionId] = voteCount;
-              }
+              votesMap[item.position_id] = item.vote_count;
             }
           }
         } catch (error) {

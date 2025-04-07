@@ -1,9 +1,9 @@
 
 import { useState } from "react";
 import PositionTabs from "./PositionTabs";
-import CreatePositionButton from "./CreatePositionButton";
 import { Position } from "@/types/positions";
 import { usePositionVotes } from "@/hooks/position/usePositionVotes";
+import CreatePositionButton from "./CreatePositionButton";
 
 interface PositionsListProps {
   positions: Position[];

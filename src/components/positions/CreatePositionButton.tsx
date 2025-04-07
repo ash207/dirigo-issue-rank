@@ -18,7 +18,7 @@ const CreatePositionButton = ({ isAuthenticated, onAddPosition }: CreatePosition
   return (
     <Button 
       onClick={handleClick} 
-      className="w-full sm:w-auto mt-4"
+      className="w-full sm:w-auto"
       variant={isAuthenticated ? "default" : "outline"}
     >
       {isAuthenticated ? "Add Your Position" : "Sign in to add your position"}
