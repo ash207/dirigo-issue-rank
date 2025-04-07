@@ -11,12 +11,12 @@ export const useVoteHandler = (
   userVotedPosition: string | null,
   setUserVotedPosition: (positionId: string | null) => void,
   positionVotes: Record<string, number>,
-  setPositionVotes: (votes: Record<string, number>) => void,
+  setPositionVotes: React.Dispatch<React.SetStateAction<Record<string, number>>>,
   isActiveUser: boolean = false
 ) => {
   const updatePositionVote = (positionId: string, newCount: number) => {
     console.log(`Updating vote count for position ${positionId} to ${newCount}`);
-    setPositionVotes(prevVotes => ({
+    setPositionVotes((prevVotes) => ({
       ...prevVotes,
       [positionId]: newCount
     }));
