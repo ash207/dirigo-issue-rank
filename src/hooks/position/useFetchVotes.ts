@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { isValidUUID } from "./useVoteValidation";
@@ -108,7 +107,8 @@ export const useFetchVotes = (
         // If the position doesn't exist in our current positions list, 
         // or the API tells us it doesn't exist in the database, reset the ghost vote status
         if (result.exists && result.position_id) {
-          const positionExists = positionIds.includes(result.position_id) && result.position_exists;
+          // Check if position exists in the positions list and the API confirms it exists
+          const positionExists = positionIds.includes(result.position_id) && result.position_exists !== false;
           
           if (positionExists) {
             // Valid ghost vote exists
