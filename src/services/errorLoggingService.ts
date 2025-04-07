@@ -24,27 +24,9 @@ export interface ErrorLogData {
   };
 }
 
-// Instead of using RPC, we'll directly check if we can access the table
-// This is just a detection mechanism - the table is created in migrations
-const ensureErrorTableExists = async () => {
-  try {
-    // Try to select from the table to check if it exists
-    // We only need to check, not actually fetch data
-    const { error } = await supabase
-      .from('system_errors')
-      .select('id')
-      .limit(1);
-    
-    if (error) {
-      console.warn("system_errors table check: ", error.message);
-    }
-  } catch (err) {
-    console.error("Error checking system_errors table:", err);
-  }
-};
-
-// Call the function to ensure the table exists (just a check)
-ensureErrorTableExists();
+// We'll skip the table check since we know it exists from migrations
+// If it doesn't exist, the function call will gracefully handle the error
+console.log("Error logging service initialized");
 
 export const logError = async (errorData: ErrorLogData): Promise<void> => {
   try {
