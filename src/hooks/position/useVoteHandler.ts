@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 import { isValidUUID } from "./useVoteValidation";
 import { VotePrivacyLevel } from "@/components/positions/dialogs/VotePrivacyDialog";

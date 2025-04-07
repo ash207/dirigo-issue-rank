@@ -11,7 +11,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import ReportModal from "./ReportModal";
-import { useAuth } from "@/contexts/AuthContext";
 
 interface IssueHeaderProps {
   issue: {
@@ -21,7 +20,6 @@ interface IssueHeaderProps {
     scope?: string;
     description: string;
     createdAt: string;
-    votes: number;
     creator: {
       name: string;
       verificationLevel: "unverified" | "basic" | "voter" | "official";
@@ -34,7 +32,6 @@ interface IssueHeaderProps {
 }
 
 const IssueHeader = ({ issue, positionsCount, isOwner, onEdit, onDelete }: IssueHeaderProps) => {
-  const { isAuthenticated } = useAuth();
   const [reportModalOpen, setReportModalOpen] = useState(false);
   
   const getScopeIcon = (scope: string = "state") => {
@@ -100,7 +97,7 @@ const IssueHeader = ({ issue, positionsCount, isOwner, onEdit, onDelete }: Issue
         
         <div className="flex justify-between items-center">
           <div className="text-sm text-muted-foreground">
-            {issue.votes} people viewed this issue • {positionsCount} positions
+            {positionsCount} positions
           </div>
         </div>
       </CardContent>

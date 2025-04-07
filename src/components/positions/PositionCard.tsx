@@ -2,11 +2,9 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import PositionCardMenu from "./PositionCardMenu";
-import PositionVoteButton from "./PositionVoteButton";
 import DeletePositionDialog from "./dialogs/DeletePositionDialog";
 import EditPositionDialog from "./dialogs/EditPositionDialog";
 import ReportPositionDialog from "./dialogs/ReportPositionDialog";
-import { VotePrivacyLevel } from "./dialogs/VotePrivacyDialog";
 
 interface PositionCardProps {
   id: string;
@@ -16,9 +14,6 @@ interface PositionCardProps {
     name: string;
     verificationLevel: "unverified" | "basic" | "voter" | "official";
   };
-  votes: number;
-  userVotedPosition: string | null;
-  onVote: (positionId: string, privacyLevel?: VotePrivacyLevel) => void;
   isAuthenticated: boolean;
   isActiveUser?: boolean;
   currentUserId?: string;
@@ -33,9 +28,6 @@ const PositionCard = ({
   title,
   content,
   author,
-  votes,
-  userVotedPosition,
-  onVote,
   isAuthenticated,
   isActiveUser = true,
   author_id,
@@ -50,11 +42,6 @@ const PositionCard = ({
   
   // Check if current user is the author of this position
   const isOwner = author_id && currentUserId && author_id === currentUserId;
-
-  // Handle vote with privacy
-  const handleVote = (privacyLevel?: VotePrivacyLevel) => {
-    onVote(id, privacyLevel);
-  };
 
   return (
     <Card className="mb-4">
@@ -71,17 +58,6 @@ const PositionCard = ({
       </CardHeader>
       <CardContent>
         <p className="text-gray-700 mb-4">{content}</p>
-        
-        <div className="flex justify-between items-center">
-          <PositionVoteButton
-            votes={votes}
-            userVoted={userVotedPosition === id}
-            onVote={handleVote}
-            isActiveUser={isActiveUser}
-            isAuthenticated={isAuthenticated}
-            positionTitle={title}
-          />
-        </div>
       </CardContent>
       
       {/* Dialogs */}

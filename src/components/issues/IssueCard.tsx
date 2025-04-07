@@ -9,11 +9,10 @@ interface IssueCardProps {
   title: string;
   category: string;
   scope?: string;
-  votes: number;
   positions: number;
 }
 
-const IssueCard = ({ id, title, category, scope = "state", votes, positions }: IssueCardProps) => {
+const IssueCard = ({ id, title, category, scope = "state", positions }: IssueCardProps) => {
   const getScopeIcon = (scope: string) => {
     switch (scope) {
       case "local":
@@ -32,7 +31,7 @@ const IssueCard = ({ id, title, category, scope = "state", votes, positions }: I
           <div className="flex justify-between items-start">
             <Badge className="bg-dirigo-blue">{category}</Badge>
             <div className="text-sm text-muted-foreground">
-              {votes} votes • {positions} positions
+              {positions} positions
             </div>
           </div>
           <CardTitle className="text-lg mt-2">{title}</CardTitle>

@@ -1,7 +1,6 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
 import { useUserData } from "@/hooks/useUserData";
 import { useAuth } from "@/contexts/AuthContext";
 import Layout from "@/components/layout/Layout";
@@ -9,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Pencil, User, Book, MessageSquare, Calendar } from "lucide-react";
+import { Pencil, User, Book, MessageSquare } from "lucide-react";
 import { format } from "date-fns";
 
 const ProfilePage = () => {
@@ -146,7 +145,6 @@ const ProfilePage = () => {
                       <TableRow>
                         <TableHead>Position Title</TableHead>
                         <TableHead>Issue</TableHead>
-                        <TableHead>Votes</TableHead>
                         <TableHead>Created</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -159,7 +157,6 @@ const ProfilePage = () => {
                         >
                           <TableCell className="font-medium">{position.title}</TableCell>
                           <TableCell>{position.issues?.title}</TableCell>
-                          <TableCell>{position.votes}</TableCell>
                           <TableCell>{format(new Date(position.created_at), 'MMM d, yyyy')}</TableCell>
                         </TableRow>
                       ))}

@@ -3,15 +3,11 @@ import { useState } from "react";
 import PositionTabs from "./PositionTabs";
 import CreatePositionButton from "./CreatePositionButton";
 import { Position } from "@/types/positions";
-import { VotePrivacyLevel } from "./dialogs/VotePrivacyDialog";
 
 interface PositionsListProps {
   positions: Position[];
   issueId: string;
   isAuthenticated: boolean;
-  userVotedPosition: string | null;
-  positionVotes: Record<string, number>;
-  onVote: (positionId: string, privacyLevel?: VotePrivacyLevel) => void;
   onAddPosition?: () => void;
   currentUserId?: string;
   onPositionUpdated?: () => void;
@@ -22,9 +18,6 @@ const PositionsList = ({
   positions, 
   issueId,
   isAuthenticated,
-  userVotedPosition,
-  positionVotes,
-  onVote,
   onAddPosition,
   currentUserId,
   onPositionUpdated,
@@ -49,9 +42,6 @@ const PositionsList = ({
       <PositionTabs 
         positions={positions}
         visibleCount={visibleCount}
-        userVotedPosition={userVotedPosition}
-        positionVotes={positionVotes}
-        onVote={onVote}
         isAuthenticated={isAuthenticated}
         currentUserId={currentUserId}
         onPositionUpdated={onPositionUpdated || (() => {})}

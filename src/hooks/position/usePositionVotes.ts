@@ -1,38 +1,15 @@
 
-import { useFetchVotes } from "./useFetchVotes";
-import { useVoteHandler } from "./useVoteHandler";
-import { VotePrivacyLevel } from "@/components/positions/dialogs/VotePrivacyDialog";
+// This file now serves as a placeholder with minimal functionality for interface compatibility
+import { useState } from "react";
 
-export const usePositionVotes = (issueId: string | undefined, userId: string | undefined, isAuthenticated: boolean) => {
-  const { 
-    userVotedPosition, 
-    positionVotes, 
-    setUserVotedPosition, 
-    setPositionVotes,
-    isActiveUser,
-    refreshVotes
-  } = useFetchVotes(issueId, userId, isAuthenticated);
+export const usePositionVotes = () => {
+  const [isActiveUser] = useState(true);
   
-  const { handleVote } = useVoteHandler(
-    issueId, 
-    userId, 
-    isAuthenticated, 
-    userVotedPosition, 
-    setUserVotedPosition,
-    positionVotes,
-    setPositionVotes,
-    isActiveUser,
-    refreshVotes
-  );
-
-  const handleVoteWithPrivacy = (positionId: string, privacyLevel?: VotePrivacyLevel) => {
-    handleVote(positionId, privacyLevel);
-  };
-
+  // Return simplified interface without voting functionality
   return { 
-    userVotedPosition, 
-    positionVotes, 
-    handleVote: handleVoteWithPrivacy, 
+    userVotedPosition: null, 
+    positionVotes: {}, 
+    handleVote: () => {}, 
     isActiveUser 
   };
 };

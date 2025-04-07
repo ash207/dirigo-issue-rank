@@ -1,17 +1,3 @@
-
-import { isValidUUID } from "./useVoteValidation";
-import { VotePrivacyLevel } from "@/components/positions/dialogs/VotePrivacyDialog";
-import { handleMockVote } from "./useMockVoteOperations";
-import { handleUnvote } from "./useVoteRemovalOperations";
-import { handleChangeVote } from "./useVoteChangeOperations";
-import { handleNewVote } from "./useNewVoteOperations";
-import { updatePositionVote } from "./useVoteUtils";
-
-// Re-export the utility functions for other modules to use
-export { 
-  updatePositionVote,
-  handleMockVote, 
-  handleUnvote, 
-  handleChangeVote, 
-  handleNewVote 
-};
+// This file now serves as a placeholder since voting functionality has been removed
+// It can be deleted if no longer needed for imports elsewhere
+export {};

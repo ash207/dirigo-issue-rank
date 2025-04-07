@@ -14,7 +14,7 @@ export const usePositionsData = (id: string | undefined) => {
         .from("positions")
         .select("*")
         .eq("issue_id", id)
-        .order("votes", { ascending: false });
+        .order("created_at", { ascending: false });
       
       if (error) {
         console.error("Error fetching positions:", error);
@@ -48,7 +48,8 @@ export const usePositionsData = (id: string | undefined) => {
             // Default to basic verification level
             verificationLevel: "basic" as const
           },
-          votes: position.votes || 0
+          votes: 0, // Votes field removed from database, default to 0
+          author_id: position.author_id
         };
       }));
       

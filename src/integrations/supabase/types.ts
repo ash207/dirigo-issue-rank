@@ -139,7 +139,6 @@ export type Database = {
           id: string
           issue_id: string
           title: string
-          votes: number
         }
         Insert: {
           author_id: string
@@ -148,7 +147,6 @@ export type Database = {
           id?: string
           issue_id: string
           title: string
-          votes?: number
         }
         Update: {
           author_id?: string
@@ -157,7 +155,6 @@ export type Database = {
           id?: string
           issue_id?: string
           title?: string
-          votes?: number
         }
         Relationships: [
           {
@@ -231,66 +228,6 @@ export type Database = {
           },
         ]
       }
-      user_vote_tracking: {
-        Row: {
-          created_at: string
-          issue_id: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          issue_id: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          issue_id?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      user_votes: {
-        Row: {
-          created_at: string
-          id: string
-          issue_id: string
-          position_id: string
-          privacy_level: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          issue_id: string
-          position_id: string
-          privacy_level?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          issue_id?: string
-          position_id?: string
-          privacy_level?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_votes_issue_id_fkey"
-            columns: ["issue_id"]
-            isOneToOne: false
-            referencedRelation: "issues"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_votes_position_id_fkey"
-            columns: ["position_id"]
-            isOneToOne: false
-            referencedRelation: "positions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
     }
     Views: {
       ranking_results: {
@@ -311,10 +248,6 @@ export type Database = {
       }
     }
     Functions: {
-      cast_super_anonymous_vote: {
-        Args: { p_issue_id: string; p_position_id: string }
-        Returns: undefined
-      }
       decrement_counter: {
         Args: { x: number }
         Returns: number

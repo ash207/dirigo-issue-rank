@@ -6,9 +6,6 @@ import PositionsTabContent from "./PositionsTabContent";
 interface PositionTabsProps {
   positions: Position[];
   visibleCount: number;
-  userVotedPosition: string | null;
-  positionVotes: Record<string, number>;
-  onVote: (positionId: string) => void;
   isAuthenticated: boolean;
   currentUserId?: string;
   onPositionUpdated: () => void;
@@ -20,9 +17,6 @@ interface PositionTabsProps {
 const PositionTabs = ({
   positions,
   visibleCount,
-  userVotedPosition,
-  positionVotes,
-  onVote,
   isAuthenticated,
   currentUserId,
   onPositionUpdated,
@@ -40,11 +34,8 @@ const PositionTabs = ({
 
       <TabsContent value="top">
         <PositionsTabContent
-          positions={positions.sort((a, b) => b.votes - a.votes)}
+          positions={positions}
           visibleCount={visibleCount}
-          userVotedPosition={userVotedPosition}
-          positionVotes={positionVotes}
-          onVote={onVote}
           isAuthenticated={isAuthenticated}
           currentUserId={currentUserId}
           onPositionUpdated={onPositionUpdated}
@@ -58,9 +49,6 @@ const PositionTabs = ({
         <PositionsTabContent
           positions={positions}
           visibleCount={visibleCount}
-          userVotedPosition={userVotedPosition}
-          positionVotes={positionVotes}
-          onVote={onVote}
           isAuthenticated={isAuthenticated}
           currentUserId={currentUserId}
           onPositionUpdated={onPositionUpdated}
@@ -77,9 +65,6 @@ const PositionTabs = ({
             p.author.verificationLevel === "official"
           )}
           visibleCount={visibleCount}
-          userVotedPosition={userVotedPosition}
-          positionVotes={positionVotes}
-          onVote={onVote}
           isAuthenticated={isAuthenticated}
           currentUserId={currentUserId}
           onPositionUpdated={onPositionUpdated}

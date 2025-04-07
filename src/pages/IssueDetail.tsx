@@ -6,7 +6,6 @@ import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/contexts/AuthContext";
 import IssueHeader from "@/components/issues/IssueHeader";
 import PositionsList from "@/components/positions/PositionsList";
-import usePositionVotes from "@/hooks/position/usePositionVotes";
 import { useIssueData } from "@/hooks/useIssueData";
 import { usePositionsData } from "@/hooks/usePositionsData";
 import IssueLoadingState from "@/components/issues/IssueLoadingState";
@@ -14,7 +13,6 @@ import IssueErrorState from "@/components/issues/IssueErrorState";
 import EmptyPositionsState from "@/components/positions/EmptyPositionsState";
 import CreatePositionForm from "@/components/positions/CreatePositionForm";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { useIssueActions } from "@/hooks/useIssueActions";
 import {
   AlertDialog,
@@ -26,13 +24,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { VotePrivacyLevel } from "@/components/positions/dialogs/VotePrivacyDialog";
 
 const IssueDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
-  const { userVotedPosition, positionVotes, handleVote, isActiveUser } = usePositionVotes(id, user?.id, isAuthenticated);
   const [loading, setLoading] = useState(true);
   const [showAddPosition, setShowAddPosition] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -96,7 +92,7 @@ const IssueDetail = () => {
     scope: issue.scope || "state",
     description: issue.description,
     createdAt: issue.created_at,
-    votes: positions.reduce((sum, pos) => sum + pos.votes, 0),
+    votes: 0, // Votes removed
     creator: {
       name: issue.creatorName || "Anonymous",
       verificationLevel: "basic" as const
@@ -117,10 +113,6 @@ const IssueDetail = () => {
   
   const handleEditIssue = () => {
     navigate(`/issues/edit/${issue.id}`);
-  };
-
-  const handleVoteWithPrivacy = (positionId: string, privacyLevel?: VotePrivacyLevel) => {
-    handleVote(positionId, privacyLevel);
   };
 
   return (
@@ -147,12 +139,9 @@ const IssueDetail = () => {
               positions={positions}
               issueId={id || ""}
               isAuthenticated={isAuthenticated}
-              userVotedPosition={userVotedPosition}
-              positionVotes={positionVotes}
-              onVote={handleVoteWithPrivacy}
               currentUserId={user?.id}
               onPositionUpdated={handleRefreshPositions}
-              isActiveUser={isActiveUser}
+              onAddPosition={() => setShowAddPosition(true)}
             />
           )}
           

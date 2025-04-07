@@ -3,14 +3,10 @@ import { Position } from "@/types/positions";
 import { Button } from "@/components/ui/button";
 import { ChevronDown } from "lucide-react";
 import PositionCard from "./PositionCard";
-import { VotePrivacyLevel } from "./dialogs/VotePrivacyDialog";
 
 interface PositionsTabContentProps {
   positions: Position[];
   visibleCount: number;
-  userVotedPosition: string | null;
-  positionVotes: Record<string, number>;
-  onVote: (positionId: string, privacyLevel?: VotePrivacyLevel) => void;
   isAuthenticated: boolean;
   currentUserId?: string;
   onPositionUpdated: () => void;
@@ -22,9 +18,6 @@ interface PositionsTabContentProps {
 const PositionsTabContent = ({
   positions,
   visibleCount,
-  userVotedPosition,
-  positionVotes,
-  onVote,
   isAuthenticated,
   currentUserId,
   onPositionUpdated,
@@ -52,9 +45,6 @@ const PositionsTabContent = ({
           title={position.title}
           content={position.content}
           author={position.author}
-          votes={position.votes}
-          userVotedPosition={userVotedPosition}
-          onVote={onVote}
           isAuthenticated={isAuthenticated}
           author_id={position.author_id}
           currentUserId={currentUserId}
