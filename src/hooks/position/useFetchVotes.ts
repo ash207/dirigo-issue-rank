@@ -90,22 +90,21 @@ export const useFetchVotes = (issueId: string | undefined, userId: string | unde
           }
           
           // If no regular vote found, check if there's a tracking record for super_anonymous vote
+          // Use a raw SQL query for the user_vote_tracking table since it might not be in TypeScript types
           const { data: voteTracking, error: trackingError } = await supabase
-            .from('user_vote_tracking')
-            .select('issue_id')
-            .eq('user_id', userId)
-            .eq('issue_id', issueId)
-            .maybeSingle();
+            .rpc('check_vote_tracking', { 
+              p_user_id: userId, 
+              p_issue_id: issueId 
+            });
             
-          if (trackingError && trackingError.code !== 'PGRST116') {
+          if (trackingError) {
             console.error("Error fetching vote tracking:", trackingError);
             return;
           }
           
           // If tracking record exists but no actual vote record with user_id,
           // it means there is a super_anonymous vote, but we don't know which position
-          // In this case, we can't show which position is voted, but we know the user voted
-          if (voteTracking) {
+          if (voteTracking && voteTracking.exists) {
             // We don't know which position was voted for with super_anonymous
             // Local UI will not highlight any position, but unvoting will be possible
             // through the tracking record

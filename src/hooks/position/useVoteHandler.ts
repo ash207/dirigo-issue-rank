@@ -78,11 +78,12 @@ export const useVoteHandler = (
               .eq('user_id', userId)
               .eq('issue_id', issueId);
           } else {
+            // Use RPC function to delete tracking since table may not be in TypeScript types
             await supabase
-              .from('user_vote_tracking')
-              .delete()
-              .eq('user_id', userId)
-              .eq('issue_id', issueId);
+              .rpc('delete_vote_tracking', {
+                p_user_id: userId,
+                p_issue_id: issueId
+              });
           }
           
           setUserVotedPosition(null);
@@ -117,7 +118,7 @@ export const useVoteHandler = (
           
           // Then add the new vote based on privacy level
           if (privacyLevel === 'super_anonymous') {
-            // Use the dedicated function for super anonymous votes
+            // Use the dedicated RPC function for super anonymous votes
             const { error } = await supabase.rpc('cast_super_anonymous_vote', {
               p_issue_id: issueId,
               p_position_id: positionId
@@ -162,7 +163,7 @@ export const useVoteHandler = (
       } else {
         // User is voting for the first time
         if (privacyLevel === 'super_anonymous') {
-          // Use the dedicated function for super anonymous votes
+          // Use the dedicated RPC function for super anonymous votes
           const { error } = await supabase.rpc('cast_super_anonymous_vote', {
             p_issue_id: issueId,
             p_position_id: positionId
