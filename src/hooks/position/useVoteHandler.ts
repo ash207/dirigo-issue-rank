@@ -1,9 +1,18 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { isValidUUID } from "./useVoteValidation";
 import { VotePrivacyLevel } from "@/components/positions/dialogs/VotePrivacyDialog";
+import { useVoteDialog } from "./useVoteDialog";
+import { useVoteState } from "./useVoteState";
+import { validateVoteParams } from "./useVoteValidation";
+import {
+  checkVoteTracking,
+  trackGhostVote,
+  deleteVoteTracking,
+  castGhostVote,
+  castPublicVote,
+  removeVote
+} from "./useVoteServices";
 
 export const useVoteHandler = (
   issueId: string | undefined, 
@@ -16,9 +25,15 @@ export const useVoteHandler = (
   isActiveUser: boolean = false,
   refreshVotes?: () => void
 ) => {
-  const [isVoting, setIsVoting] = useState<boolean>(false);
-  const [showPrivacyDialog, setShowPrivacyDialog] = useState<boolean>(false);
-  const [pendingVotePositionId, setPendingVotePositionId] = useState<string | null>(null);
+  const { isVoting, setIsVoting } = useVoteState();
+  const {
+    showPrivacyDialog,
+    setShowPrivacyDialog,
+    pendingVotePositionId,
+    setPendingVotePositionId,
+    startVoteProcess,
+    resetVoteDialog
+  } = useVoteDialog();
 
   // Debug log
   console.log("useVoteHandler:", { 
@@ -33,26 +48,10 @@ export const useVoteHandler = (
   const handleVote = async (positionId: string, privacyLevel?: VotePrivacyLevel) => {
     console.log("handleVote called:", { positionId, privacyLevel, issueId });
     
-    // If not authenticated, show toast and return
-    if (!isAuthenticated) {
-      toast.error("Please sign in to vote on positions");
-      return;
-    }
-
-    // If user not active, show toast and return
-    if (!isActiveUser) {
-      toast.error("Your account needs to be active to vote");
-      return;
-    }
-
-    // If no userId or issueId, show error and return
-    if (!userId) {
-      toast.error("Unable to process vote: User ID is missing");
-      return;
-    }
-    
-    if (!issueId) {
-      toast.error("Unable to process vote: Issue ID is missing");
+    // Validate vote parameters
+    const validation = validateVoteParams(userId, issueId, isAuthenticated, isActiveUser);
+    if (!validation.isValid) {
+      toast.error(validation.errorMessage);
       return;
     }
 
@@ -66,8 +65,7 @@ export const useVoteHandler = (
     // If we need a privacy level but don't have one, show the dialog
     else if (!privacyLevel) {
       // No privacy level specified, but we need one for a new vote
-      setPendingVotePositionId(positionId);
-      setShowPrivacyDialog(true);
+      startVoteProcess(positionId);
       return;
     }
 
@@ -83,29 +81,15 @@ export const useVoteHandler = (
         issueId
       });
       
+      // We can safely cast userId and issueId here since we've validated them
+      const validUserId = userId as string;
+      const validIssueId = issueId as string;
+      
       // If user wants to place a ghost vote, we need to check if they already voted on this issue
       if (privacyLevel === 'ghost' && !isRemovingVote) {
-        // Check if user has already cast a ghost vote on this issue using our edge function
-        const response = await fetch(`${supabase.functions.url}/check-vote-tracking`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${supabase.auth.getSession().then(res => res.data.session?.access_token)}`
-          },
-          body: JSON.stringify({
-            user_id: userId,
-            issue_id: issueId
-          })
-        });
+        const voteExists = await checkVoteTracking(validUserId, validIssueId);
         
-        const result = await response.json();
-        
-        if (!response.ok) {
-          console.error("Error checking vote tracking:", result.error);
-          throw new Error("Failed to verify your voting status");
-        }
-        
-        if (result.exists) {
+        if (voteExists) {
           toast.error("You've already cast a ghost vote on this issue and cannot change it");
           setIsVoting(false);
           return;
@@ -114,12 +98,12 @@ export const useVoteHandler = (
       
       // If user already voted on a different position, remove that vote first
       if (userVotedPosition && userVotedPosition !== positionId) {
-        await removeExistingVote(userVotedPosition, userId);
+        await removeVote(userVotedPosition, validUserId);
       }
 
       // If removing existing vote
       if (isRemovingVote) {
-        await removeExistingVote(positionId, userId);
+        await removeVote(positionId, validUserId);
         
         // Update local state
         setUserVotedPosition(null);
@@ -133,69 +117,16 @@ export const useVoteHandler = (
         // Cast a new vote based on privacy level
         if (privacyLevel === 'ghost') {
           // For ghost votes, use a direct INSERT without ON CONFLICT
-          const { data, error } = await supabase.rpc('increment_anonymous_vote', {
-            p_position_id: positionId
-          });
-          
-          if (error) {
-            console.error("Database error for ghost vote:", error);
-            throw new Error("Failed to record your ghost vote");
-          }
+          await castGhostVote(positionId);
           
           // Record that this user has cast a ghost vote on this issue using our edge function
-          const trackResponse = await fetch(`${supabase.functions.url}/check-vote-tracking`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${supabase.auth.getSession().then(res => res.data.session?.access_token)}`
-            },
-            body: JSON.stringify({
-              user_id: userId,
-              issue_id: issueId,
-              position_id: positionId
-            })
-          });
-          
-          if (!trackResponse.ok) {
-            const trackResult = await trackResponse.json();
-            console.error("Error tracking ghost vote:", trackResult.error);
-            // Don't throw here as the vote was already counted
-            toast.warning("Your vote was counted but tracking information wasn't saved");
-          }
+          await trackGhostVote(validUserId, validIssueId, positionId);
         } else {
           // For public votes, create a vote record
-          const { error } = await supabase
-            .from('position_votes')
-            .insert({
-              position_id: positionId,
-              user_id: userId,
-              privacy_level: privacyLevel,
-              issue_id: issueId // Ensure issue_id is included
-            });
+          await castPublicVote(positionId, validUserId, privacyLevel, validIssueId);
           
-          if (error) {
-            console.error("Database error:", error);
-            throw new Error("Failed to record your vote");
-          }
-          
-          // If there was a ghost vote tracking record, remove it using our edge function
-          const deleteResponse = await fetch(`${supabase.functions.url}/delete-vote-tracking`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${supabase.auth.getSession().then(res => res.data.session?.access_token)}`
-            },
-            body: JSON.stringify({
-              user_id: userId,
-              issue_id: issueId
-            })
-          });
-          
-          if (!deleteResponse.ok) {
-            const deleteResult = await deleteResponse.json();
-            console.error("Error removing ghost vote tracking:", deleteResult.error);
-            // Don't throw here as the vote was already recorded
-          }
+          // If there was a ghost vote tracking record, remove it
+          await deleteVoteTracking(validUserId, validIssueId);
         }
 
         // Update local state
@@ -214,27 +145,10 @@ export const useVoteHandler = (
       }
     } catch (error: any) {
       console.error("Error voting:", error);
-      toast.error("Failed to process your vote");
+      toast.error(error.message || "Failed to process your vote");
     } finally {
       setIsVoting(false);
-      setShowPrivacyDialog(false);
-      setPendingVotePositionId(null);
-    }
-  };
-
-  // Helper function to remove existing vote
-  const removeExistingVote = async (positionId: string, userId: string) => {
-    console.log("Removing vote:", { positionId, userId });
-    
-    // Direct deletion of vote record
-    const { error } = await supabase
-      .from('position_votes')
-      .delete()
-      .eq('position_id', positionId)
-      .eq('user_id', userId);
-    
-    if (error) {
-      console.error("Error removing vote:", error);
+      resetVoteDialog();
     }
   };
 
