@@ -58,8 +58,8 @@ const PositionsList = ({
         isVoting={isVoting}
       />
       
-      {/* Position button moved to below the positions list */}
-      <div className="mt-4">
+      {/* Position button placed below the positions list */}
+      <div className="mt-6">
         <CreatePositionButton 
           isAuthenticated={isAuthenticated} 
           onAddPosition={onAddPosition || (() => {})}

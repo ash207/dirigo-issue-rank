@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -92,7 +91,7 @@ const IssueDetail = () => {
     scope: issue.scope || "state",
     description: issue.description,
     createdAt: issue.created_at,
-    votes: 0, // Votes removed
+    votes: 0,
     creator: {
       name: issue.creatorName || "Anonymous",
       verificationLevel: "basic" as const
@@ -144,7 +143,6 @@ const IssueDetail = () => {
           />
         )}
         
-        {/* Dialog for creating a new position */}
         <Dialog open={showAddPosition} onOpenChange={setShowAddPosition}>
           <DialogContent className="sm:max-w-[500px]">
             {isAuthenticated && showAddPosition && (

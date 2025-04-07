@@ -7,21 +7,21 @@ interface CreatePositionButtonProps {
 }
 
 const CreatePositionButton = ({ isAuthenticated, onAddPosition }: CreatePositionButtonProps) => {
-  if (isAuthenticated) {
-    return (
-      <Button onClick={onAddPosition} className="mt-4">
-        Add Your Position
-      </Button>
-    );
-  }
+  const handleClick = () => {
+    if (isAuthenticated) {
+      onAddPosition();
+    } else {
+      window.location.href = "/sign-in";
+    }
+  };
 
   return (
     <Button 
-      variant="outline"
-      onClick={() => window.location.href = "/sign-in"}
+      onClick={handleClick} 
       className="w-full sm:w-auto mt-4"
+      variant={isAuthenticated ? "default" : "outline"}
     >
-      Sign in to add your position
+      {isAuthenticated ? "Add Your Position" : "Sign in to add your position"}
     </Button>
   );
 };

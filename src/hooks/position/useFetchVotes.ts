@@ -1,32 +1,20 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { isValidUUID } from "./useVoteValidation";
 
-// Define explicit types to avoid deep type instantiation
-interface PositionVoteCount {
-  position_id: string;
-  vote_count: number;
-}
-
-// Define the return type explicitly to help TypeScript
-interface UseFetchVotesResult {
-  userVotedPosition: string | null;
-  positionVotes: Record<string, number>;
-  setUserVotedPosition: React.Dispatch<React.SetStateAction<string | null>>;
-  setPositionVotes: React.Dispatch<React.SetStateAction<Record<string, number>>>;
-  isActiveUser: boolean;
-  refreshVotes: () => void;
-}
-
+/**
+ * Custom hook for fetching and managing votes for positions on an issue
+ */
 export const useFetchVotes = (
   issueId: string | undefined, 
   userId: string | undefined, 
   isAuthenticated: boolean
-): UseFetchVotesResult => {
+) => {
   const [userVotedPosition, setUserVotedPosition] = useState<string | null>(null);
   const [positionVotes, setPositionVotes] = useState<Record<string, number>>({});
   const [isActiveUser, setIsActiveUser] = useState(false);
-  const [lastVoteTime, setLastVoteTime] = useState<number>(0);
+  const [lastVoteTime, setLastVoteTime] = useState(0);
 
   // Fetch the user's profile status
   useEffect(() => {
@@ -37,19 +25,19 @@ export const useFetchVotes = (
       }
       
       try {
-        const { data, error } = await supabase
+        const result = await supabase
           .from('profiles')
           .select('status')
           .eq('id', userId)
           .single();
           
-        if (error) {
-          console.error("Error fetching user status:", error);
+        if (result.error) {
+          console.error("Error fetching user status:", result.error);
           setIsActiveUser(false);
           return;
         }
         
-        setIsActiveUser(data.status === 'active');
+        setIsActiveUser(result.data?.status === 'active');
       } catch (error) {
         console.error("Error in fetchUserStatus:", error);
         setIsActiveUser(false);
@@ -82,41 +70,32 @@ export const useFetchVotes = (
           return;
         }
         
-        const positions = positionsResult.data;
-        
         // Initialize votes map with all positions set to 0 votes
         const votesMap: Record<string, number> = {};
-        if (positions) {
-          positions.forEach(position => {
+        if (positionsResult.data) {
+          for (const position of positionsResult.data) {
             votesMap[position.id] = 0;
-          });
+          }
         }
         
-        // Get vote counts using the RPC function - avoid deep type instantiation
+        // Get vote counts using the RPC function
         try {
-          // Use explicit type annotation for the RPC call
-          interface RPCResponse {
-            data: PositionVoteCount[] | null;
-            error: Error | null;
-          }
-          
-          // Cast the response to our known type
+          // Call RPC without type assertions
           const voteCountsResult = await supabase
             .rpc('get_position_vote_counts', { p_issue_id: issueId });
           
-          // Safely handle the response
-          const error = voteCountsResult.error;
-          const data = voteCountsResult.data as PositionVoteCount[] | null;
-            
-          if (error) {
-            console.error("Error fetching vote counts:", error);
-          } else if (data) {
-            // Use the explicit type to process data safely
-            data.forEach(item => {
-              if (item.position_id && typeof item.vote_count === 'number') {
-                votesMap[item.position_id] = item.vote_count;
+          if (voteCountsResult.error) {
+            console.error("Error fetching vote counts:", voteCountsResult.error);
+          } else if (voteCountsResult.data && Array.isArray(voteCountsResult.data)) {
+            // Process data safely with type guards
+            for (const item of voteCountsResult.data) {
+              const positionId = item?.position_id;
+              const voteCount = item?.vote_count;
+              
+              if (typeof positionId === 'string' && typeof voteCount === 'number') {
+                votesMap[positionId] = voteCount;
               }
-            });
+            }
           }
         } catch (error) {
           console.error("Error in vote counts RPC:", error);
@@ -136,13 +115,13 @@ export const useFetchVotes = (
             
             if (userVoteResult.error) {
               console.error("Error fetching user vote:", userVoteResult.error);
-            } else if (userVoteResult.data && userVoteResult.data.position_id) {
-              setUserVotedPosition(userVoteResult.data.position_id);
-            } else {
               setUserVotedPosition(null);
+            } else {
+              setUserVotedPosition(userVoteResult.data?.position_id || null);
             }
           } catch (error) {
             console.error("Error fetching user vote:", error);
+            setUserVotedPosition(null);
           }
         }
       } catch (error) {
