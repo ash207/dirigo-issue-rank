@@ -29,6 +29,7 @@ interface PositionCardProps {
   onVote?: (positionId: string, privacyLevel?: VotePrivacyLevel) => void;
   isVoting?: boolean;
   hasGhostVoted?: boolean;
+  ghostVotedPositionId?: string | null;
 }
 
 const PositionCard = ({
@@ -47,7 +48,8 @@ const PositionCard = ({
   isVoted = false,
   onVote,
   isVoting = false,
-  hasGhostVoted = false
+  hasGhostVoted = false,
+  ghostVotedPositionId = null
 }: PositionCardProps) => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -55,16 +57,22 @@ const PositionCard = ({
   const [isVotePrivacyDialogOpen, setIsVotePrivacyDialogOpen] = useState(false);
   
   const isOwner = author_id && currentUserId ? author_id === currentUserId : false;
+  
+  // Check if this position is the one the user cast a ghost vote on
+  const isGhostVotedPosition = ghostVotedPositionId === id;
 
   console.log({
     buttonState: {
+      id,
       isAuthenticated,
       isActiveUser,
       isOwner,
       isVoted,
       isVoting,
       hasGhostVoted,
-      disabled: isVoting || (isOwner && !isVoted) || hasGhostVoted
+      ghostVotedPositionId,
+      isGhostVotedPosition,
+      disabled: isVoting || (isOwner && !isVoted) || (hasGhostVoted && !isGhostVotedPosition)
     }
   });
 
@@ -79,7 +87,8 @@ const PositionCard = ({
       return;
     }
     
-    if (hasGhostVoted && !isVoted) {
+    // If this isn't the ghost-voted position and there is a ghost vote active, block the vote
+    if (hasGhostVoted && !isGhostVotedPosition && !isVoted) {
       toast.error("You've already cast a ghost vote on this issue and cannot vote on other positions");
       return;
     }
@@ -99,7 +108,8 @@ const PositionCard = ({
       return;
     }
     
-    if (hasGhostVoted && !isVoted) {
+    // If this isn't the ghost-voted position and there is a ghost vote active, block the vote
+    if (hasGhostVoted && !isGhostVotedPosition && !isVoted) {
       toast.error("You've already cast a ghost vote on this issue and cannot vote on other positions");
       return;
     }
@@ -141,7 +151,7 @@ const PositionCard = ({
             isVoted={isVoted}
             onClick={handleVoteClick}
             onUpClick={handleUpArrowClick}
-            disabled={isVoting || (isOwner && !isVoted) || (hasGhostVoted && !isVoted)}
+            disabled={isVoting || (isOwner && !isVoted) || (hasGhostVoted && !isGhostVotedPosition && !isVoted)}
             positionTitle={title}
             isActiveUser={isActiveUser}
             isAuthenticated={isAuthenticated}

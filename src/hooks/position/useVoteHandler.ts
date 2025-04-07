@@ -24,7 +24,8 @@ export const useVoteHandler = (
   setPositionVotes: React.Dispatch<React.SetStateAction<Record<string, number>>>,
   isActiveUser: boolean = false,
   refreshVotes?: () => void,
-  hasGhostVoted: boolean = false
+  hasGhostVoted: boolean = false,
+  ghostVotedPositionId: string | null = null
 ) => {
   const { isVoting, setIsVoting } = useVoteState();
   const {
@@ -43,12 +44,19 @@ export const useVoteHandler = (
     isAuthenticated, 
     userVotedPosition, 
     isActiveUser,
-    hasGhostVoted
+    hasGhostVoted,
+    ghostVotedPositionId
   });
 
   // Handle vote functionality
   const handleVote = async (positionId: string, privacyLevel?: VotePrivacyLevel) => {
-    console.log("handleVote called:", { positionId, privacyLevel, issueId, hasGhostVoted });
+    console.log("handleVote called:", { 
+      positionId, 
+      privacyLevel, 
+      issueId, 
+      hasGhostVoted,
+      ghostVotedPositionId
+    });
     
     // Validate vote parameters
     const validation = validateVoteParams(userId, issueId, isAuthenticated, isActiveUser);
@@ -57,9 +65,9 @@ export const useVoteHandler = (
       return;
     }
 
-    // If user has already cast a ghost vote on this issue, they cannot vote on any position
-    // Unless they are removing their current public vote
-    if (hasGhostVoted && (!userVotedPosition || userVotedPosition !== positionId)) {
+    // If user has already cast a ghost vote on this issue, check if it's for the same position
+    // If the ghost vote was for a different position that still exists, they cannot vote
+    if (hasGhostVoted && ghostVotedPositionId && ghostVotedPositionId !== positionId) {
       toast.error("You've already cast a ghost vote on this issue and cannot vote on other positions");
       return;
     }
@@ -88,7 +96,8 @@ export const useVoteHandler = (
         userId, 
         privacyLevel,
         issueId,
-        hasGhostVoted
+        hasGhostVoted,
+        ghostVotedPositionId
       });
       
       // We can safely cast userId and issueId here since we've validated them
@@ -97,9 +106,10 @@ export const useVoteHandler = (
       
       // If user wants to place a ghost vote, we need to check if they already voted on this issue
       if (privacyLevel === 'ghost' && !isRemovingVote) {
-        const voteExists = await checkVoteTracking(validUserId, validIssueId);
+        const voteStatus = await checkVoteTracking(validUserId, validIssueId);
         
-        if (voteExists) {
+        // Only prevent the vote if there's an existing ghost vote for a DIFFERENT position
+        if (voteStatus.exists && voteStatus.position_id && voteStatus.position_id !== positionId) {
           toast.error("You've already cast a ghost vote on this issue and cannot change it");
           setIsVoting(false);
           resetVoteDialog();
@@ -175,6 +185,7 @@ export const useVoteHandler = (
     showPrivacyDialog,
     setShowPrivacyDialog,
     pendingVotePositionId,
-    hasGhostVoted
+    hasGhostVoted,
+    ghostVotedPositionId
   };
 };

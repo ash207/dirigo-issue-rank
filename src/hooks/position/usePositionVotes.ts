@@ -18,13 +18,15 @@ export const usePositionVotes = (issueId: string) => {
     setPositionVotes,
     isActiveUser,
     refreshVotes,
-    hasGhostVoted
+    hasGhostVoted,
+    ghostVotedPositionId
   } = useFetchVotes(issueId, user?.id, isAuthenticated);
 
   const {
     handleVote,
     isVoting,
-    hasGhostVoted: handlerGhostVoted
+    hasGhostVoted: handlerGhostVoted,
+    ghostVotedPositionId: handlerGhostVotedPositionId
   } = useVoteHandler(
     issueId, 
     user?.id, 
@@ -35,7 +37,8 @@ export const usePositionVotes = (issueId: string) => {
     setPositionVotes,
     isActiveUser,
     refreshVotes,
-    hasGhostVoted
+    hasGhostVoted,
+    ghostVotedPositionId
   );
 
   return {
@@ -44,7 +47,8 @@ export const usePositionVotes = (issueId: string) => {
     handleVote,
     isVoting,
     isActiveUser,
-    hasGhostVoted
+    hasGhostVoted,
+    ghostVotedPositionId
   };
 };
 

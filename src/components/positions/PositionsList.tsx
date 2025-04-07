@@ -35,7 +35,8 @@ const PositionsList = ({
     handleVote,
     isVoting,
     isActiveUser: activeVoteUser,
-    hasGhostVoted
+    hasGhostVoted,
+    ghostVotedPositionId
   } = usePositionVotes(issueId);
   
   // Add debug logging for vote states
@@ -44,7 +45,8 @@ const PositionsList = ({
     userVotedPosition, 
     isVoting, 
     activeVoteUser,
-    hasGhostVoted
+    hasGhostVoted,
+    ghostVotedPositionId
   });
   
   const loadMore = () => {
@@ -77,6 +79,7 @@ const PositionsList = ({
         onVote={handleVote}
         isVoting={isVoting}
         hasGhostVoted={hasGhostVoted}
+        ghostVotedPositionId={ghostVotedPositionId}
       />
       
       {/* Position button placed below the positions list */}

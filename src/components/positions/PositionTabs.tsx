@@ -18,6 +18,7 @@ interface PositionTabsProps {
   onVote?: (positionId: string, privacyLevel?: VotePrivacyLevel) => void;
   isVoting?: boolean;
   hasGhostVoted?: boolean;
+  ghostVotedPositionId?: string | null;
 }
 
 const PositionTabs = ({
@@ -33,7 +34,8 @@ const PositionTabs = ({
   userVotedPosition = null,
   onVote,
   isVoting = false,
-  hasGhostVoted = false
+  hasGhostVoted = false,
+  ghostVotedPositionId = null
 }: PositionTabsProps) => {
   // Sort positions by votes for "Top" tab
   const topPositions = [...positions].sort((a, b) => 
@@ -75,6 +77,7 @@ const PositionTabs = ({
           onVote={onVote}
           isVoting={isVoting}
           hasGhostVoted={hasGhostVoted}
+          ghostVotedPositionId={ghostVotedPositionId}
         />
       </TabsContent>
 
@@ -93,6 +96,7 @@ const PositionTabs = ({
           onVote={onVote}
           isVoting={isVoting}
           hasGhostVoted={hasGhostVoted}
+          ghostVotedPositionId={ghostVotedPositionId}
         />
       </TabsContent>
 
@@ -111,6 +115,7 @@ const PositionTabs = ({
           onVote={onVote}
           isVoting={isVoting}
           hasGhostVoted={hasGhostVoted}
+          ghostVotedPositionId={ghostVotedPositionId}
         />
       </TabsContent>
     </Tabs>

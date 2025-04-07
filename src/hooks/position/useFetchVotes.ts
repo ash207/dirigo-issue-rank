@@ -25,6 +25,8 @@ export const useFetchVotes = (
   const [isActiveUser, setIsActiveUser] = useState(false);
   const [lastVoteTime, setLastVoteTime] = useState(0);
   const [hasGhostVoted, setHasGhostVoted] = useState(false);
+  const [ghostVotedPositionId, setGhostVotedPositionId] = useState<string | null>(null);
+  const [positionIds, setPositionIds] = useState<string[]>([]);
 
   // Fetch the user's profile status
   useEffect(() => {
@@ -62,22 +64,48 @@ export const useFetchVotes = (
     const checkGhostVoteStatus = async () => {
       if (!isAuthenticated || !userId || !issueId || !isValidUUID(issueId)) {
         setHasGhostVoted(false);
+        setGhostVotedPositionId(null);
         return;
       }
       
       try {
-        const hasGhostVote = await checkVoteTracking(userId, issueId);
-        setHasGhostVoted(hasGhostVote);
+        const result = await checkVoteTracking(userId, issueId);
         
-        console.log("Ghost vote status checked:", hasGhostVote);
+        // The result now contains the position_id if available
+        if (result.exists) {
+          setHasGhostVoted(true);
+          setGhostVotedPositionId(result.position_id || null);
+          
+          // Check if the position_id still exists in the current positions list
+          if (result.position_id && positionIds.length > 0) {
+            const positionExists = positionIds.includes(result.position_id);
+            
+            if (!positionExists) {
+              console.log("Ghost voted position no longer exists, allowing new votes");
+              // If the position doesn't exist, reset ghost vote status
+              setHasGhostVoted(false);
+            }
+          }
+        } else {
+          setHasGhostVoted(false);
+          setGhostVotedPositionId(null);
+        }
+        
+        console.log("Ghost vote status checked:", { 
+          exists: result.exists, 
+          positionId: result.position_id,
+          currentPositions: positionIds,
+          hasGhostVoted: result.exists && (result.position_id ? positionIds.includes(result.position_id) : true)
+        });
       } catch (error) {
         console.error("Error checking ghost vote status:", error);
         setHasGhostVoted(false);
+        setGhostVotedPositionId(null);
       }
     };
     
     checkGhostVoteStatus();
-  }, [issueId, userId, isAuthenticated, lastVoteTime]);
+  }, [issueId, userId, isAuthenticated, lastVoteTime, positionIds]);
 
   // Fetch votes data
   useEffect(() => {
@@ -100,6 +128,12 @@ export const useFetchVotes = (
         if (positionsResult.error) {
           console.error("Error fetching positions:", positionsResult.error);
           return;
+        }
+        
+        // Store position IDs for checking ghost vote validity
+        if (positionsResult.data) {
+          const ids = positionsResult.data.map(position => position.id);
+          setPositionIds(ids);
         }
         
         // Initialize votes map with all positions set to 0 votes
@@ -173,6 +207,7 @@ export const useFetchVotes = (
     setPositionVotes,
     isActiveUser,
     refreshVotes,
-    hasGhostVoted
+    hasGhostVoted,
+    ghostVotedPositionId
   };
 };

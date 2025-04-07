@@ -49,6 +49,33 @@ serve(async (req) => {
         )
       }
       
+      // First, check if position exists in positions table
+      const { data: positionExists, error: positionCheckError } = await supabaseClient
+        .from('positions')
+        .select('id')
+        .eq('id', position_id)
+        .single()
+      
+      if (positionCheckError && positionCheckError.code !== 'PGRST116') { // PGRST116 is "No rows returned" error
+        console.error('Error checking position existence:', positionCheckError)
+        throw positionCheckError
+      }
+      
+      // Don't record a ghost vote for a non-existent position
+      if (!positionExists) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'Cannot track ghost vote for non-existent position', 
+            exists: false,
+            position_id: null
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 404,
+          }
+        )
+      }
+      
       // Insert the tracking record
       const { error } = await supabaseClient
         .from('user_vote_tracking')
@@ -75,7 +102,7 @@ serve(async (req) => {
     // This is a GET request to check if tracking exists
     const { data, error } = await supabaseClient
       .from('user_vote_tracking')
-      .select('user_id')
+      .select('user_id, position_id')
       .eq('user_id', user_id)
       .eq('issue_id', issue_id)
       .maybeSingle()
@@ -84,9 +111,32 @@ serve(async (req) => {
       console.error('Error checking vote tracking:', error)
       throw error
     }
+    
+    // If tracking record exists, verify that the position still exists
+    let positionExists = false
+    let positionId = null
+    
+    if (data && data.position_id) {
+      positionId = data.position_id
+      const { data: positionData, error: positionError } = await supabaseClient
+        .from('positions')
+        .select('id')
+        .eq('id', data.position_id)
+        .maybeSingle()
+      
+      if (positionError && positionError.code !== 'PGRST116') {
+        console.error('Error checking position existence:', positionError)
+      } else {
+        positionExists = !!positionData
+      }
+    }
 
     return new Response(
-      JSON.stringify({ exists: !!data }),
+      JSON.stringify({ 
+        exists: !!data && positionExists, 
+        position_id: positionId,
+        position_exists: positionExists
+      }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,

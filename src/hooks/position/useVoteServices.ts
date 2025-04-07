@@ -6,9 +6,9 @@ import { VotePrivacyLevel } from "@/components/positions/dialogs/VotePrivacyDial
 export const checkVoteTracking = async (
   userId: string,
   issueId: string
-): Promise<boolean> => {
+): Promise<{ exists: boolean; position_id: string | null }> => {
   try {
-    const { data: functionData } = await supabase.functions.invoke('check-vote-tracking', {
+    const { data: functionData, error } = await supabase.functions.invoke('check-vote-tracking', {
       method: 'POST',
       body: {
         user_id: userId,
@@ -16,7 +16,15 @@ export const checkVoteTracking = async (
       }
     });
     
-    return functionData?.exists || false;
+    if (error) {
+      console.error("Error checking vote tracking:", error);
+      throw new Error("Failed to verify your voting status");
+    }
+    
+    return { 
+      exists: !!functionData?.exists, 
+      position_id: functionData?.position_id || null 
+    };
   } catch (error) {
     console.error("Error checking vote tracking:", error);
     throw new Error("Failed to verify your voting status");
