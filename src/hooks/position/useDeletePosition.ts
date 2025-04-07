@@ -16,14 +16,6 @@ export const useDeletePosition = (userId?: string) => {
     setIsDeleting(true);
     
     try {
-      // Delete votes associated with the position
-      const { error: votesError } = await supabase
-        .from("user_votes")
-        .delete()
-        .eq("position_id", positionId);
-      
-      if (votesError) throw votesError;
-      
       // Delete the position
       const { error } = await supabase
         .from("positions")

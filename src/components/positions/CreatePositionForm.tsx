@@ -73,37 +73,6 @@ const CreatePositionForm = ({ issueId, onSuccess }: CreatePositionFormProps) => 
         .single();
       
       if (positionError) throw positionError;
-
-      // After creating a position, automatically vote for it
-      // Check if user has already voted on this issue
-      const { data: existingVote } = await supabase
-        .from('user_votes')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('issue_id', issueId)
-        .maybeSingle();
-
-      // If no existing vote, add a vote for this position
-      if (!existingVote) {
-        const { error: voteError } = await supabase
-          .from('user_votes')
-          .insert({
-            user_id: user.id,
-            issue_id: issueId,
-            position_id: positionData.id,
-          });
-          
-        if (voteError) {
-          console.error("Error recording vote:", voteError);
-          // Don't throw - position was created successfully, vote is secondary
-        }
-
-        // Update position vote count
-        await supabase
-          .from('positions')
-          .update({ votes: 1 })
-          .eq('id', positionData.id);
-      }
       
       toast.success("Position created successfully!");
       form.reset();

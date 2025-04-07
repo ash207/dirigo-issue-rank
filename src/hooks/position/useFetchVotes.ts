@@ -40,9 +40,9 @@ export const useFetchVotes = (issueId: string | undefined, userId: string | unde
     fetchUserStatus();
   }, [isAuthenticated, userId]);
 
-  // Fetch the user's vote and all position votes
+  // Fetch the positions for the issue
   useEffect(() => {
-    const fetchVotes = async () => {
+    const fetchPositions = async () => {
       if (!issueId) return;
       
       // Skip Supabase query if the issueId is not a valid UUID
@@ -52,79 +52,34 @@ export const useFetchVotes = (issueId: string | undefined, userId: string | unde
       }
       
       try {
-        // Fetch positions with vote counts
+        // Fetch positions
         const { data: positions, error: positionsError } = await supabase
           .from('positions')
-          .select('id, votes')
+          .select('id')
           .eq('issue_id', issueId);
           
         if (positionsError) {
-          console.error("Error fetching position votes:", positionsError);
+          console.error("Error fetching positions:", positionsError);
           return;
         }
         
-        // Build position votes map
+        // Build position votes map (all positions have 0 votes since voting is removed)
         const votesMap: Record<string, number> = {};
         positions.forEach(position => {
-          votesMap[position.id] = position.votes;
+          votesMap[position.id] = 0;
         });
         
-        console.log("Fetched position votes:", votesMap);
+        console.log("Fetched positions:", votesMap);
         setPositionVotes(votesMap);
-        
-        // Only fetch user vote if authenticated
-        if (isAuthenticated && userId) {
-          // First check regular votes
-          const { data: userVote, error: userVoteError } = await supabase
-            .from('user_votes')
-            .select('position_id')
-            .eq('user_id', userId)
-            .eq('issue_id', issueId)
-            .maybeSingle();
-          
-          if (userVoteError && userVoteError.code !== 'PGRST116') { // PGRST116 means no rows returned
-            console.error("Error fetching user vote:", userVoteError);
-            return;
-          }
-          
-          if (userVote) {
-            console.log("User voted for position:", userVote.position_id);
-            setUserVotedPosition(userVote.position_id);
-            return;
-          }
-          
-          // If no regular vote found, check if there's a tracking record for super_anonymous vote
-          // Use the edge function instead of direct RPC
-          try {
-            const { data, error } = await supabase.functions.invoke("check-vote-tracking", {
-              body: { user_id: userId, issue_id: issueId }
-            });
-            
-            if (error) {
-              console.error("Error invoking check-vote-tracking:", error);
-              return;
-            }
-            
-            // Check if vote tracking exists
-            if (data && data.exists === true) {
-              // We don't know which position was voted for with super_anonymous
-              // Local UI will not highlight any position, but unvoting will be possible
-              // through the tracking record
-              console.log("Super anonymous vote detected but position unknown");
-            }
-          } catch (error) {
-            console.error("Error checking vote tracking:", error);
-          }
-        }
       } catch (error) {
-        console.error("Error in fetchVotes:", error);
+        console.error("Error in fetchPositions:", error);
       }
     };
     
-    fetchVotes();
-  }, [isAuthenticated, userId, issueId, lastVoteTime]);
+    fetchPositions();
+  }, [issueId, lastVoteTime]);
 
-  // Expose a method to force refresh after vote operations
+  // Expose a method to force refresh position list
   const refreshVotes = () => {
     setLastVoteTime(Date.now());
   };

@@ -2,12 +2,6 @@
 import { toast } from "sonner";
 import { isValidUUID } from "./useVoteValidation";
 import { VotePrivacyLevel } from "@/components/positions/dialogs/VotePrivacyDialog";
-import { 
-  handleMockVote, 
-  handleUnvote, 
-  handleChangeVote, 
-  handleNewVote 
-} from "./useVoteOperations";
 
 export const useVoteHandler = (
   issueId: string | undefined, 

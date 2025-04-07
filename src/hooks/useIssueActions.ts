@@ -26,14 +26,6 @@ export const useIssueActions = (userId?: string) => {
       
       if (positionsError) throw positionsError;
       
-      // Delete user votes related to the issue
-      const { error: votesError } = await supabase
-        .from("user_votes")
-        .delete()
-        .eq("issue_id", issueId);
-      
-      if (votesError) throw votesError;
-      
       // Delete the issue itself
       const { error } = await supabase
         .from("issues")
