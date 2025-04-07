@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { isValidUUID } from "./useVoteValidation";
@@ -8,7 +9,21 @@ interface PositionVoteCount {
   vote_count: number;
 }
 
-export const useFetchVotes = (issueId: string | undefined, userId: string | undefined, isAuthenticated: boolean) => {
+// Define the return type explicitly to help TypeScript
+interface UseFetchVotesResult {
+  userVotedPosition: string | null;
+  positionVotes: Record<string, number>;
+  setUserVotedPosition: React.Dispatch<React.SetStateAction<string | null>>;
+  setPositionVotes: React.Dispatch<React.SetStateAction<Record<string, number>>>;
+  isActiveUser: boolean;
+  refreshVotes: () => void;
+}
+
+export const useFetchVotes = (
+  issueId: string | undefined, 
+  userId: string | undefined, 
+  isAuthenticated: boolean
+): UseFetchVotesResult => {
   const [userVotedPosition, setUserVotedPosition] = useState<string | null>(null);
   const [positionVotes, setPositionVotes] = useState<Record<string, number>>({});
   const [isActiveUser, setIsActiveUser] = useState(false);
@@ -58,15 +73,17 @@ export const useFetchVotes = (issueId: string | undefined, userId: string | unde
       
       try {
         // Get all positions for this issue
-        const { data: positions, error: positionsError } = await supabase
+        const positionsResult = await supabase
           .from('positions')
           .select('id')
           .eq('issue_id', issueId);
           
-        if (positionsError) {
-          console.error("Error fetching positions:", positionsError);
+        if (positionsResult.error) {
+          console.error("Error fetching positions:", positionsResult.error);
           return;
         }
+        
+        const positions = positionsResult.data;
         
         // Initialize votes map with all positions set to 0 votes
         const votesMap: Record<string, number> = {};
@@ -78,16 +95,25 @@ export const useFetchVotes = (issueId: string | undefined, userId: string | unde
         
         // Get vote counts using the RPC function - avoid deep type instantiation
         try {
-          // Fix type casting to avoid deep type instantiation
-          const { data, error } = await supabase
+          // Use explicit type annotation for the RPC call
+          interface RPCResponse {
+            data: PositionVoteCount[] | null;
+            error: Error | null;
+          }
+          
+          // Cast the response to our known type
+          const voteCountsResult = await supabase
             .rpc('get_position_vote_counts', { p_issue_id: issueId });
+          
+          // Safely handle the response
+          const error = voteCountsResult.error;
+          const data = voteCountsResult.data as PositionVoteCount[] | null;
             
           if (error) {
             console.error("Error fetching vote counts:", error);
           } else if (data) {
-            // Safely cast and process the data
-            const voteData = data as PositionVoteCount[];
-            voteData.forEach(item => {
+            // Use the explicit type to process data safely
+            data.forEach(item => {
               if (item.position_id && typeof item.vote_count === 'number') {
                 votesMap[item.position_id] = item.vote_count;
               }
@@ -102,17 +128,17 @@ export const useFetchVotes = (issueId: string | undefined, userId: string | unde
         // If user is authenticated, fetch their vote
         if (isAuthenticated && userId) {
           try {
-            const { data: userVote, error: userVoteError } = await supabase
+            const userVoteResult = await supabase
               .from('position_votes')
               .select('position_id')
               .eq('user_id', userId)
               .eq('issue_id', issueId)
               .maybeSingle();
             
-            if (userVoteError) {
-              console.error("Error fetching user vote:", userVoteError);
-            } else if (userVote && userVote.position_id) {
-              setUserVotedPosition(userVote.position_id);
+            if (userVoteResult.error) {
+              console.error("Error fetching user vote:", userVoteResult.error);
+            } else if (userVoteResult.data && userVoteResult.data.position_id) {
+              setUserVotedPosition(userVoteResult.data.position_id);
             } else {
               setUserVotedPosition(null);
             }
