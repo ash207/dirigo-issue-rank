@@ -40,8 +40,16 @@ export const useVoteHandler = (
       // If already voted for this position, unvote
       if (userVotedPosition === positionId) {
         setUserVotedPosition(null);
+        // Update local state for the position that was unvoted
+        updatePositionVote(positionId, Math.max(0, (positionVotes[positionId] || 1) - 1));
         toast.success("Your vote has been removed! (Mock)");
       } else {
+        // If switching vote, decrease count on old position
+        if (userVotedPosition) {
+          updatePositionVote(userVotedPosition, Math.max(0, (positionVotes[userVotedPosition] || 1) - 1));
+        }
+        // Increase count on new position
+        updatePositionVote(positionId, (positionVotes[positionId] || 0) + 1);
         setUserVotedPosition(positionId);
         toast.success("Your vote has been recorded! (Mock)");
       }
@@ -111,6 +119,7 @@ export const useVoteHandler = (
             
             // Update local state for the old position
             updatePositionVote(userVotedPosition, newCount);
+            console.log(`Decreased vote count for position ${userVotedPosition} to ${newCount}`);
           }
           
           // Delete the old vote record (for non-super-anonymous votes)
@@ -129,6 +138,19 @@ export const useVoteHandler = (
             });
             
             if (error) throw error;
+            
+            // Fetch the updated position vote count
+            const { data: newPosition } = await supabase
+              .from('positions')
+              .select('votes')
+              .eq('id', positionId)
+              .single();
+              
+            if (newPosition) {
+              // Update local state for the new position
+              updatePositionVote(positionId, newPosition.votes);
+              console.log(`Increased vote count for position ${positionId} to ${newPosition.votes}`);
+            }
           } else {
             // Insert regular vote with specified privacy
             const { error } = await supabase
@@ -158,6 +180,7 @@ export const useVoteHandler = (
               
               // Update local state for the new position
               updatePositionVote(positionId, newCount);
+              console.log(`Increased vote count for position ${positionId} to ${newCount}`);
             }
           }
           
@@ -175,7 +198,17 @@ export const useVoteHandler = (
           
           if (error) throw error;
           
-          // Don't need to update position vote count as the function does it
+          // Fetch the updated vote count
+          const { data: position } = await supabase
+            .from('positions')
+            .select('votes')
+            .eq('id', positionId)
+            .single();
+            
+          if (position) {
+            // Update local state
+            updatePositionVote(positionId, position.votes);
+          }
         } else {
           // Insert regular vote with specified privacy
           const { error } = await supabase
@@ -205,6 +238,7 @@ export const useVoteHandler = (
             
             // Update local state
             updatePositionVote(positionId, newCount);
+            console.log(`Set vote count for position ${positionId} to ${newCount}`);
           }
         }
         

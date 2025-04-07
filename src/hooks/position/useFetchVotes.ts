@@ -67,6 +67,8 @@ export const useFetchVotes = (issueId: string | undefined, userId: string | unde
         positions.forEach(position => {
           votesMap[position.id] = position.votes;
         });
+        
+        console.log("Fetched position votes:", votesMap);
         setPositionVotes(votesMap);
         
         // Only fetch user vote if authenticated
@@ -85,6 +87,7 @@ export const useFetchVotes = (issueId: string | undefined, userId: string | unde
           }
           
           if (userVote) {
+            console.log("User voted for position:", userVote.position_id);
             setUserVotedPosition(userVote.position_id);
             return;
           }
