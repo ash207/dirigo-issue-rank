@@ -36,7 +36,14 @@ const PositionVoteButton = ({
   }
 
   // Add console log for debugging
-  console.log("Vote button state:", { isVoted, disabled, tooltipText });
+  console.log("Vote button state:", { 
+    isVoted, 
+    disabled, 
+    tooltipText, 
+    isAuthenticated, 
+    isActiveUser,
+    voteCount 
+  });
 
   return (
     <TooltipProvider>
@@ -50,7 +57,7 @@ const PositionVoteButton = ({
               isVoted && "bg-blue-600 hover:bg-blue-700"
             )}
             onClick={onClick}
-            disabled={disabled}
+            disabled={!isAuthenticated ? false : disabled}
             aria-label={tooltipText}
             type="button"
           >
