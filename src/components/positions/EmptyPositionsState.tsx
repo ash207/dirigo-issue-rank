@@ -23,7 +23,7 @@ const EmptyPositionsState: React.FC<EmptyPositionsStateProps> = ({ issueId, onAd
       </p>
       
       {isAuthenticated ? (
-        <Button onClick={onAddPosition} className="animate-pulse">
+        <Button onClick={onAddPosition}>
           Add Your Position
         </Button>
       ) : (
