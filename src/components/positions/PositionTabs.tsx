@@ -31,6 +31,14 @@ const PositionTabs = ({
   issueId,
   isActiveUser = true
 }: PositionTabsProps) => {
+  // Helper function to get actual votes from the positionVotes object
+  const getPositionWithVotes = (position: Position) => {
+    return {
+      ...position,
+      votes: positionVotes[position.id] !== undefined ? positionVotes[position.id] : position.votes
+    };
+  };
+
   return (
     <Tabs defaultValue="top">
       <TabsList>
@@ -41,7 +49,7 @@ const PositionTabs = ({
 
       <TabsContent value="top">
         <PositionsTabContent
-          positions={positions.sort((a, b) => b.votes - a.votes)}
+          positions={positions.map(getPositionWithVotes).sort((a, b) => b.votes - a.votes)}
           visibleCount={visibleCount}
           userVotedPosition={userVotedPosition}
           positionVotes={positionVotes}
@@ -57,7 +65,7 @@ const PositionTabs = ({
 
       <TabsContent value="new">
         <PositionsTabContent
-          positions={positions}
+          positions={positions.map(getPositionWithVotes)}
           visibleCount={visibleCount}
           userVotedPosition={userVotedPosition}
           positionVotes={positionVotes}
@@ -73,10 +81,13 @@ const PositionTabs = ({
 
       <TabsContent value="verified">
         <PositionsTabContent
-          positions={positions.filter(p => 
-            p.author.verificationLevel === "voter" || 
-            p.author.verificationLevel === "official"
-          )}
+          positions={positions
+            .filter(p => 
+              p.author.verificationLevel === "voter" || 
+              p.author.verificationLevel === "official"
+            )
+            .map(getPositionWithVotes)
+          }
           visibleCount={visibleCount}
           userVotedPosition={userVotedPosition}
           positionVotes={positionVotes}

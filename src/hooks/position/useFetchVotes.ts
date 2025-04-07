@@ -85,6 +85,9 @@ export const useFetchVotes = (issueId: string | undefined, userId: string | unde
           
           if (userVote) {
             setUserVotedPosition(userVote.position_id);
+          } else {
+            // Make sure we clear the user voted position if they don't have a vote
+            setUserVotedPosition(null);
           }
         }
       } catch (error) {
