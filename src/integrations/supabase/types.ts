@@ -237,6 +237,7 @@ export type Database = {
           id: string
           issue_id: string
           position_id: string
+          privacy_level: string
           user_id: string
         }
         Insert: {
@@ -244,6 +245,7 @@ export type Database = {
           id?: string
           issue_id: string
           position_id: string
+          privacy_level?: string
           user_id: string
         }
         Update: {
@@ -251,6 +253,7 @@ export type Database = {
           id?: string
           issue_id?: string
           position_id?: string
+          privacy_level?: string
           user_id?: string
         }
         Relationships: [

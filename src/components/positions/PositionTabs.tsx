@@ -2,13 +2,14 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Position } from "@/types/positions";
 import PositionsTabContent from "./PositionsTabContent";
+import { VotePrivacyLevel } from "./dialogs/VotePrivacyDialog";
 
 interface PositionTabsProps {
   positions: Position[];
   visibleCount: number;
   userVotedPosition: string | null;
   positionVotes: Record<string, number>;
-  onVote: (positionId: string) => void;
+  onVote: (positionId: string, privacyLevel?: VotePrivacyLevel) => void;
   isAuthenticated: boolean;
   currentUserId?: string;
   onPositionUpdated: () => void;
