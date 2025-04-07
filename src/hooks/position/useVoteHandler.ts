@@ -65,11 +65,17 @@ export const useVoteHandler = (
       return;
     }
 
-    // If user has already cast a ghost vote on this issue, check if it's for the same position
-    // If the ghost vote was for a different position that still exists, they cannot vote
-    if (hasGhostVoted && ghostVotedPositionId !== positionId) {
-      toast.error("You've already cast a ghost vote on this issue and cannot vote on other positions");
-      return;
+    // If user has already cast a ghost vote on this issue, they cannot make ANY new vote
+    if (hasGhostVoted) {
+      // If this is for the ghost-voted position and we're removing the vote (special admin case), allow it
+      if (ghostVotedPositionId === positionId && userVotedPosition === positionId) {
+        // Special case: allow admins to remove ghost votes
+        console.log("Admin removing ghost vote, allowing operation");
+      } else {
+        // Block all other vote operations when a ghost vote exists
+        toast.error("You've already cast a ghost vote on this issue and cannot cast another vote or change it");
+        return;
+      }
     }
 
     // If we have a userVotedPosition that equals the positionId, it means we're removing a vote
@@ -123,6 +129,19 @@ export const useVoteHandler = (
           setIsVoting(false);
           resetVoteDialog();
           return;
+        }
+      } else if (privacyLevel === 'public' && !isRemovingVote) {
+        // For public votes, check if there's already a ghost vote tracking
+        if (hasGhostVoted) {
+          toast.error("You've already cast a ghost vote on this issue and cannot cast a public vote");
+          setIsVoting(false);
+          resetVoteDialog();
+          return;
+        }
+        
+        // Also check if the user already has a public vote on another position
+        if (userVotedPosition && userVotedPosition !== positionId) {
+          // This is handled by removing the previous vote first, so it's fine
         }
       }
       
@@ -182,7 +201,7 @@ export const useVoteHandler = (
           await castPublicVote(positionId, validUserId, privacyLevel, validIssueId);
           
           // If there was a ghost vote tracking record, remove it
-          if (hasGhostVoted) {
+          if (hasGhostVoted && ghostVotedPositionId === positionId) {
             try {
               await deleteVoteTracking(validUserId, validIssueId);
             } catch (error) {

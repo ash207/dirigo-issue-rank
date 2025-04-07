@@ -92,6 +92,35 @@ serve(async (req) => {
       )
     }
     
+    // Also check if the user has a public vote (position_votes) for this issue
+    const { data: existingPublicVote, error: publicVoteCheckError } = await supabaseClient
+      .from('position_votes')
+      .select('id')
+      .eq('user_id', user_id)
+      .eq('issue_id', issue_id)
+      .maybeSingle()
+      
+    if (publicVoteCheckError) {
+      console.error('Error checking existing public vote:', publicVoteCheckError)
+      throw publicVoteCheckError
+    }
+    
+    // If there's already a public vote, return an error
+    if (existingPublicVote) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'User already has a public vote on this issue', 
+          exists: true,
+          success: false,
+          voteType: 'public'
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 409, // Conflict
+        }
+      )
+    }
+    
     // Insert the tracking record
     const { error } = await supabaseClient
       .from('user_vote_tracking')

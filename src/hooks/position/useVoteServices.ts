@@ -47,8 +47,26 @@ export const trackGhostVote = async (
       throw new Error("You've already cast a ghost vote on this issue");
     }
     
-    // Use the correct endpoint for tracking a ghost vote
-    const { error } = await supabase.functions.invoke('create-vote-tracking', {
+    // Also verify there's no existing public vote for this user on this issue
+    const { data: publicVotes, error: publicVoteError } = await supabase
+      .from('position_votes')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('issue_id', issueId)
+      .maybeSingle();
+      
+    if (publicVoteError) {
+      console.error("Error checking public votes:", publicVoteError);
+      throw new Error("Failed to verify your voting status");
+    }
+    
+    if (publicVotes) {
+      console.error("User already has a public vote on this issue");
+      throw new Error("You've already cast a public vote on this issue and cannot cast a ghost vote");
+    }
+    
+    // Use the create-vote-tracking endpoint to record a ghost vote
+    const { data, error } = await supabase.functions.invoke('create-vote-tracking', {
       method: 'POST',
       body: {
         user_id: userId,
@@ -57,13 +75,13 @@ export const trackGhostVote = async (
       }
     });
     
-    if (error) {
-      console.error("Error tracking ghost vote:", error);
-      throw new Error("Failed to record your vote tracking");
+    if (error || !data?.success) {
+      console.error("Error tracking ghost vote:", error, data);
+      throw new Error(data?.error || "Failed to record your vote tracking");
     }
   } catch (error) {
     console.error("Error tracking ghost vote:", error);
-    throw new Error("Failed to track your ghost vote");
+    throw error instanceof Error ? error : new Error("Failed to track your ghost vote");
   }
 };
 
@@ -118,6 +136,13 @@ export const castPublicVote = async (
   issueId: string
 ): Promise<void> => {
   try {
+    // Check for existing ghost vote first
+    const existingGhostVote = await checkVoteTracking(userId, issueId);
+    
+    if (existingGhostVote.exists) {
+      throw new Error("You've already cast a ghost vote on this issue and cannot cast a public vote");
+    }
+    
     const { error } = await supabase
       .from('position_votes')
       .insert({
@@ -134,7 +159,11 @@ export const castPublicVote = async (
     }
   } catch (error) {
     console.error("Error casting public vote:", error);
-    throw new Error("Failed to cast your public vote");
+    if (error instanceof Error) {
+      throw error;
+    } else {
+      throw new Error("Failed to cast your public vote");
+    }
   }
 };
 
