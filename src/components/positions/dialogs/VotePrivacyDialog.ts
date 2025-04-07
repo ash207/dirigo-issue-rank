@@ -1,3 +1,3 @@
 
-// Type definitions only file - actual component removed with voting functionality
+// Vote privacy levels
 export type VotePrivacyLevel = 'public' | 'private' | 'super_anonymous';

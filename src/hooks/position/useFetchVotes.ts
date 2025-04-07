@@ -40,9 +40,9 @@ export const useFetchVotes = (issueId: string | undefined, userId: string | unde
     fetchUserStatus();
   }, [isAuthenticated, userId]);
 
-  // Fetch the positions for the issue
+  // Fetch the user's voted position and all positions' vote counts
   useEffect(() => {
-    const fetchPositions = async () => {
+    const fetchVoteData = async () => {
       if (!issueId) return;
       
       // Skip Supabase query if the issueId is not a valid UUID
@@ -52,7 +52,7 @@ export const useFetchVotes = (issueId: string | undefined, userId: string | unde
       }
       
       try {
-        // Fetch positions
+        // Get all positions for this issue
         const { data: positions, error: positionsError } = await supabase
           .from('positions')
           .select('id')
@@ -63,23 +63,48 @@ export const useFetchVotes = (issueId: string | undefined, userId: string | unde
           return;
         }
         
-        // Build position votes map (all positions have 0 votes since voting is removed)
+        // Get vote counts for all positions using our custom function
+        const { data: voteCounts, error: voteCountsError } = await supabase
+          .rpc('get_position_vote_counts', { p_issue_id: issueId });
+          
+        if (voteCountsError) {
+          console.error("Error fetching vote counts:", voteCountsError);
+          return;
+        }
+        
+        // Convert to a map for easier use
         const votesMap: Record<string, number> = {};
         positions.forEach(position => {
-          votesMap[position.id] = 0;
+          const voteData = voteCounts.find(vc => vc.position_id === position.id);
+          votesMap[position.id] = voteData ? Number(voteData.vote_count) : 0;
         });
         
-        console.log("Fetched positions:", votesMap);
         setPositionVotes(votesMap);
+        
+        // If user is authenticated, fetch their vote
+        if (isAuthenticated && userId) {
+          const { data: userVote, error: userVoteError } = await supabase
+            .from('position_votes')
+            .select('position_id')
+            .eq('user_id', userId)
+            .eq('issue_id', issueId)
+            .maybeSingle();
+          
+          if (userVoteError && userVoteError.code !== 'PGRST116') {
+            console.error("Error fetching user vote:", userVoteError);
+          } else {
+            setUserVotedPosition(userVote?.position_id || null);
+          }
+        }
       } catch (error) {
-        console.error("Error in fetchPositions:", error);
+        console.error("Error in fetchVoteData:", error);
       }
     };
     
-    fetchPositions();
-  }, [issueId, lastVoteTime]);
+    fetchVoteData();
+  }, [issueId, userId, isAuthenticated, lastVoteTime]);
 
-  // Expose a method to force refresh position list
+  // Expose a method to force refresh vote data
   const refreshVotes = () => {
     setLastVoteTime(Date.now());
   };

@@ -1,10 +1,13 @@
 
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import PositionCardMenu from "./PositionCardMenu";
 import DeletePositionDialog from "./dialogs/DeletePositionDialog";
 import EditPositionDialog from "./dialogs/EditPositionDialog";
 import ReportPositionDialog from "./dialogs/ReportPositionDialog";
+import PositionVoteButton from "./PositionVoteButton";
+import VotePrivacyDialog from "./dialogs/VotePrivacyDialog";
+import { VotePrivacyLevel } from "./dialogs/VotePrivacyDialog";
 
 interface PositionCardProps {
   id: string;
@@ -21,6 +24,10 @@ interface PositionCardProps {
   onPositionUpdated?: () => void;
   issueId?: string;
   issueTitle?: string;
+  voteCount?: number;
+  isVoted?: boolean;
+  onVote?: (positionId: string, privacyLevel?: VotePrivacyLevel) => void;
+  isVoting?: boolean;
 }
 
 const PositionCard = ({
@@ -34,14 +41,37 @@ const PositionCard = ({
   currentUserId,
   onPositionUpdated,
   issueId,
-  issueTitle = "this issue"
+  issueTitle = "this issue",
+  voteCount = 0,
+  isVoted = false,
+  onVote,
+  isVoting = false
 }: PositionCardProps) => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
+  const [isVotePrivacyDialogOpen, setIsVotePrivacyDialogOpen] = useState(false);
   
   // Check if current user is the author of this position
   const isOwner = author_id && currentUserId && author_id === currentUserId;
+
+  const handleVoteClick = () => {
+    if (onVote) {
+      if (isVoted) {
+        // If already voted, just call onVote directly to toggle vote off
+        onVote(id);
+      } else {
+        // If not voted, open privacy dialog first
+        setIsVotePrivacyDialogOpen(true);
+      }
+    }
+  };
+
+  const handlePrivacySelected = (privacyLevel: VotePrivacyLevel) => {
+    if (onVote) {
+      onVote(id, privacyLevel);
+    }
+  };
 
   return (
     <Card className="mb-4">
@@ -59,6 +89,21 @@ const PositionCard = ({
       <CardContent>
         <p className="text-gray-700 mb-4">{content}</p>
       </CardContent>
+      <CardFooter className="flex justify-between items-center pt-0">
+        <div className="text-sm text-muted-foreground">
+          Posted by {author.name}
+        </div>
+
+        {onVote && (
+          <PositionVoteButton
+            voteCount={voteCount}
+            isVoted={isVoted}
+            onClick={handleVoteClick}
+            disabled={isVoting || (isOwner && !isVoted)}
+            positionTitle={title}
+          />
+        )}
+      </CardFooter>
       
       {/* Dialogs */}
       <DeletePositionDialog
@@ -86,6 +131,13 @@ const PositionCard = ({
         issueTitle={issueTitle}
         open={isReportDialogOpen}
         onOpenChange={setIsReportDialogOpen}
+      />
+
+      <VotePrivacyDialog
+        open={isVotePrivacyDialogOpen}
+        onOpenChange={setIsVotePrivacyDialogOpen}
+        onPrivacySelected={handlePrivacySelected}
+        positionTitle={title}
       />
     </Card>
   );

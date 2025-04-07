@@ -43,12 +43,12 @@ export const usePositionsData = (id: string | undefined) => {
           id: position.id,
           title: position.title,
           content: position.content,
+          created_at: position.created_at,
           author: {
             name: authorName,
             // Default to basic verification level
             verificationLevel: "basic" as const
           },
-          votes: 0, // Votes field removed from database, default to 0
           author_id: position.author_id
         };
       }));

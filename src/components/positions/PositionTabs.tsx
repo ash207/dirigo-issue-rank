@@ -2,6 +2,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Position } from "@/types/positions";
 import PositionsTabContent from "./PositionsTabContent";
+import { VotePrivacyLevel } from "./dialogs/VotePrivacyDialog";
 
 interface PositionTabsProps {
   positions: Position[];
@@ -12,6 +13,10 @@ interface PositionTabsProps {
   loadMore: () => void;
   issueId: string;
   isActiveUser?: boolean;
+  positionVotes?: Record<string, number>;
+  userVotedPosition?: string | null;
+  onVote?: (positionId: string, privacyLevel?: VotePrivacyLevel) => void;
+  isVoting?: boolean;
 }
 
 const PositionTabs = ({
@@ -22,8 +27,29 @@ const PositionTabs = ({
   onPositionUpdated,
   loadMore,
   issueId,
-  isActiveUser = true
+  isActiveUser = true,
+  positionVotes = {},
+  userVotedPosition = null,
+  onVote,
+  isVoting = false
 }: PositionTabsProps) => {
+  // Sort positions by votes for "Top" tab
+  const topPositions = [...positions].sort((a, b) => 
+    (positionVotes[b.id] || 0) - (positionVotes[a.id] || 0)
+  );
+
+  // Sort positions by date for "Newest" tab (assuming newest first)
+  const newestPositions = [...positions].sort((a, b) => {
+    if (!a.created_at || !b.created_at) return 0;
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
+
+  // Filter verified positions
+  const verifiedPositions = positions.filter(p => 
+    p.author.verificationLevel === "voter" || 
+    p.author.verificationLevel === "official"
+  );
+
   return (
     <Tabs defaultValue="top">
       <TabsList>
@@ -34,7 +60,7 @@ const PositionTabs = ({
 
       <TabsContent value="top">
         <PositionsTabContent
-          positions={positions}
+          positions={topPositions}
           visibleCount={visibleCount}
           isAuthenticated={isAuthenticated}
           currentUserId={currentUserId}
@@ -42,12 +68,16 @@ const PositionTabs = ({
           loadMore={loadMore}
           issueId={issueId}
           isActiveUser={isActiveUser}
+          positionVotes={positionVotes}
+          userVotedPosition={userVotedPosition}
+          onVote={onVote}
+          isVoting={isVoting}
         />
       </TabsContent>
 
       <TabsContent value="new">
         <PositionsTabContent
-          positions={positions}
+          positions={newestPositions}
           visibleCount={visibleCount}
           isAuthenticated={isAuthenticated}
           currentUserId={currentUserId}
@@ -55,15 +85,16 @@ const PositionTabs = ({
           loadMore={loadMore}
           issueId={issueId}
           isActiveUser={isActiveUser}
+          positionVotes={positionVotes}
+          userVotedPosition={userVotedPosition}
+          onVote={onVote}
+          isVoting={isVoting}
         />
       </TabsContent>
 
       <TabsContent value="verified">
         <PositionsTabContent
-          positions={positions.filter(p => 
-            p.author.verificationLevel === "voter" || 
-            p.author.verificationLevel === "official"
-          )}
+          positions={verifiedPositions}
           visibleCount={visibleCount}
           isAuthenticated={isAuthenticated}
           currentUserId={currentUserId}
@@ -71,6 +102,10 @@ const PositionTabs = ({
           loadMore={loadMore}
           issueId={issueId}
           isActiveUser={isActiveUser}
+          positionVotes={positionVotes}
+          userVotedPosition={userVotedPosition}
+          onVote={onVote}
+          isVoting={isVoting}
         />
       </TabsContent>
     </Tabs>

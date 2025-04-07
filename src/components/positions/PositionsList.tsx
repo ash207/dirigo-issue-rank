@@ -3,6 +3,7 @@ import { useState } from "react";
 import PositionTabs from "./PositionTabs";
 import CreatePositionButton from "./CreatePositionButton";
 import { Position } from "@/types/positions";
+import { usePositionVotes } from "@/hooks/position/usePositionVotes";
 
 interface PositionsListProps {
   positions: Position[];
@@ -24,6 +25,13 @@ const PositionsList = ({
   isActiveUser = true
 }: PositionsListProps) => {
   const [visibleCount, setVisibleCount] = useState(5);
+  
+  const {
+    positionVotes,
+    userVotedPosition,
+    handleVote,
+    isVoting
+  } = usePositionVotes(issueId);
   
   const loadMore = () => {
     setVisibleCount(prev => prev + 5);
@@ -48,6 +56,10 @@ const PositionsList = ({
         loadMore={loadMore}
         issueId={issueId}
         isActiveUser={isActiveUser}
+        positionVotes={positionVotes}
+        userVotedPosition={userVotedPosition}
+        onVote={handleVote}
+        isVoting={isVoting}
       />
     </div>
   );

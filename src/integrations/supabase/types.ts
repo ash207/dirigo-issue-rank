@@ -9,6 +9,35 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      anonymous_vote_counts: {
+        Row: {
+          count: number
+          id: string
+          last_updated: string
+          position_id: string
+        }
+        Insert: {
+          count?: number
+          id?: string
+          last_updated?: string
+          position_id: string
+        }
+        Update: {
+          count?: number
+          id?: string
+          last_updated?: string
+          position_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "anonymous_vote_counts_position_id_fkey"
+            columns: ["position_id"]
+            isOneToOne: false
+            referencedRelation: "positions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       issue_reports: {
         Row: {
           created_at: string
@@ -124,6 +153,41 @@ export type Database = {
           },
           {
             foreignKeyName: "position_reports_position_id_fkey"
+            columns: ["position_id"]
+            isOneToOne: false
+            referencedRelation: "positions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      position_votes: {
+        Row: {
+          created_at: string
+          id: string
+          position_id: string
+          privacy_level: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          position_id: string
+          privacy_level: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          position_id?: string
+          privacy_level?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "position_votes_position_id_fkey"
             columns: ["position_id"]
             isOneToOne: false
             referencedRelation: "positions"
@@ -252,6 +316,13 @@ export type Database = {
         Args: { x: number }
         Returns: number
       }
+      get_position_vote_counts: {
+        Args: { p_issue_id: string }
+        Returns: {
+          position_id: string
+          vote_count: number
+        }[]
+      }
       get_user_role: {
         Args: { user_id: string }
         Returns: string
@@ -261,6 +332,10 @@ export type Database = {
           user_id: string
           required_role: Database["public"]["Enums"]["user_role"]
         }
+        Returns: boolean
+      }
+      increment_anonymous_vote: {
+        Args: { p_position_id: string }
         Returns: boolean
       }
       increment_counter: {

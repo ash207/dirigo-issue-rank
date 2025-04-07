@@ -8,4 +8,5 @@ export interface Position {
     verificationLevel: "unverified" | "basic" | "voter" | "official";
   };
   author_id?: string;
+  created_at?: string;
 }
