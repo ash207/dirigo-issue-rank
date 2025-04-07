@@ -73,7 +73,6 @@ export const useVoteHandler = (
         // Cast a new vote based on privacy level
         if (privacyLevel === 'super_anonymous') {
           // For super anonymous votes, use a direct INSERT for now
-          // instead of the RPC function to avoid type errors
           const { data, error } = await supabase
             .from('anonymous_vote_counts')
             .upsert({
@@ -86,14 +85,15 @@ export const useVoteHandler = (
           
           if (error) throw error;
         } else {
-          // For public or private votes, create a custom insert
-          // avoiding direct table access to work around type issues
-          const { error } = await supabase.rpc('insert_position_vote', {
-            p_position_id: positionId,
-            p_user_id: userId,
-            p_privacy_level: privacyLevel,
-            p_issue_id: issueId
-          });
+          // For public or private votes, create a vote record
+          const { error } = await supabase
+            .from('position_votes')
+            .insert({
+              position_id: positionId,
+              user_id: userId,
+              privacy_level: privacyLevel,
+              issue_id: issueId
+            });
           
           if (error) {
             console.error("Database error:", error);
@@ -127,11 +127,12 @@ export const useVoteHandler = (
 
   // Helper function to remove existing vote
   const removeExistingVote = async (positionId: string, userId: string) => {
-    // Use RPC function instead of direct deletion to work around type issues
-    const { error } = await supabase.rpc('remove_position_vote', {
-      p_position_id: positionId,
-      p_user_id: userId
-    });
+    // Direct deletion of vote record
+    const { error } = await supabase
+      .from('position_votes')
+      .delete()
+      .eq('position_id', positionId)
+      .eq('user_id', userId);
     
     if (error) {
       console.error("Error removing vote:", error);

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import PositionCardMenu from "./PositionCardMenu";
@@ -6,8 +5,8 @@ import DeletePositionDialog from "./dialogs/DeletePositionDialog";
 import EditPositionDialog from "./dialogs/EditPositionDialog";
 import ReportPositionDialog from "./dialogs/ReportPositionDialog";
 import PositionVoteButton from "./PositionVoteButton";
-import { VotePrivacyDialog } from "./dialogs/VotePrivacyDialog";
-import { VotePrivacyLevel } from "./dialogs/VotePrivacyDialog";
+import VotePrivacyDialog from "./dialogs/VotePrivacyDialog";
+import type VotePrivacyLevel from "./dialogs/VotePrivacyDialog";
 
 interface PositionCardProps {
   id: string;
@@ -52,16 +51,13 @@ const PositionCard = ({
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
   const [isVotePrivacyDialogOpen, setIsVotePrivacyDialogOpen] = useState(false);
   
-  // Check if current user is the author of this position
   const isOwner = author_id && currentUserId && author_id === currentUserId;
 
   const handleVoteClick = () => {
     if (onVote) {
       if (isVoted) {
-        // If already voted, just call onVote directly to toggle vote off
         onVote(id);
       } else {
-        // If not voted, open privacy dialog first
         setIsVotePrivacyDialogOpen(true);
       }
     }
@@ -105,7 +101,6 @@ const PositionCard = ({
         )}
       </CardFooter>
       
-      {/* Dialogs */}
       <DeletePositionDialog
         id={id}
         author_id={author_id}

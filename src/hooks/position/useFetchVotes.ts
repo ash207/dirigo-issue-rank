@@ -63,14 +63,9 @@ export const useFetchVotes = (issueId: string | undefined, userId: string | unde
           return;
         }
         
-        // Get vote counts directly with SQL query instead of using RPC
+        // Get vote counts using the RPC function
         const { data: voteCounts, error: voteCountsError } = await supabase
-          .from('positions')
-          .select(`
-            id,
-            position_counts:id (count)
-          `)
-          .eq('issue_id', issueId);
+          .rpc('get_position_vote_counts', { p_issue_id: issueId });
           
         if (voteCountsError) {
           console.error("Error fetching vote counts:", voteCountsError);
@@ -83,6 +78,17 @@ export const useFetchVotes = (issueId: string | undefined, userId: string | unde
           // Set default count to 0
           votesMap[position.id] = 0;
         });
+        
+        // Update vote counts from the RPC result
+        if (voteCounts && Array.isArray(voteCounts)) {
+          voteCounts.forEach(item => {
+            if (item && item.position_id) {
+              votesMap[item.position_id] = item.vote_count;
+            }
+          });
+        }
+        
+        setPositionVotes(votesMap);
         
         // If user is authenticated, fetch their vote
         if (isAuthenticated && userId) {
