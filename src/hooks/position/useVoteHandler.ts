@@ -1,8 +1,13 @@
 
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { isValidUUID } from "./useVoteValidation";
 import { VotePrivacyLevel } from "@/components/positions/dialogs/VotePrivacyDialog";
+import { 
+  handleMockVote, 
+  handleUnvote, 
+  handleChangeVote, 
+  handleNewVote 
+} from "./useVoteOperations";
 
 export const useVoteHandler = (
   issueId: string | undefined, 
@@ -14,14 +19,6 @@ export const useVoteHandler = (
   setPositionVotes: React.Dispatch<React.SetStateAction<Record<string, number>>>,
   isActiveUser: boolean = false
 ) => {
-  const updatePositionVote = (positionId: string, newCount: number) => {
-    console.log(`Updating vote count for position ${positionId} to ${newCount}`);
-    setPositionVotes((prevVotes) => ({
-      ...prevVotes,
-      [positionId]: newCount
-    }));
-  };
-
   const handleVote = async (positionId: string, privacyLevel?: VotePrivacyLevel) => {
     if (!isAuthenticated || !userId || !issueId) {
       toast.error("You must be signed in to vote");
@@ -36,214 +33,50 @@ export const useVoteHandler = (
     // For mock data with non-UUID IDs, simulate voting without database calls
     if (!isValidUUID(issueId) || !isValidUUID(positionId)) {
       console.log("Using mock voting for non-UUID IDs", { issueId, positionId, privacyLevel });
-      
-      // If already voted for this position, unvote
-      if (userVotedPosition === positionId) {
-        setUserVotedPosition(null);
-        // Update local state for the position that was unvoted
-        updatePositionVote(positionId, Math.max(0, (positionVotes[positionId] || 1) - 1));
-        toast.success("Your vote has been removed! (Mock)");
-      } else {
-        // If switching vote, decrease count on old position
-        if (userVotedPosition) {
-          updatePositionVote(userVotedPosition, Math.max(0, (positionVotes[userVotedPosition] || 1) - 1));
-        }
-        // Increase count on new position
-        updatePositionVote(positionId, (positionVotes[positionId] || 0) + 1);
-        setUserVotedPosition(positionId);
-        toast.success("Your vote has been recorded! (Mock)");
-      }
+      handleMockVote(
+        userVotedPosition, 
+        positionId, 
+        positionVotes, 
+        setUserVotedPosition, 
+        setPositionVotes
+      );
       return;
     }
     
     try {
       if (userVotedPosition) {
         if (userVotedPosition === positionId) {
-          // User is trying to unvote - now allowed
-          const { data: oldPosition } = await supabase
-            .from('positions')
-            .select('votes')
-            .eq('id', userVotedPosition)
-            .single();
-            
-          if (oldPosition) {
-            const newCount = Math.max(0, oldPosition.votes - 1);
-            await supabase
-              .from('positions')
-              .update({ votes: newCount })
-              .eq('id', userVotedPosition);
-            
-            // Update local state for the position
-            updatePositionVote(userVotedPosition, newCount);
-          }
-          
-          // Delete the vote record (if not super anonymous)
-          // For super anonymous votes, we can't identify which one to delete,
-          // but we can remove the tracking record
-          if (privacyLevel !== 'super_anonymous') {
-            await supabase
-              .from('user_votes')
-              .delete()
-              .eq('user_id', userId)
-              .eq('issue_id', issueId);
-          } else {
-            // Use edge function instead of direct RPC
-            const { error } = await supabase.functions.invoke("delete-vote-tracking", {
-              body: { user_id: userId, issue_id: issueId }
-            });
-            
-            if (error) {
-              console.error("Error deleting vote tracking:", error);
-              throw error;
-            }
-          }
-          
+          // User is trying to unvote
+          await handleUnvote(
+            userVotedPosition, 
+            userId, 
+            issueId, 
+            privacyLevel, 
+            setPositionVotes
+          );
           setUserVotedPosition(null);
-          toast.success("Your vote has been removed!");
-          return;
         } else {
           // User is changing their vote
-          // First, remove the old vote by decrementing the count
-          const { data: oldPosition } = await supabase
-            .from('positions')
-            .select('votes')
-            .eq('id', userVotedPosition)
-            .single();
-            
-          if (oldPosition) {
-            const newCount = Math.max(0, oldPosition.votes - 1);
-            await supabase
-              .from('positions')
-              .update({ votes: newCount })
-              .eq('id', userVotedPosition);
-            
-            // Update local state for the old position
-            updatePositionVote(userVotedPosition, newCount);
-            console.log(`Decreased vote count for position ${userVotedPosition} to ${newCount}`);
-          }
-          
-          // Delete the old vote record (for non-super-anonymous votes)
-          await supabase
-            .from('user_votes')
-            .delete()
-            .eq('user_id', userId)
-            .eq('issue_id', issueId);
-          
-          // Then add the new vote based on privacy level
-          if (privacyLevel === 'super_anonymous') {
-            // Use the dedicated RPC function for super anonymous votes
-            const { error } = await supabase.rpc('cast_super_anonymous_vote', {
-              p_issue_id: issueId,
-              p_position_id: positionId
-            });
-            
-            if (error) throw error;
-            
-            // Fetch the updated position vote count
-            const { data: newPosition } = await supabase
-              .from('positions')
-              .select('votes')
-              .eq('id', positionId)
-              .single();
-              
-            if (newPosition) {
-              // Update local state for the new position
-              updatePositionVote(positionId, newPosition.votes);
-              console.log(`Increased vote count for position ${positionId} to ${newPosition.votes}`);
-            }
-          } else {
-            // Insert regular vote with specified privacy
-            const { error } = await supabase
-              .from('user_votes')
-              .insert({
-                user_id: userId,
-                issue_id: issueId,
-                position_id: positionId,
-                privacy_level: privacyLevel || 'public'
-              });
-            
-            if (error) throw error;
-            
-            // Increment the vote count for the new position
-            const { data: newPosition } = await supabase
-              .from('positions')
-              .select('votes')
-              .eq('id', positionId)
-              .single();
-              
-            if (newPosition) {
-              const newCount = newPosition.votes + 1;
-              await supabase
-                .from('positions')
-                .update({ votes: newCount })
-                .eq('id', positionId);
-              
-              // Update local state for the new position
-              updatePositionVote(positionId, newCount);
-              console.log(`Increased vote count for position ${positionId} to ${newCount}`);
-            }
-          }
-          
+          await handleChangeVote(
+            userVotedPosition, 
+            positionId, 
+            userId, 
+            issueId, 
+            privacyLevel, 
+            setPositionVotes
+          );
           setUserVotedPosition(positionId);
-          toast.success("Your vote has been updated!");
         }
       } else {
         // User is voting for the first time
-        if (privacyLevel === 'super_anonymous') {
-          // Use the dedicated RPC function for super anonymous votes
-          const { error } = await supabase.rpc('cast_super_anonymous_vote', {
-            p_issue_id: issueId,
-            p_position_id: positionId
-          });
-          
-          if (error) throw error;
-          
-          // Fetch the updated vote count
-          const { data: position } = await supabase
-            .from('positions')
-            .select('votes')
-            .eq('id', positionId)
-            .single();
-            
-          if (position) {
-            // Update local state
-            updatePositionVote(positionId, position.votes);
-          }
-        } else {
-          // Insert regular vote with specified privacy
-          const { error } = await supabase
-            .from('user_votes')
-            .insert({
-              user_id: userId,
-              issue_id: issueId,
-              position_id: positionId,
-              privacy_level: privacyLevel || 'public'
-            });
-          
-          if (error) throw error;
-          
-          // Increment the vote count
-          const { data: position } = await supabase
-            .from('positions')
-            .select('votes')
-            .eq('id', positionId)
-            .single();
-            
-          if (position) {
-            const newCount = position.votes + 1;
-            await supabase
-              .from('positions')
-              .update({ votes: newCount })
-              .eq('id', positionId);
-            
-            // Update local state
-            updatePositionVote(positionId, newCount);
-            console.log(`Set vote count for position ${positionId} to ${newCount}`);
-          }
-        }
-        
+        await handleNewVote(
+          positionId, 
+          userId, 
+          issueId, 
+          privacyLevel, 
+          setPositionVotes
+        );
         setUserVotedPosition(positionId);
-        toast.success("Your vote has been recorded!");
       }
     } catch (error: any) {
       console.error("Error saving vote:", error);
