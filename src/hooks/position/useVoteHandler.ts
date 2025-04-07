@@ -104,15 +104,22 @@ export const useVoteHandler = (
       const validUserId = userId as string;
       const validIssueId = issueId as string;
       
-      // If user wants to place a ghost vote, we need to verify there's no existing ghost vote
+      // Double-check for existing ghost votes to prevent race conditions
       if (privacyLevel === 'ghost' && !isRemovingVote) {
-        // Always check the current ghost vote status directly from the database 
-        // to ensure we have the most up-to-date information
-        const voteStatus = await checkVoteTracking(validUserId, validIssueId);
-        
-        // If there's already a ghost vote for this issue (regardless of position), prevent the vote
-        if (voteStatus.exists) {
-          toast.error("You've already cast a ghost vote on this issue and cannot cast another");
+        try {
+          // Verify no existing ghost vote directly from the database
+          const voteStatus = await checkVoteTracking(validUserId, validIssueId);
+          
+          // If there's already a ghost vote for this issue, prevent the vote
+          if (voteStatus.exists) {
+            toast.error("You've already cast a ghost vote on this issue and cannot cast another");
+            setIsVoting(false);
+            resetVoteDialog();
+            return;
+          }
+        } catch (error) {
+          console.error("Error checking ghost vote status:", error);
+          toast.error("Unable to verify your voting status. Please try again.");
           setIsVoting(false);
           resetVoteDialog();
           return;
@@ -145,17 +152,27 @@ export const useVoteHandler = (
       } else {
         // Cast a new vote based on privacy level
         if (privacyLevel === 'ghost') {
-          // For ghost votes, first increment the anonymous vote count
-          await castGhostVote(positionId);
+          // For ghost votes, we need to coordinate two operations:
+          // 1. Increment the anonymous vote count
+          // 2. Track that this user has cast a ghost vote
           
           try {
-            // Record that this user has cast a ghost vote on this issue using our edge function
+            // First try to track the ghost vote
             await trackGhostVote(validUserId, validIssueId, positionId);
-          } catch (trackError) {
-            // If tracking fails, we need to revert the vote increment
-            console.error("Failed to track ghost vote:", trackError);
-            // Don't update UI state since the vote wasn't properly tracked
-            toast.error("Failed to record your ghost vote. Please try again.");
+            
+            // Only if tracking succeeds, increment the vote count
+            await castGhostVote(positionId);
+            
+            // Update local state only if both operations succeeded
+            setPositionVotes(prev => ({
+              ...prev,
+              [positionId]: (prev[positionId] || 0) + 1
+            }));
+            
+            toast.success("Ghost vote recorded");
+          } catch (error) {
+            console.error("Ghost vote failed:", error);
+            toast.error(error instanceof Error ? error.message : "Failed to record your ghost vote");
             setIsVoting(false);
             resetVoteDialog();
             return;
@@ -166,18 +183,23 @@ export const useVoteHandler = (
           
           // If there was a ghost vote tracking record, remove it
           if (hasGhostVoted) {
-            await deleteVoteTracking(validUserId, validIssueId);
+            try {
+              await deleteVoteTracking(validUserId, validIssueId);
+            } catch (error) {
+              console.error("Failed to remove ghost vote tracking:", error);
+              // Continue anyway since the public vote succeeded
+            }
           }
+          
+          // Update local state
+          setUserVotedPosition(positionId);
+          setPositionVotes(prev => ({
+            ...prev,
+            [positionId]: (prev[positionId] || 0) + 1
+          }));
+          
+          toast.success("Vote recorded");
         }
-
-        // Update local state
-        setUserVotedPosition(positionId);
-        setPositionVotes(prev => ({
-          ...prev,
-          [positionId]: (prev[positionId] || 0) + 1
-        }));
-
-        toast.success("Vote recorded");
       }
 
       // Refresh votes if callback provided

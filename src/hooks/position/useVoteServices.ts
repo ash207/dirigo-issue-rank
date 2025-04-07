@@ -47,9 +47,9 @@ export const trackGhostVote = async (
       throw new Error("You've already cast a ghost vote on this issue");
     }
     
-    // If no existing ghost vote, proceed with tracking the new one
-    const { error } = await supabase.functions.invoke('check-vote-tracking', {
-      method: 'PUT',
+    // Use the correct endpoint for tracking a ghost vote
+    const { error } = await supabase.functions.invoke('create-vote-tracking', {
+      method: 'POST',
       body: {
         user_id: userId,
         issue_id: issueId,

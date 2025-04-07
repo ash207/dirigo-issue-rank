@@ -1,37 +1,30 @@
 
-project_id = "zqgyndjnnphgxjygoxcp"
+project_id = "your-project-id"
 
 [api]
 enabled = true
 port = 54321
-schemas = ["public", "storage", "graphql_public"]
+schemas = ["public", "storage"]
 
 [db]
 port = 54322
 
 [studio]
-enabled = true
 port = 54323
-api_url = "http://localhost"
 
 [inbucket]
-enabled = true
 port = 54324
 
 [auth]
-enabled = true
-site_url = "http://localhost:3000"
+port = 54325
 
 [storage]
-enabled = true
+port = 54326
 
-[edge_functions]
-enabled = true
+[realtime]
+port = 54327
 
-[[edge_functions.routes]]
-path = "/check-vote-tracking"
-function = "check-vote-tracking"
-
-[[edge_functions.routes]]
-path = "/delete-vote-tracking"
-function = "delete-vote-tracking"
+[functions]
+[functions.check-vote-tracking]
+[functions.create-vote-tracking]
+[functions.delete-vote-tracking]
