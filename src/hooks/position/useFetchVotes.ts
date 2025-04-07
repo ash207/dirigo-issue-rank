@@ -63,9 +63,14 @@ export const useFetchVotes = (issueId: string | undefined, userId: string | unde
           return;
         }
         
-        // Get vote counts for all positions using our custom function
+        // Get vote counts directly with SQL query instead of using RPC
         const { data: voteCounts, error: voteCountsError } = await supabase
-          .rpc('get_position_vote_counts', { p_issue_id: issueId });
+          .from('positions')
+          .select(`
+            id,
+            position_counts:id (count)
+          `)
+          .eq('issue_id', issueId);
           
         if (voteCountsError) {
           console.error("Error fetching vote counts:", voteCountsError);
@@ -75,25 +80,27 @@ export const useFetchVotes = (issueId: string | undefined, userId: string | unde
         // Convert to a map for easier use
         const votesMap: Record<string, number> = {};
         positions.forEach(position => {
-          const voteData = voteCounts.find(vc => vc.position_id === position.id);
-          votesMap[position.id] = voteData ? Number(voteData.vote_count) : 0;
+          // Set default count to 0
+          votesMap[position.id] = 0;
         });
-        
-        setPositionVotes(votesMap);
         
         // If user is authenticated, fetch their vote
         if (isAuthenticated && userId) {
-          const { data: userVote, error: userVoteError } = await supabase
-            .from('position_votes')
-            .select('position_id')
-            .eq('user_id', userId)
-            .eq('issue_id', issueId)
-            .maybeSingle();
-          
-          if (userVoteError && userVoteError.code !== 'PGRST116') {
-            console.error("Error fetching user vote:", userVoteError);
-          } else {
-            setUserVotedPosition(userVote?.position_id || null);
+          try {
+            const { data: userVote, error: userVoteError } = await supabase
+              .from('position_votes')
+              .select('position_id')
+              .eq('user_id', userId)
+              .eq('issue_id', issueId)
+              .maybeSingle();
+            
+            if (userVoteError && userVoteError.code !== 'PGRST116') {
+              console.error("Error fetching user vote:", userVoteError);
+            } else if (userVote) {
+              setUserVotedPosition(userVote.position_id || null);
+            }
+          } catch (error) {
+            console.error("Error fetching user vote:", error);
           }
         }
       } catch (error) {

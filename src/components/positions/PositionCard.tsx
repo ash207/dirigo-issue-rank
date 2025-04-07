@@ -6,7 +6,7 @@ import DeletePositionDialog from "./dialogs/DeletePositionDialog";
 import EditPositionDialog from "./dialogs/EditPositionDialog";
 import ReportPositionDialog from "./dialogs/ReportPositionDialog";
 import PositionVoteButton from "./PositionVoteButton";
-import VotePrivacyDialog from "./dialogs/VotePrivacyDialog";
+import { VotePrivacyDialog } from "./dialogs/VotePrivacyDialog";
 import { VotePrivacyLevel } from "./dialogs/VotePrivacyDialog";
 
 interface PositionCardProps {

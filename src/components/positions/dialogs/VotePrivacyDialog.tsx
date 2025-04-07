@@ -13,7 +13,7 @@ interface VotePrivacyDialogProps {
   positionTitle?: string;
 }
 
-const VotePrivacyDialog = ({
+export const VotePrivacyDialog = ({
   open,
   onOpenChange,
   onPrivacySelected,
