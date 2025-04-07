@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { isValidUUID } from "./useVoteValidation";
@@ -95,24 +94,29 @@ export const useFetchVotes = (
         
         // Get vote counts using the RPC function - avoid deep type instantiation
         try {
-          // Using any type to completely bypass TypeScript inference
-          const { data, error } = await supabase.rpc('get_position_vote_counts', { 
-            p_issue_id: issueId 
-          });
+          // Use explicit type annotation for the RPC call
+          interface RPCResponse {
+            data: PositionVoteCount[] | null;
+            error: Error | null;
+          }
           
+          // Cast the response to our known type
+          const voteCountsResult = await supabase
+            .rpc('get_position_vote_counts', { p_issue_id: issueId });
+          
+          // Safely handle the response
+          const error = voteCountsResult.error;
+          const data = voteCountsResult.data as PositionVoteCount[] | null;
+            
           if (error) {
             console.error("Error fetching vote counts:", error);
           } else if (data) {
-            // Process the data as a simple array of objects
-            // This avoids TypeScript trying to infer complex nested types
-            const voteData = data as Array<{position_id: string, vote_count: number}>;
-            
-            for (let i = 0; i < voteData.length; i++) {
-              const item = voteData[i];
-              if (item && typeof item.position_id === 'string' && typeof item.vote_count === 'number') {
+            // Use the explicit type to process data safely
+            data.forEach(item => {
+              if (item.position_id && typeof item.vote_count === 'number') {
                 votesMap[item.position_id] = item.vote_count;
               }
-            }
+            });
           }
         } catch (error) {
           console.error("Error in vote counts RPC:", error);
