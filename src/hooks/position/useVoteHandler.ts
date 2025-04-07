@@ -123,9 +123,9 @@ export const useVoteHandler = (
             .eq('user_id', userId)
             .eq('issue_id', issueId);
           
-          // For super_anonymous votes, we only update the position count and don't store user association
+          // For super_anonymous votes, we track the issue but not the position
           if (privacyLevel === 'super_anonymous') {
-            // Only increment the position vote count
+            // Increment the position vote count
             const { data: position } = await supabase
               .from('positions')
               .select('votes')
@@ -143,7 +143,19 @@ export const useVoteHandler = (
               updatePositionVote(positionId, newCount);
             }
             
-            // Store only in local state for the current session, not in database
+            // Create a record that only tracks the issue, with null position_id
+            const { error } = await supabase
+              .from('user_votes')
+              .insert({
+                user_id: userId,
+                issue_id: issueId,
+                position_id: null,
+                privacy_level: 'super_anonymous'
+              });
+            
+            if (error) throw error;
+            
+            // Store the position ID only in local state for the current session
             setUserVotedPosition(positionId);
             toast.success("Your vote has been updated with super anonymity!");
             return;
@@ -184,9 +196,9 @@ export const useVoteHandler = (
         }
       } else {
         // User is voting for the first time
-        // For super_anonymous votes, we only update the position count and don't store user association
+        // For super_anonymous votes, we track the issue but not the position
         if (privacyLevel === 'super_anonymous') {
-          // Only increment the position vote count
+          // Increment the position vote count
           const { data: position } = await supabase
             .from('positions')
             .select('votes')
@@ -204,7 +216,19 @@ export const useVoteHandler = (
             updatePositionVote(positionId, newCount);
           }
           
-          // Store only in local state for the current session, not in database
+          // Create a record that only tracks the issue, with null position_id
+          const { error } = await supabase
+            .from('user_votes')
+            .insert({
+              user_id: userId,
+              issue_id: issueId,
+              position_id: null,
+              privacy_level: 'super_anonymous'
+            });
+          
+          if (error) throw error;
+          
+          // Store the position ID only in local state for the current session
           setUserVotedPosition(positionId);
           toast.success("Your vote has been recorded with super anonymity!");
           return;

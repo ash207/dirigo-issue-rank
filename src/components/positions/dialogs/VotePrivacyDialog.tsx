@@ -85,7 +85,7 @@ const VotePrivacyDialog = ({
                   Super Anonymous
                 </Label>
                 <p className="text-sm text-muted-foreground">
-                  Your vote will be completely private. No database record will link your identity to this vote, making it inaccessible even to site administrators.
+                  Your vote will be completely private. The system will track that you've voted on this issue, but no record will link your identity to which specific position you voted for.
                 </p>
               </div>
             </div>
