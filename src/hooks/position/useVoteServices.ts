@@ -39,6 +39,15 @@ export const trackGhostVote = async (
   positionId: string
 ): Promise<void> => {
   try {
+    // First, verify there's no existing ghost vote for this user on this issue
+    const existingVote = await checkVoteTracking(userId, issueId);
+    
+    if (existingVote.exists) {
+      console.error("User already has a ghost vote on this issue");
+      throw new Error("You've already cast a ghost vote on this issue");
+    }
+    
+    // If no existing ghost vote, proceed with tracking the new one
     const { error } = await supabase.functions.invoke('check-vote-tracking', {
       method: 'PUT',
       body: {

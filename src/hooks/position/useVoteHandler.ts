@@ -104,7 +104,7 @@ export const useVoteHandler = (
       const validUserId = userId as string;
       const validIssueId = issueId as string;
       
-      // If user wants to place a ghost vote, we need to check if they already voted on this issue
+      // If user wants to place a ghost vote, we need to verify there's no existing ghost vote
       if (privacyLevel === 'ghost' && !isRemovingVote) {
         // Always check the current ghost vote status directly from the database 
         // to ensure we have the most up-to-date information
@@ -145,17 +145,29 @@ export const useVoteHandler = (
       } else {
         // Cast a new vote based on privacy level
         if (privacyLevel === 'ghost') {
-          // For ghost votes, use a direct INSERT without ON CONFLICT
+          // For ghost votes, first increment the anonymous vote count
           await castGhostVote(positionId);
           
-          // Record that this user has cast a ghost vote on this issue using our edge function
-          await trackGhostVote(validUserId, validIssueId, positionId);
+          try {
+            // Record that this user has cast a ghost vote on this issue using our edge function
+            await trackGhostVote(validUserId, validIssueId, positionId);
+          } catch (trackError) {
+            // If tracking fails, we need to revert the vote increment
+            console.error("Failed to track ghost vote:", trackError);
+            // Don't update UI state since the vote wasn't properly tracked
+            toast.error("Failed to record your ghost vote. Please try again.");
+            setIsVoting(false);
+            resetVoteDialog();
+            return;
+          }
         } else {
           // For public votes, create a vote record
           await castPublicVote(positionId, validUserId, privacyLevel, validIssueId);
           
           // If there was a ghost vote tracking record, remove it
-          await deleteVoteTracking(validUserId, validIssueId);
+          if (hasGhostVoted) {
+            await deleteVoteTracking(validUserId, validIssueId);
+          }
         }
 
         // Update local state
