@@ -2,12 +2,9 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import PositionCardMenu from "./PositionCardMenu";
-import DeletePositionDialog from "./dialogs/DeletePositionDialog";
-import EditPositionDialog from "./dialogs/EditPositionDialog";
-import ReportPositionDialog from "./dialogs/ReportPositionDialog";
-import PositionVoteButton from "./PositionVoteButton";
-import VotePrivacyDialog, { VotePrivacyLevel } from "./dialogs/VotePrivacyDialog";
-import { toast } from "sonner";
+import PositionCardDialogs from "./PositionCardDialogs";
+import PositionCardVote from "./PositionCardVote";
+import { VotePrivacyLevel } from "./dialogs/VotePrivacyDialog";
 
 interface PositionCardProps {
   id: string;
@@ -54,81 +51,8 @@ const PositionCard = ({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
-  const [isVotePrivacyDialogOpen, setIsVotePrivacyDialogOpen] = useState(false);
   
   const isOwner = author_id && currentUserId ? author_id === currentUserId : false;
-  
-  // Check if this position is the one the user cast a ghost vote on
-  const isGhostVotedPosition = ghostVotedPositionId === id;
-
-  console.log({
-    buttonState: {
-      id,
-      isAuthenticated,
-      isActiveUser,
-      isOwner,
-      isVoted,
-      isVoting,
-      hasGhostVoted,
-      ghostVotedPositionId,
-      isGhostVotedPosition,
-      disabled: isVoting || (isOwner && !isVoted) || (hasGhostVoted && !isGhostVotedPosition)
-    }
-  });
-
-  const handleVoteClick = () => {
-    if (!isAuthenticated) {
-      toast.error("Please sign in to vote");
-      return;
-    }
-    
-    if (!isActiveUser) {
-      toast.error("Your account needs to be active to vote");
-      return;
-    }
-    
-    // If this isn't the ghost-voted position and there is a ghost vote active, block the vote
-    if (hasGhostVoted && !isGhostVotedPosition && !isVoted) {
-      toast.error("You've already cast a ghost vote on this issue and cannot vote on other positions");
-      return;
-    }
-    
-    if (onVote) {
-      if (isVoted) {
-        onVote(id);
-      } else {
-        setIsVotePrivacyDialogOpen(true);
-      }
-    }
-  };
-
-  const handleUpArrowClick = () => {
-    if (!isAuthenticated) {
-      toast.error("Please sign in to view voting options");
-      return;
-    }
-    
-    // If this isn't the ghost-voted position and there is a ghost vote active, block the vote
-    if (hasGhostVoted && !isGhostVotedPosition && !isVoted) {
-      toast.error("You've already cast a ghost vote on this issue and cannot vote on other positions");
-      return;
-    }
-    
-    setIsVotePrivacyDialogOpen(true);
-  };
-
-  const handlePrivacySelected = (privacyLevel: VotePrivacyLevel) => {
-    // Additional safeguard to prevent ghost votes if user already has a ghost vote
-    if (privacyLevel === 'ghost' && hasGhostVoted && !isGhostVotedPosition) {
-      toast.error("You've already cast a ghost vote on this issue and cannot vote on other positions");
-      return;
-    }
-    
-    if (onVote) {
-      onVote(id, privacyLevel);
-    }
-    setIsVotePrivacyDialogOpen(false);
-  };
 
   return (
     <Card className="mb-4">
@@ -152,51 +76,36 @@ const PositionCard = ({
         </div>
 
         {onVote && (
-          <PositionVoteButton
+          <PositionCardVote
+            id={id}
+            title={title}
+            isAuthenticated={isAuthenticated}
+            isActiveUser={isActiveUser}
+            isOwner={isOwner}
             voteCount={voteCount}
             isVoted={isVoted}
-            onClick={handleVoteClick}
-            onUpClick={handleUpArrowClick}
-            disabled={isVoting || (isOwner && !isVoted) || (hasGhostVoted && !isGhostVotedPosition && !isVoted)}
-            positionTitle={title}
-            isActiveUser={isActiveUser}
-            isAuthenticated={isAuthenticated}
+            onVote={onVote}
+            isVoting={isVoting}
+            hasGhostVoted={hasGhostVoted}
+            ghostVotedPositionId={ghostVotedPositionId}
           />
         )}
       </CardFooter>
       
-      <DeletePositionDialog
+      <PositionCardDialogs
         id={id}
+        title={title}
+        content={content}
         author_id={author_id}
-        open={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
-        onPositionDeleted={onPositionUpdated}
-      />
-      
-      <EditPositionDialog
-        id={id}
-        initialContent={content}
-        author_id={author_id}
-        open={isEditDialogOpen}
-        onOpenChange={setIsEditDialogOpen}
-        onPositionUpdated={onPositionUpdated}
-      />
-      
-      <ReportPositionDialog
-        positionId={id}
-        positionTitle={title}
-        positionContent={content}
         issueId={issueId}
         issueTitle={issueTitle}
-        open={isReportDialogOpen}
-        onOpenChange={setIsReportDialogOpen}
-      />
-
-      <VotePrivacyDialog
-        open={isVotePrivacyDialogOpen}
-        onOpenChange={setIsVotePrivacyDialogOpen}
-        onPrivacySelected={handlePrivacySelected}
-        positionTitle={title}
+        isDeleteDialogOpen={isDeleteDialogOpen}
+        isEditDialogOpen={isEditDialogOpen}
+        isReportDialogOpen={isReportDialogOpen}
+        setIsDeleteDialogOpen={setIsDeleteDialogOpen}
+        setIsEditDialogOpen={setIsEditDialogOpen}
+        setIsReportDialogOpen={setIsReportDialogOpen}
+        onPositionUpdated={onPositionUpdated}
       />
     </Card>
   );
