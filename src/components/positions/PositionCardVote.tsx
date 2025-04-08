@@ -14,8 +14,6 @@ interface PositionCardVoteProps {
   isVoted?: boolean;
   onVote?: (positionId: string, privacyLevel?: VotePrivacyLevel) => void;
   isVoting?: boolean;
-  hasGhostVoted?: boolean;
-  ghostVotedPositionId?: string | null;
 }
 
 const PositionCardVote = ({
@@ -27,14 +25,9 @@ const PositionCardVote = ({
   voteCount = 0,
   isVoted = false,
   onVote,
-  isVoting = false,
-  hasGhostVoted = false,
-  ghostVotedPositionId = null
+  isVoting = false
 }: PositionCardVoteProps) => {
   const [isVotePrivacyDialogOpen, setIsVotePrivacyDialogOpen] = useState(false);
-  
-  // Check if this position is the one the user cast a ghost vote on
-  const isGhostVotedPosition = ghostVotedPositionId === id;
 
   const handleVoteClick = () => {
     if (!isAuthenticated) {
@@ -47,26 +40,10 @@ const PositionCardVote = ({
       return;
     }
     
-    // If this isn't the ghost-voted position and there is a ghost vote active, block the vote
-    if (hasGhostVoted && !isGhostVotedPosition && !isVoted) {
-      toast.error("You've already cast a ghost vote on this issue and cannot vote on other positions");
-      return;
-    }
-    
-    // If user has a ghost vote (on any position), don't allow them to add or change votes
-    if (hasGhostVoted) {
-      // Only allow removing existing votes when ghost votes exist
-      if (!isVoted) {
-        toast.error("You've already cast a ghost vote on this issue and cannot cast another vote");
-        return;
-      }
-    }
-    
     if (onVote) {
       if (isVoted) {
         onVote(id);
-      } else if (!hasGhostVoted) {
-        // Only open privacy dialog if no ghost vote exists
+      } else {
         setIsVotePrivacyDialogOpen(true);
       }
     }
@@ -78,34 +55,10 @@ const PositionCardVote = ({
       return;
     }
     
-    // If this isn't the ghost-voted position and there is a ghost vote active, block the vote
-    if (hasGhostVoted && !isGhostVotedPosition && !isVoted) {
-      toast.error("You've already cast a ghost vote on this issue and cannot vote on other positions");
-      return;
-    }
-    
-    // Block opening the dialog if the user has a ghost vote (on any position)
-    if (hasGhostVoted) {
-      toast.error("You've already cast a ghost vote on this issue and cannot cast another vote or change it");
-      return;
-    }
-    
     setIsVotePrivacyDialogOpen(true);
   };
 
   const handlePrivacySelected = (privacyLevel: VotePrivacyLevel) => {
-    // Additional safeguard to prevent ghost votes if user already has a ghost vote
-    if (privacyLevel === 'ghost' && hasGhostVoted && !isGhostVotedPosition) {
-      toast.error("You've already cast a ghost vote on this issue and cannot vote on other positions");
-      return;
-    }
-    
-    // Block any new vote if a ghost vote exists
-    if (hasGhostVoted) {
-      toast.error("You've already cast a ghost vote on this issue and cannot cast another vote or change it");
-      return;
-    }
-    
     if (onVote) {
       onVote(id, privacyLevel);
     }
@@ -119,7 +72,7 @@ const PositionCardVote = ({
         isVoted={isVoted}
         onClick={handleVoteClick}
         onUpClick={handleUpArrowClick}
-        disabled={isVoting || (isOwner && !isVoted) || (hasGhostVoted && !isGhostVotedPosition && !isVoted) || (hasGhostVoted && !isVoted)}
+        disabled={isVoting || (isOwner && !isVoted)}
         positionTitle={title}
         isActiveUser={isActiveUser}
         isAuthenticated={isAuthenticated}

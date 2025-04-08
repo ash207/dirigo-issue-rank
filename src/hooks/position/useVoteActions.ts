@@ -3,9 +3,6 @@
 import { toast } from "sonner";
 import { VotePrivacyLevel } from "@/components/positions/dialogs/VotePrivacyDialog";
 import {
-  checkVoteTracking,
-  trackGhostVote,
-  deleteVoteTracking,
   castGhostVote,
   castPublicVote,
   removeVote
@@ -65,30 +62,25 @@ export const handleRemoveVote = async ({
  */
 export const handleGhostVote = async ({
   positionId,
-  userId,
-  issueId,
   setPositionVotes,
   setIsVoting,
   resetVoteDialog
 }: VoteActionParams) => {
   try {
-    // First try to track the ghost vote
-    await trackGhostVote(userId, issueId, positionId);
-    
-    // Only if tracking succeeds, increment the vote count
+    // Simply increment the anonymous vote count without tracking the user
     await castGhostVote(positionId);
     
-    // Update local state only if both operations succeeded
+    // Update local state
     setPositionVotes(prev => ({
       ...prev,
       [positionId]: (prev[positionId] || 0) + 1
     }));
     
-    toast.success("Ghost vote recorded");
+    toast.success("Anonymous vote recorded");
     return true;
   } catch (error) {
     console.error("Ghost vote failed:", error);
-    toast.error(error instanceof Error ? error.message : "Failed to record your ghost vote");
+    toast.error(error instanceof Error ? error.message : "Failed to record your anonymous vote");
     return false;
   } finally {
     setIsVoting(false);
@@ -107,9 +99,7 @@ export const handlePublicVote = async ({
   setPositionVotes,
   privacyLevel,
   setIsVoting,
-  resetVoteDialog,
-  hasGhostVoted,
-  ghostVotedPositionId
+  resetVoteDialog
 }: VoteActionParams) => {
   if (!privacyLevel) {
     console.error("Missing privacy level for public vote");
@@ -122,16 +112,6 @@ export const handlePublicVote = async ({
   try {
     // For public votes, create a vote record
     await castPublicVote(positionId, userId, privacyLevel, issueId);
-    
-    // If there was a ghost vote tracking record and it matches this position, remove it
-    if (hasGhostVoted && ghostVotedPositionId === positionId) {
-      try {
-        await deleteVoteTracking(userId, issueId);
-      } catch (error) {
-        console.error("Failed to remove ghost vote tracking:", error);
-        // Continue anyway since the public vote succeeded
-      }
-    }
     
     // Update local state
     setUserVotedPosition(positionId);

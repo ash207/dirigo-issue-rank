@@ -4,6 +4,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ShieldAlert } from "lucide-react";
 
 // Export type separately for use in other files
 export type VotePrivacyLevel = 'public' | 'ghost';
@@ -57,11 +59,20 @@ const VotePrivacyDialog = ({
             <div className="flex items-start space-x-3 space-y-0 p-2 rounded-md hover:bg-muted/50">
               <RadioGroupItem value="ghost" id="ghost" />
               <div className="grid gap-1.5">
-                <Label htmlFor="ghost" className="font-medium">Ghost Vote</Label>
+                <Label htmlFor="ghost" className="font-medium">Ghost Vote (Truly Anonymous)</Label>
                 <p className="text-sm text-muted-foreground">
-                  Your vote cannot be traced back to you at all. Not even the system will store a connection
-                  between you and your vote. <span className="font-medium text-amber-600">Important: You cannot change or remove this vote later.</span>
+                  Your vote cannot be traced back to you. No record of who cast this vote
+                  is stored anywhere in the system, ensuring complete anonymity.
                 </p>
+                {selectedPrivacy === 'ghost' && (
+                  <Alert className="mt-2 bg-amber-50 text-amber-900 border-amber-200">
+                    <ShieldAlert className="h-4 w-4 text-amber-600" />
+                    <AlertDescription className="text-xs">
+                      <strong>Important:</strong> Since ghost votes are completely anonymous, you cannot change or remove them later. 
+                      The system does not track which users cast ghost votes.
+                    </AlertDescription>
+                  </Alert>
+                )}
               </div>
             </div>
           </RadioGroup>

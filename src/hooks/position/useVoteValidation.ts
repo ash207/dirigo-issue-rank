@@ -1,8 +1,6 @@
 
 // Validation utilities for the voting process
-import { toast } from "sonner";
 import { VotePrivacyLevel } from "@/components/positions/dialogs/VotePrivacyDialog";
-import { checkVoteTracking } from "./useVoteServices";
 
 // Helper to check if a string is a valid UUID
 export const isValidUUID = (str: string | undefined): boolean => {
@@ -38,7 +36,7 @@ export const validateVoteParams = (
   return { isValid: true };
 };
 
-// Validate ghost vote state
+// Validate ghost vote state - simplified since we no longer track ghost votes
 export const validateGhostVoteState = async (
   userId: string,
   issueId: string,
@@ -47,34 +45,9 @@ export const validateGhostVoteState = async (
   targetPositionId: string,
   isVoted: boolean = false
 ): Promise<{ isValid: boolean; errorMessage?: string }> => {
-  // If not the ghost-voted position and there is a ghost vote active, block the vote
-  if (hasGhostVoted && ghostVotedPositionId !== targetPositionId && !isVoted) {
-    return {
-      isValid: false,
-      errorMessage: "You've already cast a ghost vote on this issue and cannot vote on other positions"
-    };
-  }
-  
-  // Double-check for ghost votes (critical to prevent race conditions)
-  try {
-    const voteStatus = await checkVoteTracking(userId, issueId);
-    
-    // If there's a ghost vote but not on this position and we're not already voted, block it
-    if (voteStatus.exists && voteStatus.position_id !== targetPositionId && !isVoted) {
-      return {
-        isValid: false,
-        errorMessage: "You've already cast a ghost vote on this issue and cannot vote on other positions"
-      };
-    }
-    
-    return { isValid: true };
-  } catch (error) {
-    console.error("Error checking ghost vote status:", error);
-    return {
-      isValid: false,
-      errorMessage: "Unable to verify your voting status. Please try again."
-    };
-  }
+  // Ghost votes are now fully anonymous and we don't track them 
+  // so there's no need to validate if a user already has one
+  return { isValid: true };
 };
 
 // Determine vote type 
