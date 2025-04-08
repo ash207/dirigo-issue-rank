@@ -14,7 +14,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { InfoIcon } from "lucide-react";
+import { InfoIcon, UserIcon } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 type GhostVote = {
   id: string;
@@ -25,6 +26,9 @@ type GhostVote = {
   position_title?: string;
   count: number;
   last_updated: string;
+  user_id?: string;
+  user_name?: string;
+  user_email?: string;
 };
 
 export function GhostVotesTabContent() {
@@ -41,27 +45,88 @@ export function GhostVotesTabContent() {
 
       setIsLoading(true);
       try {
-        // Fetch ghost votes from anonymous_vote_counts table
+        // Fetch ghost votes with user information
         const { data: voteData, error: voteError } = await supabase
-          .from('anonymous_vote_counts')
-          .select('*')
-          .order('last_updated', { ascending: false });
+          .from('user_vote_tracking')
+          .select(`
+            id,
+            position_id,
+            issue_id,
+            created_at,
+            user_id,
+            positions:position_id(title, issues:issue_id(title))
+          `)
+          .order('created_at', { ascending: false });
 
         if (voteError) throw voteError;
 
-        // If we have ghost votes, get the related data
         if (voteData && voteData.length > 0) {
-          // Transform the data to include the required properties for GhostVote type
+          // Fetch user profiles for the vote data
+          const userIds = voteData.map(vote => vote.user_id).filter(Boolean);
+          
+          let userProfiles: Record<string, { name: string; email: string }> = {};
+          
+          if (userIds.length > 0) {
+            const { data: profiles } = await supabase
+              .from('profiles')
+              .select('id, name')
+              .in('id', userIds);
+              
+            // Get user emails from Auth service via admin function
+            const { data: userEmails, error: userEmailsError } = await supabase.functions.invoke("get-user-emails", {
+              headers: {
+                Authorization: `Bearer ${session.access_token}`
+              },
+              body: {
+                userIds
+              }
+            });
+            
+            if (userEmailsError) {
+              console.error("Error fetching user emails:", userEmailsError);
+            } else if (userEmails) {
+              // Create a mapping of user IDs to their profile information
+              profiles?.forEach(profile => {
+                const email = userEmails.find((u: any) => u.id === profile.id)?.email || 'Unknown';
+                userProfiles[profile.id] = {
+                  name: profile.name || 'Unnamed User',
+                  email
+                };
+              });
+            }
+          }
+          
+          // Transform the vote data to include user and position information
           const transformedVotes: GhostVote[] = voteData.map(vote => ({
-            ...vote,
-            issue_id: '', // Will be populated in enrichVotesWithDetails
-            created_at: vote.last_updated || new Date().toISOString(),
+            id: vote.id,
+            position_id: vote.position_id,
+            issue_id: vote.issue_id,
+            created_at: vote.created_at,
+            last_updated: vote.created_at,
+            count: 1, // Individual ghost votes always have count of 1
+            issue_title: vote.positions?.issues?.title || 'Unknown Issue',
+            position_title: vote.positions?.title || 'Unknown Position',
+            user_id: vote.user_id,
+            user_name: vote.user_id ? userProfiles[vote.user_id]?.name : 'Anonymous User',
+            user_email: vote.user_id ? userProfiles[vote.user_id]?.email : 'anonymous@example.com'
           }));
           
-          const enrichedVotes = await enrichVotesWithDetails(transformedVotes);
-          setGhostVotes(enrichedVotes);
+          setGhostVotes(transformedVotes);
         } else {
-          setGhostVotes([]);
+          // If no user_vote_tracking data, fall back to anonymous vote counts
+          const { data: anonymousVotes, error: anonymousError } = await supabase
+            .from('anonymous_vote_counts')
+            .select('*')
+            .order('last_updated', { ascending: false });
+            
+          if (anonymousError) throw anonymousError;
+          
+          if (anonymousVotes && anonymousVotes.length > 0) {
+            const enrichedVotes = await enrichVotesWithDetails(anonymousVotes);
+            setGhostVotes(enrichedVotes);
+          } else {
+            setGhostVotes([]);
+          }
         }
       } catch (error) {
         console.error("Error fetching ghost votes:", error);
@@ -74,8 +139,8 @@ export function GhostVotesTabContent() {
     fetchGhostVotes();
   }, [session]);
 
-  // Enrich ghost votes with issue titles and position titles
-  const enrichVotesWithDetails = async (votes: GhostVote[]) => {
+  // Enrich anonymous ghost votes with issue titles and position titles
+  const enrichVotesWithDetails = async (votes: any[]) => {
     try {
       // Get issue titles and position titles
       const positionIds = [...new Set(votes.map(vote => vote.position_id))];
@@ -100,7 +165,10 @@ export function GhostVotesTabContent() {
           ...vote,
           issue_id: positionMap[vote.position_id]?.issueId || vote.issue_id || 'Unknown',
           issue_title: positionMap[vote.position_id]?.issueTitle || 'Unknown Issue',
-          position_title: positionMap[vote.position_id]?.title || 'Unknown Position'
+          position_title: positionMap[vote.position_id]?.title || 'Unknown Position',
+          user_id: null,
+          user_name: 'Anonymous User',
+          user_email: 'anonymous@example.com'
         }));
       }
       
@@ -117,16 +185,16 @@ export function GhostVotesTabContent() {
         <CardHeader>
           <CardTitle>Ghost Votes Overview</CardTitle>
           <CardDescription>
-            View anonymous ghost votes cast across the platform
+            View ghost votes cast across the platform
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Alert className="mb-6">
             <InfoIcon className="h-4 w-4" />
-            <AlertTitle>Anonymous Voting Information</AlertTitle>
+            <AlertTitle>Ghost Voting Information</AlertTitle>
             <AlertDescription>
-              Ghost votes are truly anonymous - we don't track which users cast them. This table shows 
-              only the positions that received ghost votes, the count, and when they were last updated.
+              This table shows both tracked ghost votes (associated with specific users) and truly anonymous ghost votes 
+              (not associated with any user). Truly anonymous votes are aggregated by position and show counts rather than individual votes.
             </AlertDescription>
           </Alert>
 
@@ -147,15 +215,29 @@ export function GhostVotesTabContent() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>User</TableHead>
                     <TableHead>Issue</TableHead>
                     <TableHead>Position</TableHead>
                     <TableHead>Vote Count</TableHead>
-                    <TableHead>Last Updated</TableHead>
+                    <TableHead>Date</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {ghostVotes.map((vote) => (
                     <TableRow key={vote.id}>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          <Avatar className="h-8 w-8">
+                            <AvatarFallback>
+                              <UserIcon className="h-4 w-4" />
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="font-medium">{vote.user_name || 'Anonymous'}</div>
+                            <div className="text-xs text-muted-foreground">{vote.user_email || 'anonymous@example.com'}</div>
+                          </div>
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <div className="font-medium">{vote.issue_title}</div>
                         <div className="text-xs text-muted-foreground">{vote.issue_id}</div>
