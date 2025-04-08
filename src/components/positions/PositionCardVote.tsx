@@ -14,6 +14,8 @@ interface PositionCardVoteProps {
   isVoted?: boolean;
   onVote?: (positionId: string, privacyLevel?: VotePrivacyLevel) => void;
   isVoting?: boolean;
+  hasGhostVoted?: boolean;
+  ghostVotedPositionId?: string | null;
 }
 
 const PositionCardVote = ({
@@ -25,7 +27,9 @@ const PositionCardVote = ({
   voteCount = 0,
   isVoted = false,
   onVote,
-  isVoting = false
+  isVoting = false,
+  hasGhostVoted = false,
+  ghostVotedPositionId = null
 }: PositionCardVoteProps) => {
   const [isVotePrivacyDialogOpen, setIsVotePrivacyDialogOpen] = useState(false);
 
@@ -37,6 +41,12 @@ const PositionCardVote = ({
     
     if (!isActiveUser) {
       toast.error("Your account needs to be active to vote");
+      return;
+    }
+    
+    // If there's already a ghost vote on this issue, display a message
+    if (hasGhostVoted) {
+      toast.error("You've already cast a ghost vote on this issue and cannot cast another vote or change it");
       return;
     }
     
@@ -52,6 +62,12 @@ const PositionCardVote = ({
   const handleUpArrowClick = () => {
     if (!isAuthenticated) {
       toast.error("Please sign in to view voting options");
+      return;
+    }
+    
+    // If there's already a ghost vote on this issue, display a message
+    if (hasGhostVoted) {
+      toast.error("You've already cast a ghost vote on this issue and cannot cast another vote or change it");
       return;
     }
     
@@ -72,7 +88,7 @@ const PositionCardVote = ({
         isVoted={isVoted}
         onClick={handleVoteClick}
         onUpClick={handleUpArrowClick}
-        disabled={isVoting || (isOwner && !isVoted)}
+        disabled={isVoting || (isOwner && !isVoted) || hasGhostVoted}
         positionTitle={title}
         isActiveUser={isActiveUser}
         isAuthenticated={isAuthenticated}

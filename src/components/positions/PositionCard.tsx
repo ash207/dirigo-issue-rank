@@ -25,6 +25,8 @@ interface PositionCardProps {
   isVoted?: boolean;
   onVote?: (positionId: string, privacyLevel?: VotePrivacyLevel) => void;
   isVoting?: boolean;
+  hasGhostVoted?: boolean;
+  ghostVotedPositionId?: string | null;
 }
 
 const PositionCard = ({
@@ -42,7 +44,9 @@ const PositionCard = ({
   voteCount = 0,
   isVoted = false,
   onVote,
-  isVoting = false
+  isVoting = false,
+  hasGhostVoted = false,
+  ghostVotedPositionId = null
 }: PositionCardProps) => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -82,6 +86,8 @@ const PositionCard = ({
             isVoted={isVoted}
             onVote={onVote}
             isVoting={isVoting}
+            hasGhostVoted={hasGhostVoted}
+            ghostVotedPositionId={ghostVotedPositionId}
           />
         )}
       </CardFooter>

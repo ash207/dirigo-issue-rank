@@ -24,6 +24,7 @@ type GhostVote = {
   issue_title?: string;
   position_title?: string;
   count: number;
+  last_updated: string;
 };
 
 export function GhostVotesTabContent() {
@@ -50,7 +51,14 @@ export function GhostVotesTabContent() {
 
         // If we have ghost votes, get the related data
         if (voteData && voteData.length > 0) {
-          const enrichedVotes = await enrichVotesWithDetails(voteData);
+          // Transform the data to include the required properties for GhostVote type
+          const transformedVotes: GhostVote[] = voteData.map(vote => ({
+            ...vote,
+            issue_id: '', // Will be populated in enrichVotesWithDetails
+            created_at: vote.last_updated || new Date().toISOString(),
+          }));
+          
+          const enrichedVotes = await enrichVotesWithDetails(transformedVotes);
           setGhostVotes(enrichedVotes);
         } else {
           setGhostVotes([]);

@@ -8,6 +8,7 @@ export const castGhostVote = async (
   positionId: string
 ): Promise<void> => {
   try {
+    // Call the Supabase RPC function to increment the anonymous vote count
     const { error } = await supabase.rpc('increment_anonymous_vote', {
       p_position_id: positionId
     });
