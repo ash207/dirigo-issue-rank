@@ -1,9 +1,7 @@
 
-import { useState } from "react";
 import { useFetchVotes } from "./useFetchVotes";
 import { useVoteHandler } from "./useVoteHandler";
 import { useAuth } from "@/contexts/AuthContext";
-import { VotePrivacyLevel } from "@/components/positions/dialogs/VotePrivacyDialog";
 
 export const usePositionVotes = (issueId: string) => {
   const { user, isAuthenticated } = useAuth();
