@@ -54,15 +54,19 @@ const PositionCardVote = ({
     }
     
     // If user has a ghost vote (on any position), don't allow them to add or change votes
-    if (hasGhostVoted && !isVoted) {
-      toast.error("You've already cast a ghost vote on this issue and cannot cast another vote or change it");
-      return;
+    if (hasGhostVoted) {
+      // Only allow removing existing votes when ghost votes exist
+      if (!isVoted) {
+        toast.error("You've already cast a ghost vote on this issue and cannot cast another vote");
+        return;
+      }
     }
     
     if (onVote) {
       if (isVoted) {
         onVote(id);
-      } else {
+      } else if (!hasGhostVoted) {
+        // Only open privacy dialog if no ghost vote exists
         setIsVotePrivacyDialogOpen(true);
       }
     }
@@ -115,7 +119,7 @@ const PositionCardVote = ({
         isVoted={isVoted}
         onClick={handleVoteClick}
         onUpClick={handleUpArrowClick}
-        disabled={isVoting || (isOwner && !isVoted) || (hasGhostVoted && !isGhostVotedPosition && !isVoted)}
+        disabled={isVoting || (isOwner && !isVoted) || (hasGhostVoted && !isGhostVotedPosition && !isVoted) || (hasGhostVoted && !isVoted)}
         positionTitle={title}
         isActiveUser={isActiveUser}
         isAuthenticated={isAuthenticated}
