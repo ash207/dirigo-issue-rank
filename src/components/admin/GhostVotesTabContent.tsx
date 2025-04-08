@@ -26,9 +26,10 @@ type GhostVote = {
   position_title?: string;
   count: number;
   last_updated: string;
-  user_id?: string;
+  user_id?: string | null;
   user_name?: string;
   user_email?: string;
+  is_anonymous: boolean;
 };
 
 export function GhostVotesTabContent() {
@@ -45,7 +46,26 @@ export function GhostVotesTabContent() {
 
       setIsLoading(true);
       try {
-        // First fetch ghost votes from user_vote_tracking table
+        // Fetch anonymous vote counts first
+        const { data: anonymousVotes, error: anonymousError } = await supabase
+          .from('anonymous_vote_counts')
+          .select('*')
+          .order('last_updated', { ascending: false });
+          
+        if (anonymousError) throw anonymousError;
+        
+        let allGhostVotes: GhostVote[] = [];
+        
+        // Process anonymous votes
+        if (anonymousVotes && anonymousVotes.length > 0) {
+          const enrichedVotes = await enrichVotesWithDetails(anonymousVotes);
+          allGhostVotes = enrichedVotes.map(vote => ({
+            ...vote,
+            is_anonymous: true
+          }));
+        }
+        
+        // Then fetch legacy ghost votes from user_vote_tracking table
         const { data: voteData, error: voteError } = await supabase
           .from('user_vote_tracking')
           .select(`
@@ -122,27 +142,23 @@ export function GhostVotesTabContent() {
             issue_title: positionMap[vote.position_id]?.issueTitle || 'Unknown Issue',
             position_title: positionMap[vote.position_id]?.title || 'Unknown Position',
             user_id: vote.user_id,
-            user_name: vote.user_id ? userProfiles[vote.user_id]?.name : 'Anonymous User',
-            user_email: vote.user_id ? userProfiles[vote.user_id]?.email : 'anonymous@example.com'
+            user_name: vote.user_id ? userProfiles[vote.user_id]?.name : 'Legacy Ghost Vote',
+            user_email: vote.user_id ? userProfiles[vote.user_id]?.email : 'legacy-ghost@example.com',
+            is_anonymous: false
           }));
           
-          setGhostVotes(transformedVotes);
-        } else {
-          // If no user_vote_tracking data, fall back to anonymous vote counts
-          const { data: anonymousVotes, error: anonymousError } = await supabase
-            .from('anonymous_vote_counts')
-            .select('*')
-            .order('last_updated', { ascending: false });
-            
-          if (anonymousError) throw anonymousError;
-          
-          if (anonymousVotes && anonymousVotes.length > 0) {
-            const enrichedVotes = await enrichVotesWithDetails(anonymousVotes);
-            setGhostVotes(enrichedVotes);
-          } else {
-            setGhostVotes([]);
-          }
+          // Combine both types of ghost votes
+          allGhostVotes = [...allGhostVotes, ...transformedVotes];
         }
+        
+        // Sort by last updated/created date
+        allGhostVotes.sort((a, b) => {
+          const dateA = new Date(a.last_updated || a.created_at);
+          const dateB = new Date(b.last_updated || b.created_at);
+          return dateB.getTime() - dateA.getTime();
+        });
+        
+        setGhostVotes(allGhostVotes);
       } catch (error) {
         console.error("Error fetching ghost votes:", error);
         toast.error("Failed to fetch ghost votes");
@@ -208,8 +224,9 @@ export function GhostVotesTabContent() {
             <InfoIcon className="h-4 w-4" />
             <AlertTitle>Ghost Voting Information</AlertTitle>
             <AlertDescription>
-              This table shows both tracked ghost votes (associated with specific users) and truly anonymous ghost votes 
-              (not associated with any user). Truly anonymous votes are aggregated by position and show counts rather than individual votes.
+              This table shows both truly anonymous ghost votes (aggregated by position) and legacy tracked ghost votes 
+              (associated with specific users but shown for historical purposes only). 
+              New ghost votes are now completely anonymous with no user tracking.
             </AlertDescription>
           </Alert>
 
@@ -235,6 +252,7 @@ export function GhostVotesTabContent() {
                     <TableHead>Position</TableHead>
                     <TableHead>Vote Count</TableHead>
                     <TableHead>Date</TableHead>
+                    <TableHead>Type</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -266,6 +284,15 @@ export function GhostVotesTabContent() {
                       </TableCell>
                       <TableCell>
                         {new Date(vote.last_updated || vote.created_at).toLocaleString()}
+                      </TableCell>
+                      <TableCell>
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          vote.is_anonymous 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-amber-100 text-amber-800'
+                        }`}>
+                          {vote.is_anonymous ? 'Truly Anonymous' : 'Legacy Tracked'}
+                        </span>
                       </TableCell>
                     </TableRow>
                   ))}

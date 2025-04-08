@@ -9,6 +9,7 @@ export const castGhostVote = async (
 ): Promise<void> => {
   try {
     // Call the Supabase RPC function to increment the anonymous vote count
+    // This is truly anonymous - no user tracking is performed
     const { error } = await supabase.rpc('increment_anonymous_vote', {
       p_position_id: positionId
     });
@@ -23,12 +24,13 @@ export const castGhostVote = async (
   }
 };
 
-// Legacy functions preserved for backward compatibility but not used in the new flow
+// Legacy functions preserved for backward compatibility but no longer track users
 export const checkVoteTracking = async (
   userId: string,
   issueId: string
 ): Promise<{ exists: boolean; position_id: string | null; position_exists?: boolean }> => {
   // Always return no tracking for truly anonymous votes
+  // This ensures ghost votes are no longer tracked per user
   return { exists: false, position_id: null, position_exists: false };
 };
 
@@ -37,8 +39,8 @@ export const trackGhostVote = async (
   issueId: string,
   positionId: string
 ): Promise<void> => {
-  // This function is intentionally left empty for backwards compatibility
-  // We no longer track ghost votes to user accounts
+  // This function is intentionally empty - we no longer track ghost votes to user accounts
+  // Ghost votes are now truly anonymous
   return;
 };
 
@@ -46,7 +48,7 @@ export const deleteVoteTracking = async (
   userId: string,
   issueId: string
 ): Promise<void> => {
-  // This function is intentionally left empty for backwards compatibility
-  // We no longer track ghost votes to user accounts
+  // This function is intentionally empty - we no longer track ghost votes to user accounts
+  // Ghost votes are now truly anonymous
   return;
 };
