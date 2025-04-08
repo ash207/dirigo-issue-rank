@@ -38,12 +38,13 @@ export const checkIssueParticipation = async (
   if (!userId || !issueId) return false;
   
   try {
-    // We need to use a custom query since the type isn't in the TypeScript definitions
+    // TypeScript doesn't recognize the function name, so we'll use a more generic approach
+    // using the raw SQL query feature to call our RPC function
     const { data, error } = await supabase
       .rpc('check_issue_participation', { 
         p_user_id: userId, 
         p_issue_id: issueId 
-      });
+      } as any); // Use type assertion to bypass TypeScript check
     
     if (error) {
       console.error("Error checking issue participation:", error);
