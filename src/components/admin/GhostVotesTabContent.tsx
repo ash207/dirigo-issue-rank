@@ -45,7 +45,7 @@ export function GhostVotesTabContent() {
 
       setIsLoading(true);
       try {
-        // Fetch ghost votes with user information
+        // First fetch ghost votes from user_vote_tracking table
         const { data: voteData, error: voteError } = await supabase
           .from('user_vote_tracking')
           .select(`
@@ -53,8 +53,7 @@ export function GhostVotesTabContent() {
             position_id,
             issue_id,
             created_at,
-            user_id,
-            positions:position_id(title, issues:issue_id(title))
+            user_id
           `)
           .order('created_at', { ascending: false });
 
@@ -96,6 +95,22 @@ export function GhostVotesTabContent() {
             }
           }
           
+          // Fetch position details separately
+          const positionIds = [...new Set(voteData.map(vote => vote.position_id))];
+          const { data: positions } = await supabase
+            .from('positions')
+            .select('id, title, issue_id, issues:issue_id(title)')
+            .in('id', positionIds);
+            
+          const positionMap = positions ? positions.reduce((acc, position) => {
+            acc[position.id] = {
+              title: position.title,
+              issueId: position.issue_id,
+              issueTitle: position.issues ? (position.issues as any).title : 'Unknown Issue'
+            };
+            return acc;
+          }, {} as Record<string, { title: string, issueId: string, issueTitle: string }>) : {};
+          
           // Transform the vote data to include user and position information
           const transformedVotes: GhostVote[] = voteData.map(vote => ({
             id: vote.id,
@@ -104,8 +119,8 @@ export function GhostVotesTabContent() {
             created_at: vote.created_at,
             last_updated: vote.created_at,
             count: 1, // Individual ghost votes always have count of 1
-            issue_title: vote.positions?.issues?.title || 'Unknown Issue',
-            position_title: vote.positions?.title || 'Unknown Position',
+            issue_title: positionMap[vote.position_id]?.issueTitle || 'Unknown Issue',
+            position_title: positionMap[vote.position_id]?.title || 'Unknown Position',
             user_id: vote.user_id,
             user_name: vote.user_id ? userProfiles[vote.user_id]?.name : 'Anonymous User',
             user_email: vote.user_id ? userProfiles[vote.user_id]?.email : 'anonymous@example.com'
@@ -148,14 +163,14 @@ export function GhostVotesTabContent() {
       if (positionIds.length > 0) {
         const { data: positions } = await supabase
           .from('positions')
-          .select('id, title, issue_id, issues(title)')
+          .select('id, title, issue_id, issues:issue_id(title)')
           .in('id', positionIds);
           
         const positionMap = positions ? positions.reduce((acc, position) => {
           acc[position.id] = {
             title: position.title,
             issueId: position.issue_id,
-            issueTitle: position.issues?.title || 'Unknown Issue'
+            issueTitle: position.issues ? (position.issues as any).title : 'Unknown Issue'
           };
           return acc;
         }, {} as Record<string, { title: string, issueId: string, issueTitle: string }>) : {};
