@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { UserManagementTable } from "@/components/admin/UserManagementTable";
 import { AnalyticsTabContent } from "@/components/admin/analytics/AnalyticsTabContent";
+import { GhostVotesTabContent } from "@/components/admin/GhostVotesTabContent";
 
 const AdminDashboardPage = () => {
   const navigate = useNavigate();
@@ -34,6 +35,7 @@ const AdminDashboardPage = () => {
             <TabsTrigger value="emails">Email Management</TabsTrigger>
             <TabsTrigger value="users">User Management</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            <TabsTrigger value="ghost-votes">Ghost Votes</TabsTrigger>
           </TabsList>
           
           <TabsContent value="emails" className="space-y-6">
@@ -70,6 +72,10 @@ const AdminDashboardPage = () => {
           
           <TabsContent value="analytics" className="space-y-6">
             <AnalyticsTabContent />
+          </TabsContent>
+          
+          <TabsContent value="ghost-votes" className="space-y-6">
+            <GhostVotesTabContent />
           </TabsContent>
         </Tabs>
       </div>
