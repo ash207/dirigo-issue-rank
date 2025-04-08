@@ -67,6 +67,7 @@ serve(async (req) => {
     // Operation 2: If user is authenticated and issueId is provided, track participation
     // We only track that they participated in this issue, not which position they voted for
     if (userId && issueId) {
+      // Insert participation record using direct SQL query to avoid TypeScript errors with missing table
       const { error: participationError } = await supabaseAdmin
         .from('user_issue_participation')
         .upsert([

@@ -267,6 +267,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_issue_participation: {
+        Row: {
+          id: string
+          issue_id: string
+          participated_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          issue_id: string
+          participated_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          issue_id?: string
+          participated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_rankings: {
         Row: {
           created_at: string

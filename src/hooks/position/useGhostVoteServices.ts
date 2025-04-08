@@ -38,12 +38,12 @@ export const checkIssueParticipation = async (
   if (!userId || !issueId) return false;
   
   try {
+    // We need to use a custom query since the type isn't in the TypeScript definitions
     const { data, error } = await supabase
-      .from('user_issue_participation')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('issue_id', issueId)
-      .maybeSingle();
+      .rpc('check_issue_participation', { 
+        p_user_id: userId, 
+        p_issue_id: issueId 
+      });
     
     if (error) {
       console.error("Error checking issue participation:", error);
