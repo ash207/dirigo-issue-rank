@@ -53,6 +53,12 @@ const PositionCardVote = ({
       return;
     }
     
+    // If user has a ghost vote (on any position), don't allow them to add or change votes
+    if (hasGhostVoted && !isVoted) {
+      toast.error("You've already cast a ghost vote on this issue and cannot cast another vote or change it");
+      return;
+    }
+    
     if (onVote) {
       if (isVoted) {
         onVote(id);
@@ -74,6 +80,12 @@ const PositionCardVote = ({
       return;
     }
     
+    // Block opening the dialog if the user has a ghost vote (on any position)
+    if (hasGhostVoted) {
+      toast.error("You've already cast a ghost vote on this issue and cannot cast another vote or change it");
+      return;
+    }
+    
     setIsVotePrivacyDialogOpen(true);
   };
 
@@ -81,6 +93,12 @@ const PositionCardVote = ({
     // Additional safeguard to prevent ghost votes if user already has a ghost vote
     if (privacyLevel === 'ghost' && hasGhostVoted && !isGhostVotedPosition) {
       toast.error("You've already cast a ghost vote on this issue and cannot vote on other positions");
+      return;
+    }
+    
+    // Block any new vote if a ghost vote exists
+    if (hasGhostVoted) {
+      toast.error("You've already cast a ghost vote on this issue and cannot cast another vote or change it");
       return;
     }
     
