@@ -4,15 +4,8 @@ import { toast } from "sonner";
 import { VotePrivacyLevel } from "@/components/positions/dialogs/VotePrivacyDialog";
 import { useVoteDialog } from "./useVoteDialog";
 import { useVoteState } from "./useVoteState";
-import { validateVoteParams } from "./useVoteValidation";
-import {
-  checkVoteTracking,
-  trackGhostVote,
-  deleteVoteTracking,
-  castGhostVote,
-  castPublicVote,
-  removeVote
-} from "./useVoteServices";
+import { validateVoteParams, validateGhostVoteState, determineVoteAction } from "./useVoteValidation";
+import { handleRemoveVote, handleGhostVote, handlePublicVote, handleChangeVote } from "./useVoteActions";
 
 export const useVoteHandler = (
   issueId: string | undefined, 
@@ -66,6 +59,7 @@ export const useVoteHandler = (
     }
 
     // If user has already cast a ghost vote on this issue, they cannot make ANY new vote
+    // except on the position they ghost voted on
     if (hasGhostVoted) {
       // If this is for the ghost-voted position and we're removing the vote (special admin case), allow it
       if (ghostVotedPositionId === positionId && userVotedPosition === positionId) {
@@ -78,7 +72,7 @@ export const useVoteHandler = (
       }
     }
 
-    // If we have a userVotedPosition that equals the positionId, it means we're removing a vote
+    // Is the user removing a vote?
     const isRemovingVote = userVotedPosition === positionId;
     
     // If we're removing a vote, we don't need a privacy level
@@ -110,127 +104,124 @@ export const useVoteHandler = (
       const validUserId = userId as string;
       const validIssueId = issueId as string;
       
-      // Double-check for existing ghost votes to prevent race conditions
-      if (privacyLevel === 'ghost' && !isRemovingVote) {
-        try {
-          // Verify no existing ghost vote directly from the database
-          const voteStatus = await checkVoteTracking(validUserId, validIssueId);
-          
-          // If there's already a ghost vote for this issue, prevent the vote
-          if (voteStatus.exists) {
-            toast.error("You've already cast a ghost vote on this issue and cannot cast another");
-            setIsVoting(false);
-            resetVoteDialog();
-            return;
-          }
-        } catch (error) {
-          console.error("Error checking ghost vote status:", error);
-          toast.error("Unable to verify your voting status. Please try again.");
-          setIsVoting(false);
-          resetVoteDialog();
-          return;
-        }
-      } else if (privacyLevel === 'public' && !isRemovingVote) {
-        // For public votes, check if there's already a ghost vote tracking
-        if (hasGhostVoted) {
-          toast.error("You've already cast a ghost vote on this issue and cannot cast a public vote");
-          setIsVoting(false);
-          resetVoteDialog();
-          return;
-        }
-        
-        // Also check if the user already has a public vote on another position
-        if (userVotedPosition && userVotedPosition !== positionId) {
-          // This is handled by removing the previous vote first, so it's fine
-        }
+      // Perform additional validation for ghost votes to prevent race conditions
+      const ghostValidation = await validateGhostVoteState(
+        validUserId, 
+        validIssueId, 
+        hasGhostVoted, 
+        ghostVotedPositionId, 
+        positionId, 
+        isRemovingVote
+      );
+      
+      if (!ghostValidation.isValid) {
+        toast.error(ghostValidation.errorMessage);
+        setIsVoting(false);
+        resetVoteDialog();
+        return;
       }
       
+      // Determine the type of action we need to take
+      const voteAction = determineVoteAction(isRemovingVote, privacyLevel);
+      
       // If user already voted on a different position, remove that vote first
-      if (userVotedPosition && userVotedPosition !== positionId) {
-        await removeVote(userVotedPosition, validUserId);
+      if (userVotedPosition && userVotedPosition !== positionId && voteAction !== "remove") {
+        const changeSuccess = await handleChangeVote({
+          positionId,
+          userId: validUserId,
+          issueId: validIssueId,
+          userVotedPosition,
+          setUserVotedPosition,
+          positionVotes,
+          setPositionVotes,
+          setIsVoting,
+          resetVoteDialog,
+          hasGhostVoted,
+          ghostVotedPositionId
+        });
         
-        // Update local state for previous vote
-        setPositionVotes(prev => ({
-          ...prev,
-          [userVotedPosition]: Math.max(0, (prev[userVotedPosition] || 0) - 1)
-        }));
-      }
-
-      // If removing existing vote
-      if (isRemovingVote) {
-        await removeVote(positionId, validUserId);
-        
-        // Update local state
-        setUserVotedPosition(null);
-        setPositionVotes(prev => ({
-          ...prev,
-          [positionId]: Math.max(0, (prev[positionId] || 0) - 1)
-        }));
-        
-        toast.success("Vote removed");
-      } else {
-        // Cast a new vote based on privacy level
-        if (privacyLevel === 'ghost') {
-          // For ghost votes, we need to coordinate two operations:
-          // 1. Increment the anonymous vote count
-          // 2. Track that this user has cast a ghost vote
-          
-          try {
-            // First try to track the ghost vote
-            await trackGhostVote(validUserId, validIssueId, positionId);
-            
-            // Only if tracking succeeds, increment the vote count
-            await castGhostVote(positionId);
-            
-            // Update local state only if both operations succeeded
-            setPositionVotes(prev => ({
-              ...prev,
-              [positionId]: (prev[positionId] || 0) + 1
-            }));
-            
-            toast.success("Ghost vote recorded");
-          } catch (error) {
-            console.error("Ghost vote failed:", error);
-            toast.error(error instanceof Error ? error.message : "Failed to record your ghost vote");
-            setIsVoting(false);
-            resetVoteDialog();
-            return;
-          }
-        } else {
-          // For public votes, create a vote record
-          await castPublicVote(positionId, validUserId, privacyLevel, validIssueId);
-          
-          // If there was a ghost vote tracking record, remove it
-          if (hasGhostVoted && ghostVotedPositionId === positionId) {
-            try {
-              await deleteVoteTracking(validUserId, validIssueId);
-            } catch (error) {
-              console.error("Failed to remove ghost vote tracking:", error);
-              // Continue anyway since the public vote succeeded
-            }
-          }
-          
-          // Update local state
-          setUserVotedPosition(positionId);
-          setPositionVotes(prev => ({
-            ...prev,
-            [positionId]: (prev[positionId] || 0) + 1
-          }));
-          
-          toast.success("Vote recorded");
+        if (!changeSuccess) {
+          setIsVoting(false);
+          resetVoteDialog();
+          return;
         }
       }
 
-      // Refresh votes if callback provided
-      if (refreshVotes) {
+      // Handle the actual vote action
+      let actionSuccess = false;
+      
+      switch (voteAction) {
+        case "remove":
+          actionSuccess = await handleRemoveVote({
+            positionId,
+            userId: validUserId,
+            issueId: validIssueId,
+            userVotedPosition,
+            setUserVotedPosition,
+            positionVotes,
+            setPositionVotes,
+            setIsVoting,
+            resetVoteDialog,
+            hasGhostVoted,
+            ghostVotedPositionId
+          });
+          break;
+          
+        case "ghost":
+          actionSuccess = await handleGhostVote({
+            positionId,
+            userId: validUserId,
+            issueId: validIssueId,
+            userVotedPosition,
+            setUserVotedPosition,
+            positionVotes,
+            setPositionVotes,
+            setIsVoting,
+            resetVoteDialog,
+            hasGhostVoted,
+            ghostVotedPositionId
+          });
+          break;
+          
+        case "public":
+          actionSuccess = await handlePublicVote({
+            positionId,
+            userId: validUserId,
+            issueId: validIssueId,
+            userVotedPosition,
+            setUserVotedPosition,
+            positionVotes,
+            setPositionVotes,
+            setIsVoting,
+            resetVoteDialog,
+            hasGhostVoted,
+            ghostVotedPositionId,
+            privacyLevel
+          });
+          break;
+          
+        case "need-privacy":
+          // We should never get here due to earlier check
+          console.error("Privacy level needed but not provided");
+          toast.error("Vote configuration error");
+          actionSuccess = false;
+          break;
+      }
+
+      // Refresh votes if callback provided and action succeeded
+      if (refreshVotes && actionSuccess) {
         refreshVotes();
       }
     } catch (error: any) {
       console.error("Error voting:", error);
       toast.error(error.message || "Failed to process your vote");
-    } finally {
       setIsVoting(false);
       resetVoteDialog();
+    } finally {
+      if (isVoting) {
+        setIsVoting(false);
+        resetVoteDialog();
+      }
     }
   };
 
