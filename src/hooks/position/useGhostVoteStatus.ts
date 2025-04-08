@@ -1,11 +1,10 @@
 
 import { useState, useEffect } from "react";
-import { checkVoteTracking } from "./useVoteServices";
+import { checkIssueParticipation } from "./useGhostVoteServices";
 
 /**
- * Hook to check if a user has a ghost vote on an issue
- * Note: With the new truly anonymous system, this will always return false
- * as ghost votes are no longer tracked per user
+ * Hook to check if a user has participated in an issue's voting
+ * Note: This only tracks participation in the issue, not which position was voted for
  */
 export const useGhostVoteStatus = (
   issueId: string | undefined, 
@@ -14,32 +13,35 @@ export const useGhostVoteStatus = (
   positionIds: string[],
   refreshTrigger: number
 ) => {
-  const [hasGhostVoted, setHasGhostVoted] = useState(false);
-  const [ghostVotedPositionId, setGhostVotedPositionId] = useState<string | null>(null);
+  const [hasParticipated, setHasParticipated] = useState(false);
 
   useEffect(() => {
-    const checkGhostVoteStatus = async () => {
-      // With the new truly anonymous voting system, we don't track ghost votes by user
-      // So we always set hasGhostVoted to false
-      setHasGhostVoted(false);
-      setGhostVotedPositionId(null);
+    const checkParticipationStatus = async () => {
+      // Reset participation status
+      setHasParticipated(false);
       
-      // The code below is kept for legacy purposes but will always return false now
+      // Only check participation for authenticated users
       if (!isAuthenticated || !userId || !issueId) {
         return;
       }
       
       try {
-        // This will always return {exists: false, position_id: null} now
-        const result = await checkVoteTracking(userId, issueId);
-        console.log("Ghost vote check result (will always be false now):", result);
+        // Check if user has participated in this issue
+        const participated = await checkIssueParticipation(userId, issueId);
+        setHasParticipated(participated);
+        console.log("Issue participation check result:", participated);
       } catch (error) {
-        console.error("Error checking ghost vote status:", error);
+        console.error("Error checking issue participation status:", error);
       }
     };
     
-    checkGhostVoteStatus();
+    checkParticipationStatus();
   }, [issueId, userId, isAuthenticated, refreshTrigger, positionIds]);
 
-  return { hasGhostVoted, ghostVotedPositionId };
+  // For backward compatibility, we map hasParticipated to hasGhostVoted
+  // But we don't track which position was voted for
+  return { 
+    hasGhostVoted: hasParticipated, 
+    ghostVotedPositionId: null 
+  };
 };

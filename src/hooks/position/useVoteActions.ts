@@ -62,13 +62,19 @@ export const handleRemoveVote = async ({
  */
 export const handleGhostVote = async ({
   positionId,
+  userId,
+  issueId,
   setPositionVotes,
   setIsVoting,
   resetVoteDialog
 }: VoteActionParams) => {
   try {
-    // Simply increment the anonymous vote count without tracking the user
-    await castGhostVote(positionId);
+    // Cast a truly anonymous vote using the Edge Function
+    await castGhostVote(
+      positionId, 
+      issueId, // Now we pass issueId for participation tracking
+      userId   // Now we pass userId for participation tracking
+    );
     
     // Update local state
     setPositionVotes(prev => ({

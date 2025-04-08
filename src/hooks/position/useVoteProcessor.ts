@@ -1,4 +1,3 @@
-
 import { VotePrivacyLevel } from "@/components/positions/dialogs/VotePrivacyDialog";
 import { toast } from "sonner";
 import { validateVoteParams, validateGhostVoteState } from "./useVoteValidation";
@@ -43,19 +42,14 @@ export const processVoteRequest = async (
     };
   }
 
-  // Step 2: Check ghost vote status
+  // Step 2: Check participation status
   if (hasGhostVoted) {
-    // Special case: Admin removing a ghost vote on the ghost-voted position
-    if (ghostVotedPositionId === positionId && userVotedPosition === positionId) {
-      console.log("Admin removing ghost vote, allowing operation");
-    } else {
-      return {
-        shouldShowPrivacyDialog: false,
-        isValidRequest: false,
-        voteAction: "invalid",
-        errorMessage: "You've already cast a ghost vote on this issue and cannot cast another vote or change it"
-      };
-    }
+    return {
+      shouldShowPrivacyDialog: false,
+      isValidRequest: false,
+      voteAction: "invalid",
+      errorMessage: "You've already participated in voting on this issue and cannot cast another vote"
+    };
   }
   
   // Step 3: Is the user removing a vote?
@@ -70,25 +64,10 @@ export const processVoteRequest = async (
     };
   }
   
-  // Step 5: Check for any additional ghost vote validation to prevent race conditions
+  // Step 5: Check for any additional validation
   if (userId && issueId) {
-    const ghostValidation = await validateGhostVoteState(
-      userId, 
-      issueId, 
-      hasGhostVoted, 
-      ghostVotedPositionId, 
-      positionId, 
-      isRemovingVote
-    );
-    
-    if (!ghostValidation.isValid) {
-      return {
-        shouldShowPrivacyDialog: false,
-        isValidRequest: false,
-        voteAction: "invalid",
-        errorMessage: ghostValidation.errorMessage
-      };
-    }
+    // With the new system, we've simplified validation since participation tracking
+    // is handled separately from vote tracking
   }
   
   // Step 6: Determine vote action type

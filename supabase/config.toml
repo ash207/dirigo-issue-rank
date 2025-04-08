@@ -46,3 +46,6 @@ enable_confirmations = false
 [functions]
 [functions.get-user-emails]
 verify_jwt = true
+
+[functions.cast-ghost-vote]
+verify_jwt = false

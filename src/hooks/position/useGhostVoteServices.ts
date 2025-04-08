@@ -3,24 +3,57 @@ import { supabase } from "@/integrations/supabase/client";
 
 /**
  * Cast a ghost vote - completely anonymous with no user tracking
+ * This uses a secure Edge Function to ensure true anonymity
  */
 export const castGhostVote = async (
-  positionId: string
+  positionId: string,
+  issueId?: string,
+  userId?: string
 ): Promise<void> => {
   try {
-    // Call the Supabase RPC function to increment the anonymous vote count
-    // This is truly anonymous - no user tracking is performed
-    const { error } = await supabase.rpc('increment_anonymous_vote', {
-      p_position_id: positionId
+    // Call the Edge Function that handles anonymous voting
+    const { error } = await supabase.functions.invoke('cast-ghost-vote', {
+      body: { 
+        positionId, 
+        issueId, 
+        userId 
+      }
     });
     
     if (error) {
-      console.error("Database error for ghost vote:", error);
+      console.error("Error invoking ghost vote function:", error);
       throw new Error("Failed to record your anonymous vote");
     }
   } catch (error) {
     console.error("Error casting ghost vote:", error);
     throw new Error("Failed to cast your anonymous vote");
+  }
+};
+
+// Get user's issue participation without revealing which positions they voted for
+export const checkIssueParticipation = async (
+  userId: string,
+  issueId: string
+): Promise<boolean> => {
+  if (!userId || !issueId) return false;
+  
+  try {
+    const { data, error } = await supabase
+      .from('user_issue_participation')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('issue_id', issueId)
+      .maybeSingle();
+    
+    if (error) {
+      console.error("Error checking issue participation:", error);
+      return false;
+    }
+    
+    return !!data;
+  } catch (error) {
+    console.error("Error checking issue participation:", error);
+    return false;
   }
 };
 
