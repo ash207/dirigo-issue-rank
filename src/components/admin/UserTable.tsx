@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { manuallyConfirmUserEmail } from "@/utils/profileUtils";
 import { useAuth } from "@/contexts/AuthContext";
+import { Link } from "react-router-dom";
 import {
   Table,
   TableBody,
@@ -19,6 +20,7 @@ import { UserRoleSelector } from "./UserRoleSelector";
 import { UserStatusSelector } from "./UserStatusSelector";
 import { UserStatusBadge } from "./UserStatusBadge";
 import { UserRoleBadge } from "./UserRoleBadge";
+import { ExternalLink } from "lucide-react";
 
 interface UserTableProps {
   users: UserWithProfile[];
@@ -121,8 +123,13 @@ export const UserTable = ({
           {users.map((user: UserWithProfile) => (
             <TableRow key={user.id}>
               <TableCell className="font-medium">
-                <div>
-                  <div className="font-medium">{user.name || "N/A"}</div>
+                <div className="flex flex-col">
+                  <div className="font-medium flex items-center">
+                    {user.name || "N/A"}
+                    <Link to={`/profile/${user.id}`} className="ml-1 text-blue-600 hover:text-blue-800">
+                      <ExternalLink className="h-3 w-3" />
+                    </Link>
+                  </div>
                   <div className="text-sm text-muted-foreground truncate max-w-[230px]">{user.email}</div>
                 </div>
               </TableCell>

@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useUserData } from "@/hooks/useUserData";
 import { useAuth } from "@/contexts/AuthContext";
 import Layout from "@/components/layout/Layout";
@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Pencil, User, Book, MessageSquare } from "lucide-react";
+import { Pencil, User, Book, MessageSquare, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 
 const ProfilePage = () => {
@@ -42,9 +42,16 @@ const ProfilePage = () => {
                 <User size={32} className="text-white" />
               </div>
               <div>
-                <CardTitle className="text-2xl">
-                  {profile.data?.name || user?.email?.split('@')[0] || "User"}
-                </CardTitle>
+                <div className="flex items-center">
+                  <CardTitle className="text-2xl">
+                    {profile.data?.name || user?.email?.split('@')[0] || "User"}
+                  </CardTitle>
+                  {user?.id && (
+                    <Link to={`/profile/${user.id}`} className="ml-2 text-blue-600 hover:text-blue-800">
+                      <ExternalLink className="h-4 w-4" />
+                    </Link>
+                  )}
+                </div>
                 <CardDescription>{user?.email}</CardDescription>
               </div>
             </div>

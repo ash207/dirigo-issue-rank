@@ -11,6 +11,7 @@ import IssueDetail from "./pages/IssueDetail";
 import CreateIssuePage from "./pages/CreateIssuePage";
 import EditIssuePage from "./pages/EditIssuePage";
 import ProfilePage from "./pages/ProfilePage";
+import UserProfilePage from "./pages/UserProfilePage";
 import VerificationPage from "./pages/VerificationPage";
 import AboutPage from "./pages/AboutPage";
 import NotFound from "./pages/NotFound";
@@ -42,6 +43,7 @@ function App() {
               <Route path="/email-sent" element={<EmailSentPage />} />
               <Route path="/welcome" element={<WelcomePage />} />
               <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/profile/:userId" element={<UserProfilePage />} />
               <Route path="/reports" element={<ReportsPage />} />
               <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
               <Route path="/about" element={<AboutPage />} />
