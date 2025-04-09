@@ -49,53 +49,70 @@ serve(async (req) => {
       );
     }
 
+    console.log("Searching for users with term:", searchTerm);
+
     // Get all users admin data - to search by email
     const { data: authUsers, error: usersError } = await supabaseAdmin.auth.admin.listUsers();
     
     if (usersError) {
+      console.error("Error listing users:", usersError);
       return new Response(
         JSON.stringify({ error: usersError.message }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
     
+    console.log(`Found ${authUsers.users.length} total users to search through`);
+    
     // Filter to match the search term on email
     const filteredUsers = authUsers.users
-      .filter(user => user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase()))
+      .filter(user => {
+        if (!user.email) return false;
+        return user.email.toLowerCase().includes(searchTerm.toLowerCase());
+      })
       .slice(0, 5)  // Limit to 5 results
       .map(user => ({
         id: user.id,
         email: user.email
       }));
+    
+    console.log(`Found ${filteredUsers.length} users matching "${searchTerm}"`);
 
     // Get profile data for these users
     const userIds = filteredUsers.map(user => user.id);
     
-    // Only proceed if we have users to look up
-    if (userIds.length > 0) {
-      const { data: profiles } = await supabaseAdmin
-        .from("profiles")
-        .select("id, name")
-        .in("id", userIds);
-
-      // Merge profile data with users
-      const usersWithProfiles = filteredUsers.map(user => {
-        const profile = profiles?.find(p => p.id === user.id);
-        return {
-          id: user.id,
-          email: user.email,
-          name: profile?.name || null
-        };
-      });
-
+    if (userIds.length === 0) {
+      console.log("No matching users found");
       return new Response(
-        JSON.stringify(usersWithProfiles),
+        JSON.stringify([]),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+    
+    // Only proceed if we have users to look up
+    const { data: profiles, error: profilesError } = await supabaseAdmin
+      .from("profiles")
+      .select("id, name")
+      .in("id", userIds);
+      
+    if (profilesError) {
+      console.error("Error fetching profiles:", profilesError);
+    }
+
+    console.log(`Retrieved ${profiles?.length || 0} profile records`);
+
+    // Merge profile data with users
+    const usersWithProfiles = filteredUsers.map(user => {
+      const profile = profiles?.find(p => p.id === user.id);
+      return {
+        id: user.id,
+        email: user.email,
+        name: profile?.name || null
+      };
+    });
 
     return new Response(
-      JSON.stringify([]),
+      JSON.stringify(usersWithProfiles),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
