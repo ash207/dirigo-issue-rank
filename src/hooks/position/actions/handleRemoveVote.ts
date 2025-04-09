@@ -1,6 +1,7 @@
 
 import { toast } from "sonner";
 import { removeVote } from "../useVoteServices";
+import { VoteActionParams } from "../types/voteActionTypes";
 
 /**
  * Handle removing an existing vote

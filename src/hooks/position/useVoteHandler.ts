@@ -6,6 +6,7 @@ import { useVoteDialog } from "./useVoteDialog";
 import { useVoteState } from "./useVoteState";
 import { processVoteRequest } from "./useVoteProcessor";
 import { executeVoteAction } from "./useVoteExecutor";
+import { VoteActionType } from "./types/voteActionTypes";
 
 export const useVoteHandler = (
   issueId: string | undefined, 

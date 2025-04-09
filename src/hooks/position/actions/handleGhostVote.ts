@@ -2,6 +2,7 @@
 import { toast } from "sonner";
 import { castGhostVote } from "../useGhostVoteServices";
 import { removeVote } from "../useVoteServices";
+import { VoteActionParams } from "../types/voteActionTypes";
 
 /**
  * Handle casting a ghost vote

@@ -1,6 +1,7 @@
 
 import { toast } from "sonner";
 import { castPublicVote, switchVote } from "../useVoteServices";
+import { VoteActionParams } from "../types/voteActionTypes";
 
 /**
  * Handle casting a public vote
