@@ -24,11 +24,8 @@ export const SearchDialog = ({ open, setOpen }: { open: boolean; setOpen: (open:
 
   // When dialog opens, trigger search if there's a searchTerm already
   useEffect(() => {
-    if (open) {
-      // Force a search whenever the dialog opens if there's a term
-      if (searchTerm.length >= 2) {
-        performSearch();
-      }
+    if (open && searchTerm.length >= 2) {
+      performSearch();
     }
   }, [open, searchTerm, performSearch]);
 

@@ -17,16 +17,22 @@ export const SearchResults = ({ results, isLoading, onSelectResult }: SearchResu
   const issueResults = results.filter(result => result.type === "issue");
   const userResults = results.filter(result => result.type === "user");
   const emailResults = results.filter(result => result.type === "email");
+  
+  // Check if there are any results to display
+  const hasResults = issueResults.length > 0 || 
+                    (isAuthenticated && (userResults.length > 0 || emailResults.length > 0));
 
   return (
     <CommandList>
-      <CommandEmpty>
-        {isLoading ? (
-          <div className="py-6 text-center text-sm">Loading...</div>
-        ) : (
-          <div className="py-6 text-center text-sm">No results found.</div>
-        )}
-      </CommandEmpty>
+      {!hasResults && (
+        <CommandEmpty>
+          {isLoading ? (
+            <div className="py-6 text-center text-sm">Loading...</div>
+          ) : (
+            <div className="py-6 text-center text-sm">No results found.</div>
+          )}
+        </CommandEmpty>
+      )}
       
       {issueResults.length > 0 && (
         <CommandGroup heading="Issues">
@@ -65,4 +71,4 @@ export const SearchResults = ({ results, isLoading, onSelectResult }: SearchResu
       )}
     </CommandList>
   );
-}
+};
