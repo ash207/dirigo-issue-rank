@@ -22,7 +22,6 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-  CommandLoading,
 } from "@/components/ui/command";
 
 type SearchResult = {
@@ -166,9 +165,6 @@ export const SearchDialog = ({ open, setOpen }: { open: boolean; setOpen: (open:
             onValueChange={setSearchTerm}
           />
           <CommandList>
-            {isLoading && (
-              <CommandLoading>Searching...</CommandLoading>
-            )}
             <CommandEmpty>
               {isLoading ? (
                 <div className="py-6 text-center text-sm">Loading...</div>
