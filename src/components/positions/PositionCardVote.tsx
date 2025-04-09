@@ -44,8 +44,9 @@ const PositionCardVote = ({
       return;
     }
     
-    // If there's already a ghost vote on this issue, display a message
-    if (hasGhostVoted) {
+    // If there's already a ghost vote on this issue and the user isn't trying to remove it,
+    // display a message (but we'll allow switching from public vote to ghost vote)
+    if (hasGhostVoted && !isVoted) {
       toast.error("You've already cast a ghost vote on this issue and cannot cast another vote or change it");
       return;
     }
@@ -66,7 +67,8 @@ const PositionCardVote = ({
     }
     
     // If there's already a ghost vote on this issue, display a message
-    if (hasGhostVoted) {
+    // (but we'll allow switching from public vote to ghost vote in the privacy dialog)
+    if (hasGhostVoted && !isVoted) {
       toast.error("You've already cast a ghost vote on this issue and cannot cast another vote or change it");
       return;
     }
@@ -88,7 +90,7 @@ const PositionCardVote = ({
         isVoted={isVoted}
         onClick={handleVoteClick}
         onUpClick={handleUpArrowClick}
-        disabled={isVoting || (isOwner && !isVoted) || hasGhostVoted}
+        disabled={isVoting || (isOwner && !isVoted) || (hasGhostVoted && !isVoted)}
         positionTitle={title}
         isActiveUser={isActiveUser}
         isAuthenticated={isAuthenticated}

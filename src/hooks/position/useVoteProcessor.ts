@@ -2,6 +2,7 @@
 import { VotePrivacyLevel } from "@/components/positions/dialogs/VotePrivacyDialog";
 import { toast } from "sonner";
 import { validateVoteParams, validateGhostVoteState } from "./useVoteValidation";
+import { checkIssueParticipation } from "./useGhostVoteServices";
 
 /**
  * Processes vote requests, runs validations, and determines the appropriate action
@@ -44,13 +45,25 @@ export const processVoteRequest = async (
   }
 
   // Step 2: Check participation status
-  if (hasGhostVoted) {
+  // If user has a ghost vote, they can't vote again
+  if (hasGhostVoted && privacyLevel !== "ghost") {
     return {
       shouldShowPrivacyDialog: false,
       isValidRequest: false,
       voteAction: "invalid",
       errorMessage: "You've already participated in voting on this issue and cannot cast another vote"
     };
+  }
+  
+  // If we have a valid user ID and issue ID, check if the user already has a ghost vote
+  if (userId && issueId && privacyLevel === "ghost") {
+    // Check if the user already has a public vote on this issue before allowing a ghost vote
+    const hasPublicVote = !!userVotedPosition;
+    
+    if (hasPublicVote) {
+      // Allow switching from public to ghost vote - this will be handled in handleGhostVote
+      console.log("User is switching from public to ghost vote");
+    }
   }
   
   // Step 3: Is the user removing a vote?

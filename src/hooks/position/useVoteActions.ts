@@ -7,7 +7,7 @@ import {
   switchVote,
   castPublicVote
 } from "./useVoteServices";
-import { castGhostVote } from "./useGhostVoteServices";
+import { castGhostVote, checkIssueParticipation } from "./useGhostVoteServices";
 
 type VoteActionParams = {
   positionId: string;
@@ -65,11 +65,28 @@ export const handleGhostVote = async ({
   positionId,
   userId,
   issueId,
+  userVotedPosition,
+  setUserVotedPosition,
   setPositionVotes,
   setIsVoting,
   resetVoteDialog
 }: VoteActionParams) => {
   try {
+    // If the user has an existing public vote, remove it first
+    if (userVotedPosition) {
+      // Remove the existing public vote from the database
+      await removeVote(userVotedPosition, userId);
+      
+      // Update local state to reflect the removal
+      setPositionVotes(prev => ({
+        ...prev,
+        [userVotedPosition]: Math.max(0, (prev[userVotedPosition] || 0) - 1)
+      }));
+      
+      // Clear the user's voted position since we're switching to ghost vote
+      setUserVotedPosition(null);
+    }
+    
     // Cast a truly anonymous vote using the Edge Function
     await castGhostVote(
       positionId, 
