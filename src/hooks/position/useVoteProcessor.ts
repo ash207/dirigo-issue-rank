@@ -3,6 +3,7 @@ import { VotePrivacyLevel } from "@/components/positions/dialogs/VotePrivacyDial
 import { toast } from "sonner";
 import { validateVoteParams, validateGhostVoteState } from "./useVoteValidation";
 import { checkIssueParticipation } from "./useGhostVoteServices";
+import { VoteActionType } from "./types/voteActionTypes";
 
 /**
  * Processes vote requests, runs validations, and determines the appropriate action
@@ -20,7 +21,7 @@ export const processVoteRequest = async (
 ): Promise<{
   shouldShowPrivacyDialog: boolean,
   isValidRequest: boolean,
-  voteAction: "remove" | "ghost" | "public" | "change" | "invalid",
+  voteAction: VoteActionType,
   errorMessage?: string
 }> => {
   // Debug log for vote processing

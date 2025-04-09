@@ -1,10 +1,10 @@
 
 import { toast } from "sonner";
 import { VotePrivacyLevel } from "@/components/positions/dialogs/VotePrivacyDialog";
-import { handleRemoveVote, handleGhostVote, handlePublicVote, handleChangeVote } from "./useVoteActions";
+import { handleRemoveVote, handleGhostVote, handlePublicVote, handleChangeVote, VoteActionType, VoteActionParams } from "./useVoteActions";
 
 type VoteExecutionParams = {
-  voteAction: "remove" | "ghost" | "public" | "change" | "invalid";
+  voteAction: VoteActionType;
   positionId: string;
   userId: string;
   issueId: string;
