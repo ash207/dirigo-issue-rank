@@ -12,11 +12,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { SearchDialog } from "@/components/search/SearchDialog";
 
 const Navbar = () => {
   const { user, signOut, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   useEffect(() => {
     const checkUserRole = async () => {
@@ -47,6 +49,10 @@ const Navbar = () => {
   const handleSignOut = async () => {
     await signOut();
     navigate('/sign-in');
+  };
+
+  const handleSearchClick = () => {
+    setIsSearchOpen(true);
   };
 
   return (
@@ -96,7 +102,7 @@ const Navbar = () => {
         </div>
 
         <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="icon" className="text-dirigo-white">
+          <Button variant="ghost" size="icon" className="text-dirigo-white" onClick={handleSearchClick}>
             <Search size={20} />
           </Button>
           
@@ -155,6 +161,9 @@ const Navbar = () => {
           )}
         </div>
       </div>
+      
+      {/* Search Dialog */}
+      <SearchDialog open={isSearchOpen} setOpen={setIsSearchOpen} />
     </nav>
   );
 };
