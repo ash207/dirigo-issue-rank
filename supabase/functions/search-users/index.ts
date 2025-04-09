@@ -118,7 +118,7 @@ serve(async (req) => {
       const profile = profileMap.get(user.id);
       return {
         id: user.id,
-        email: user.email,
+        email: user.email, // Make sure to include the email
         name: profile?.name || null
       };
     });

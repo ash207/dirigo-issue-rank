@@ -85,6 +85,7 @@ export function useSearch(initialSearchTerm = "") {
         // Extract results
         const issuesData = results[0].error ? [] : results[0].data || [];
         const usersData = isAuthenticated && results[1] && !results[1].error ? results[1].data || [] : [];
+        // Note: Email search results come directly from the edge function
         const emailUsers = isAuthenticated && results[2] && !results[2].error ? results[2].data || [] : [];
         
         console.log("Issues found:", issuesData?.length || 0);
@@ -109,7 +110,7 @@ export function useSearch(initialSearchTerm = "") {
             id: user.id,
             type: "email" as const,
             title: user.name || "Unnamed User",
-            subtitle: user.email
+            subtitle: user.email // Make sure the email is included in the subtitle
           }))
         ];
 
