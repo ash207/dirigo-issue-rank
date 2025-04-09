@@ -62,6 +62,7 @@ export function useSearch(initialSearchTerm = "") {
           searchPromises.push(usersPromise);
           
           // Search for users by email using the edge function
+          // Fixed: Removed 'signal' property as it's not supported in FunctionInvokeOptions
           emailSearchPromise = supabase.functions.invoke(
             "search-users",
             {
@@ -70,8 +71,7 @@ export function useSearch(initialSearchTerm = "") {
               },
               body: {
                 searchTerm: debouncedSearchTerm
-              },
-              signal: controller.signal
+              }
             }
           );
           searchPromises.push(emailSearchPromise);
