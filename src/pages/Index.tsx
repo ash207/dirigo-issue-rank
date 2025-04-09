@@ -4,8 +4,12 @@ import Layout from "@/components/layout/Layout";
 import { Link } from "react-router-dom";
 import IssueCard from "@/components/issues/IssueCard";
 import SendTestEmailButton from "@/components/email/SendTestEmailButton";
+import { useAuth } from "@/contexts/AuthContext";
+import { UserRound } from "lucide-react";
 
 const Index = () => {
+  const { user, isAuthenticated } = useAuth();
+  
   // Mock data for featured issues
   const featuredIssues = [
     { id: "1", title: "Should the minimum wage be increased to $15/hour nationwide?", category: "Federal", votes: 1240, positions: 23 },
@@ -29,9 +33,18 @@ const Index = () => {
           <Button asChild size="lg" className="bg-dirigo-blue hover:bg-dirigo-blue/90">
             <Link to="/issues">Explore Issues</Link>
           </Button>
-          <Button asChild size="lg" variant="outline" className="border-dirigo-red text-dirigo-red hover:bg-dirigo-red/10">
-            <Link to="/verify">Get Verified</Link>
-          </Button>
+          {isAuthenticated && user?.id ? (
+            <Button asChild size="lg" variant="outline" className="border-dirigo-blue text-dirigo-blue hover:bg-dirigo-blue/10">
+              <Link to={`/profile/${user.id}`} className="flex items-center gap-2">
+                <UserRound size={18} />
+                View Your Public Profile
+              </Link>
+            </Button>
+          ) : (
+            <Button asChild size="lg" variant="outline" className="border-dirigo-red text-dirigo-red hover:bg-dirigo-red/10">
+              <Link to="/verify">Get Verified</Link>
+            </Button>
+          )}
         </div>
       </section>
 

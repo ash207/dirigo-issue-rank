@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
-import { Search, User, LogOut, Flag, Users, LayoutDashboard } from "lucide-react";
+import { Search, User, LogOut, Flag, Users, LayoutDashboard, UserRound } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   DropdownMenu,
@@ -70,10 +70,16 @@ const Navbar = () => {
             Verification
           </Link>
           {isAuthenticated && (
-            <Link to="/reports" className="text-dirigo-white hover:text-opacity-80 flex items-center gap-1">
-              <Flag className="h-4 w-4" />
-              Reports
-            </Link>
+            <>
+              <Link to="/reports" className="text-dirigo-white hover:text-opacity-80 flex items-center gap-1">
+                <Flag className="h-4 w-4" />
+                Reports
+              </Link>
+              <Link to="/profile" className="text-dirigo-white hover:text-opacity-80 flex items-center gap-1">
+                <UserRound className="h-4 w-4" />
+                My Profile
+              </Link>
+            </>
           )}
           {isAdmin && (
             <>
@@ -107,6 +113,12 @@ const Navbar = () => {
                   <User className="mr-2 h-4 w-4" />
                   <span>My Profile</span>
                 </DropdownMenuItem>
+                {user?.id && (
+                  <DropdownMenuItem onClick={() => navigate(`/profile/${user.id}`)}>
+                    <UserRound className="mr-2 h-4 w-4" />
+                    <span>View Public Profile</span>
+                  </DropdownMenuItem>
+                )}
                 {isAdmin && (
                   <>
                     <DropdownMenuSeparator />
