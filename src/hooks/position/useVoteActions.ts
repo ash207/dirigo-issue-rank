@@ -5,7 +5,8 @@ import { VotePrivacyLevel } from "@/components/positions/dialogs/VotePrivacyDial
 import {
   castGhostVote,
   castPublicVote,
-  removeVote
+  removeVote,
+  switchVote
 } from "./useVoteServices";
 
 type VoteActionParams = {
@@ -104,6 +105,7 @@ export const handlePublicVote = async ({
   setUserVotedPosition,
   setPositionVotes,
   privacyLevel,
+  userVotedPosition,
   setIsVoting,
   resetVoteDialog
 }: VoteActionParams) => {
@@ -116,17 +118,33 @@ export const handlePublicVote = async ({
   }
   
   try {
-    // For public votes, create a vote record
-    await castPublicVote(positionId, userId, privacyLevel, issueId);
+    // If user already voted for another position, we'll switch the vote
+    if (userVotedPosition && userVotedPosition !== positionId) {
+      await switchVote(userVotedPosition, positionId, userId, privacyLevel, issueId);
+      
+      // Update local state for both positions
+      setPositionVotes(prev => ({
+        ...prev,
+        [userVotedPosition]: Math.max(0, (prev[userVotedPosition] || 0) - 1),
+        [positionId]: (prev[positionId] || 0) + 1
+      }));
+      
+      toast.success("Your vote has been switched");
+    } else {
+      // For new public votes, create a vote record
+      await castPublicVote(positionId, userId, privacyLevel, issueId);
+      
+      // Update local state
+      setPositionVotes(prev => ({
+        ...prev,
+        [positionId]: (prev[positionId] || 0) + 1
+      }));
+      
+      toast.success("Vote recorded");
+    }
     
-    // Update local state
+    // Update which position the user voted for
     setUserVotedPosition(positionId);
-    setPositionVotes(prev => ({
-      ...prev,
-      [positionId]: (prev[positionId] || 0) + 1
-    }));
-    
-    toast.success("Vote recorded");
     return true;
   } catch (error) {
     console.error("Public vote failed:", error);
@@ -140,6 +158,8 @@ export const handlePublicVote = async ({
 
 /**
  * Handle removing a vote from one position and casting to another
+ * This function is now only used for ghost votes or special cases
+ * Most vote switching is handled directly in handlePublicVote
  */
 export const handleChangeVote = async ({
   positionId,

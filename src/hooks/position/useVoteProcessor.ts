@@ -1,3 +1,4 @@
+
 import { VotePrivacyLevel } from "@/components/positions/dialogs/VotePrivacyDialog";
 import { toast } from "sonner";
 import { validateVoteParams, validateGhostVoteState } from "./useVoteValidation";
@@ -56,7 +57,11 @@ export const processVoteRequest = async (
   const isRemovingVote = userVotedPosition === positionId;
   
   // Step 4: Does the user need to choose a privacy level?
-  if (!isRemovingVote && !privacyLevel) {
+  // For new votes or switching to a different position
+  const isNewVote = !userVotedPosition; 
+  const isSwitchingVote = userVotedPosition && userVotedPosition !== positionId;
+  
+  if ((isNewVote || isSwitchingVote) && !privacyLevel) {
     return {
       shouldShowPrivacyDialog: true,
       isValidRequest: true,
@@ -64,13 +69,7 @@ export const processVoteRequest = async (
     };
   }
   
-  // Step 5: Check for any additional validation
-  if (userId && issueId) {
-    // With the new system, we've simplified validation since participation tracking
-    // is handled separately from vote tracking
-  }
-  
-  // Step 6: Determine vote action type
+  // Step 5: Determine vote action type
   if (isRemovingVote) {
     return {
       shouldShowPrivacyDialog: false,
@@ -79,16 +78,10 @@ export const processVoteRequest = async (
     };
   }
   
-  // Step 7: Check if user already voted on a different position
-  if (userVotedPosition && userVotedPosition !== positionId) {
-    return {
-      shouldShowPrivacyDialog: false,
-      isValidRequest: true,
-      voteAction: "change"
-    };
-  }
+  // Step 6: If user already voted on a different position, we want a direct switch
+  // This is handled in the handlePublicVote logic now, no need for "change" action
   
-  // Step 8: Determine new vote type based on privacy level
+  // Step 7: Determine new vote type based on privacy level
   if (privacyLevel === "ghost") {
     return {
       shouldShowPrivacyDialog: false,
