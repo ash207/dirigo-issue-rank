@@ -11,8 +11,10 @@ export const castGhostVote = async (
   userId?: string
 ): Promise<void> => {
   try {
+    console.log("Calling ghost vote edge function with:", { positionId, issueId, userId });
+    
     // Call the Edge Function that handles anonymous voting
-    const { error } = await supabase.functions.invoke('cast-ghost-vote', {
+    const { data, error } = await supabase.functions.invoke('cast-ghost-vote', {
       body: { 
         positionId, 
         issueId, 
@@ -20,15 +22,48 @@ export const castGhostVote = async (
       }
     });
     
+    console.log("Edge function response:", { data, error });
+    
     if (error) {
       console.error("Error invoking ghost vote function:", error);
       throw new Error("Failed to record your anonymous vote");
     }
+    
+    // Record participation in user_issue_participation if issueId and userId are provided
+    if (issueId && userId) {
+      await recordIssueParticipation(userId, issueId);
+    }
+    
+    return data;
   } catch (error) {
     console.error("Error casting ghost vote:", error);
     throw new Error("Failed to cast your anonymous vote");
   }
 };
+
+// Record that a user has participated in an issue without revealing which position
+// This maintains the anonymity of the ghost vote while allowing us to prevent multiple votes
+async function recordIssueParticipation(userId: string, issueId: string): Promise<void> {
+  try {
+    console.log("Recording issue participation:", { userId, issueId });
+    const { error } = await supabase
+      .from('user_issue_participation')
+      .upsert({
+        user_id: userId,
+        issue_id: issueId,
+        participated_at: new Date().toISOString()
+      })
+      .select();
+      
+    if (error) {
+      console.error("Error recording issue participation:", error);
+      // Don't throw here - this is a secondary operation and shouldn't fail the main vote
+    }
+  } catch (error) {
+    console.error("Error in recordIssueParticipation:", error);
+    // Don't throw here - this is a secondary operation and shouldn't fail the main vote
+  }
+}
 
 // Get user's issue participation without revealing which positions they voted for
 export const checkIssueParticipation = async (

@@ -72,8 +72,12 @@ export const handleGhostVote = async ({
   resetVoteDialog
 }: VoteActionParams) => {
   try {
+    console.log("Starting ghost vote process", { positionId, userVotedPosition });
+    
     // If the user has an existing public vote, remove it first
     if (userVotedPosition) {
+      console.log("Removing existing public vote before ghost vote", userVotedPosition);
+      
       // Remove the existing public vote from the database
       await removeVote(userVotedPosition, userId);
       
@@ -88,13 +92,15 @@ export const handleGhostVote = async ({
     }
     
     // Cast a truly anonymous vote using the Edge Function
-    await castGhostVote(
+    console.log("Casting ghost vote", { positionId, issueId, userId });
+    const response = await castGhostVote(
       positionId, 
-      issueId, // Now we pass issueId for participation tracking
-      userId   // Now we pass userId for participation tracking
+      issueId, // Passing issueId for participation tracking
+      userId   // Passing userId for participation tracking
     );
+    console.log("Ghost vote response:", response);
     
-    // Update local state
+    // Update local state to show the vote count increasing
     setPositionVotes(prev => ({
       ...prev,
       [positionId]: (prev[positionId] || 0) + 1
