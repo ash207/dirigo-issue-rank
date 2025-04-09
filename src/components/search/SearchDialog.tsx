@@ -1,6 +1,7 @@
 
 import { useNavigate } from "react-router-dom";
 import { useSearch } from "@/hooks/useSearch";
+import { useEffect } from "react";
 
 import {
   Dialog,
@@ -19,7 +20,14 @@ import { SearchResults } from "./SearchResults";
 
 export const SearchDialog = ({ open, setOpen }: { open: boolean; setOpen: (open: boolean) => void }) => {
   const navigate = useNavigate();
-  const { searchTerm, setSearchTerm, results, isLoading } = useSearch();
+  const { searchTerm, setSearchTerm, results, isLoading, performSearch } = useSearch();
+
+  // When dialog opens, trigger search if there's a searchTerm already
+  useEffect(() => {
+    if (open && searchTerm.length >= 2) {
+      performSearch();
+    }
+  }, [open, searchTerm, performSearch]);
 
   const handleSelect = (result: ReturnType<typeof useSearch>["results"][0]) => {
     if (result.type === "issue") {
