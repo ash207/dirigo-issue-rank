@@ -3,11 +3,11 @@
 import { toast } from "sonner";
 import { VotePrivacyLevel } from "@/components/positions/dialogs/VotePrivacyDialog";
 import {
-  castGhostVote,
-  castPublicVote,
   removeVote,
-  switchVote
+  switchVote,
+  castPublicVote
 } from "./useVoteServices";
+import { castGhostVote } from "./useGhostVoteServices";
 
 type VoteActionParams = {
   positionId: string;
