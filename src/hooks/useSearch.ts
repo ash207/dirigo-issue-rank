@@ -20,7 +20,11 @@ export function useSearch(initialSearchTerm = "") {
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
   useEffect(() => {
+    let isMounted = true;
+    const controller = new AbortController();
+
     const performSearch = async () => {
+      // Don't search if term is too short
       if (!debouncedSearchTerm || debouncedSearchTerm.length < 2) {
         setResults([]);
         return;
@@ -31,63 +35,65 @@ export function useSearch(initialSearchTerm = "") {
       try {
         console.log("Searching for term:", debouncedSearchTerm);
         
+        // Batch requests in parallel for better performance
+        const searchPromises = [];
+        
         // Search for issues
-        const { data: issuesData, error: issuesError } = await supabase
+        const issuesPromise = supabase
           .from("issues")
           .select("id, title, category")
           .or(`title.ilike.%${debouncedSearchTerm}%,description.ilike.%${debouncedSearchTerm}%`)
-          .limit(5);
+          .limit(5)
+          .abortSignal(controller.signal);
+        searchPromises.push(issuesPromise);
 
-        if (issuesError) throw issuesError;
-        console.log("Issues found:", issuesData?.length || 0);
-
-        // If authenticated, also search for users by name and by email
-        let usersData: any[] = [];
-        let emailUsers: any[] = [];
+        // Conditionally add user search if authenticated
+        let usersPromise = null;
+        let emailSearchPromise = null;
         
         if (isAuthenticated && session?.access_token) {
           // Search for users by name
-          const { data: userData, error: userError } = await supabase
+          usersPromise = supabase
             .from("profiles")
             .select("id, name")
             .ilike("name", `%${debouncedSearchTerm}%`)
-            .limit(5);
-
-          if (userError) throw userError;
-          usersData = userData || [];
-          console.log("Users found by name:", usersData.length);
+            .limit(5)
+            .abortSignal(controller.signal);
+          searchPromises.push(usersPromise);
           
           // Search for users by email using the edge function
-          try {
-            console.log("Searching for users by email");
-            const { data: emailUserData, error: emailUserError } = await supabase.functions.invoke(
-              "search-users",
-              {
-                headers: {
-                  Authorization: `Bearer ${session.access_token}`
-                },
-                body: {
-                  searchTerm: debouncedSearchTerm
-                }
-              }
-            );
-            
-            if (emailUserError) {
-              console.error("Email search error:", emailUserError);
-              throw emailUserError;
+          emailSearchPromise = supabase.functions.invoke(
+            "search-users",
+            {
+              headers: {
+                Authorization: `Bearer ${session.access_token}`
+              },
+              body: {
+                searchTerm: debouncedSearchTerm
+              },
+              signal: controller.signal
             }
-            
-            emailUsers = emailUserData || [];
-            console.log("Users found by email:", emailUsers.length);
-          } catch (error) {
-            console.error("Error searching users by email:", error);
-            toast.error("Error searching by email. Please try again.");
-          }
+          );
+          searchPromises.push(emailSearchPromise);
         }
 
-        // Combine results
+        // Wait for all search requests to complete
+        const results = await Promise.all(searchPromises);
+        
+        if (!isMounted) return;
+        
+        // Extract results
+        const issuesData = results[0].error ? [] : results[0].data || [];
+        const usersData = isAuthenticated && results[1] && !results[1].error ? results[1].data || [] : [];
+        const emailUsers = isAuthenticated && results[2] && !results[2].error ? results[2].data || [] : [];
+        
+        console.log("Issues found:", issuesData?.length || 0);
+        console.log("Users found by name:", usersData.length);
+        console.log("Users found by email:", emailUsers.length);
+
+        // Combine results with a more efficient approach
         const formattedResults: SearchResult[] = [
-          ...(issuesData || []).map((issue) => ({
+          ...issuesData.map((issue) => ({
             id: issue.id,
             type: "issue" as const,
             title: issue.title,
@@ -108,16 +114,29 @@ export function useSearch(initialSearchTerm = "") {
         ];
 
         console.log("Total combined results:", formattedResults.length);
-        setResults(formattedResults);
+        
+        if (isMounted) {
+          setResults(formattedResults);
+        }
       } catch (error) {
         console.error("Search error:", error);
-        toast.error("An error occurred while searching");
+        if (isMounted) {
+          toast.error("An error occurred while searching");
+        }
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     performSearch();
+
+    // Cleanup function
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
   }, [debouncedSearchTerm, isAuthenticated, session]);
 
   return {

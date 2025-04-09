@@ -51,8 +51,12 @@ serve(async (req) => {
 
     console.log("Searching for users with term:", searchTerm);
 
-    // Get all users admin data - to search by email
-    const { data: authUsers, error: usersError } = await supabaseAdmin.auth.admin.listUsers();
+    // Performance optimization: Use a more efficient query pattern
+    // Get all users admin data - to search by email - using a more efficient approach
+    const { data: authUsers, error: usersError } = await supabaseAdmin.auth.admin.listUsers({
+      perPage: 100, // Limit to reasonable amount for performance
+      page: 1,
+    });
     
     if (usersError) {
       console.error("Error listing users:", usersError);
@@ -64,11 +68,12 @@ serve(async (req) => {
     
     console.log(`Found ${authUsers.users.length} total users to search through`);
     
-    // Filter to match the search term on email
+    // Optimize filtering with lowercase comparison only once
+    const lowerSearchTerm = searchTerm.toLowerCase();
     const filteredUsers = authUsers.users
       .filter(user => {
         if (!user.email) return false;
-        return user.email.toLowerCase().includes(searchTerm.toLowerCase());
+        return user.email.toLowerCase().includes(lowerSearchTerm);
       })
       .slice(0, 5)  // Limit to 5 results
       .map(user => ({
@@ -78,10 +83,8 @@ serve(async (req) => {
     
     console.log(`Found ${filteredUsers.length} users matching "${searchTerm}"`);
 
-    // Get profile data for these users
-    const userIds = filteredUsers.map(user => user.id);
-    
-    if (userIds.length === 0) {
+    // Performance optimization: Only query profiles if we have matching users
+    if (filteredUsers.length === 0) {
       console.log("No matching users found");
       return new Response(
         JSON.stringify([]),
@@ -89,7 +92,8 @@ serve(async (req) => {
       );
     }
     
-    // Only proceed if we have users to look up
+    // Get profile data only for the filtered users
+    const userIds = filteredUsers.map(user => user.id);
     const { data: profiles, error: profilesError } = await supabaseAdmin
       .from("profiles")
       .select("id, name")
@@ -101,9 +105,17 @@ serve(async (req) => {
 
     console.log(`Retrieved ${profiles?.length || 0} profile records`);
 
-    // Merge profile data with users
+    // Create a map for efficient lookup
+    const profileMap = new Map();
+    if (profiles) {
+      profiles.forEach(profile => {
+        profileMap.set(profile.id, profile);
+      });
+    }
+
+    // Merge profile data with users using the map for better performance
     const usersWithProfiles = filteredUsers.map(user => {
-      const profile = profiles?.find(p => p.id === user.id);
+      const profile = profileMap.get(user.id);
       return {
         id: user.id,
         email: user.email,
