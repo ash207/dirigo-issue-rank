@@ -28,45 +28,41 @@ export const SearchResults = ({ results, isLoading, onSelectResult }: SearchResu
         )}
       </CommandEmpty>
       
-      {results.length > 0 && (
-        <>
-          {issueResults.length > 0 && (
-            <CommandGroup heading="Issues">
-              {issueResults.map((result) => (
-                <SearchResultItem 
-                  key={`${result.type}-${result.id}`} 
-                  result={result} 
-                  onSelect={onSelectResult} 
-                />
-              ))}
-            </CommandGroup>
-          )}
-          
-          {isAuthenticated && userResults.length > 0 && (
-            <CommandGroup heading="Users">
-              {userResults.map((result) => (
-                <SearchResultItem 
-                  key={`${result.type}-${result.id}`} 
-                  result={result} 
-                  onSelect={onSelectResult} 
-                />
-              ))}
-            </CommandGroup>
-          )}
-          
-          {isAuthenticated && emailResults.length > 0 && (
-            <CommandGroup heading="Email Search">
-              {emailResults.map((result) => (
-                <SearchResultItem 
-                  key={`${result.type}-${result.id}`} 
-                  result={result} 
-                  onSelect={onSelectResult} 
-                />
-              ))}
-            </CommandGroup>
-          )}
-        </>
+      {issueResults.length > 0 && (
+        <CommandGroup heading="Issues">
+          {issueResults.map((result) => (
+            <SearchResultItem 
+              key={`${result.type}-${result.id}`} 
+              result={result} 
+              onSelect={onSelectResult} 
+            />
+          ))}
+        </CommandGroup>
+      )}
+      
+      {isAuthenticated && userResults.length > 0 && (
+        <CommandGroup heading="Users">
+          {userResults.map((result) => (
+            <SearchResultItem 
+              key={`${result.type}-${result.id}`} 
+              result={result} 
+              onSelect={onSelectResult} 
+            />
+          ))}
+        </CommandGroup>
+      )}
+      
+      {isAuthenticated && emailResults.length > 0 && (
+        <CommandGroup heading="Email Search">
+          {emailResults.map((result) => (
+            <SearchResultItem 
+              key={`${result.type}-${result.id}`} 
+              result={result} 
+              onSelect={onSelectResult} 
+            />
+          ))}
+        </CommandGroup>
       )}
     </CommandList>
   );
-};
+}

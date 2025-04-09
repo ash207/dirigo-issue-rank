@@ -76,7 +76,7 @@ export function useSearch(initialSearchTerm = "") {
       // Extract results
       const issuesData = results[0].error ? [] : results[0].data || [];
       const usersData = isAuthenticated && results[1] && !results[1].error ? results[1].data || [] : [];
-      // Note: Email search results come directly from the edge function
+      // Email search results come from the edge function
       const emailUsers = isAuthenticated && results[2] && !results[2].error ? results[2].data || [] : [];
       
       console.log("Issues found:", issuesData?.length || 0);
@@ -84,26 +84,37 @@ export function useSearch(initialSearchTerm = "") {
       console.log("Users found by email:", emailUsers.length);
 
       // Combine results with a more efficient approach
-      const formattedResults: SearchResult[] = [
-        ...issuesData.map((issue) => ({
+      const formattedResults: SearchResult[] = [];
+      
+      // Add issues to results
+      issuesData.forEach(issue => {
+        formattedResults.push({
           id: issue.id,
           type: "issue" as const,
           title: issue.title,
           subtitle: `Issue: ${issue.category}`
-        })),
-        ...usersData.map((user) => ({
+        });
+      });
+      
+      // Add users found by name to results
+      usersData.forEach(user => {
+        formattedResults.push({
           id: user.id,
           type: "user" as const,
           title: user.name || "Unnamed User",
           subtitle: "User Profile"
-        })),
-        ...emailUsers.map((user) => ({
+        });
+      });
+      
+      // Add users found by email to results
+      emailUsers.forEach(user => {
+        formattedResults.push({
           id: user.id,
           type: "email" as const,
           title: user.name || "Unnamed User",
           subtitle: user.email // Make sure the email is included in the subtitle
-        }))
-      ];
+        });
+      });
 
       console.log("Total combined results:", formattedResults.length);
       
@@ -118,17 +129,11 @@ export function useSearch(initialSearchTerm = "") {
 
   // Automatically perform search when debounced search term changes
   useEffect(() => {
-    const controller = new AbortController();
-    let isMounted = true;
-    
-    if (isMounted) {
+    if (debouncedSearchTerm.length >= 2) {
       performSearch();
+    } else {
+      setResults([]);
     }
-
-    return () => {
-      isMounted = false;
-      controller.abort();
-    };
   }, [debouncedSearchTerm, performSearch]);
 
   return {

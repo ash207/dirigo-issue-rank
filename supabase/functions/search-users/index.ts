@@ -51,8 +51,7 @@ serve(async (req) => {
 
     console.log("Searching for users with term:", searchTerm);
 
-    // Performance optimization: Use a more efficient query pattern
-    // Get all users admin data - to search by email - using a more efficient approach
+    // Get all users admin data - to search by email
     const { data: authUsers, error: usersError } = await supabaseAdmin.auth.admin.listUsers({
       perPage: 100, // Limit to reasonable amount for performance
       page: 1,
@@ -68,7 +67,7 @@ serve(async (req) => {
     
     console.log(`Found ${authUsers.users.length} total users to search through`);
     
-    // Optimize filtering with lowercase comparison only once
+    // Optimize filtering with lowercase comparison
     const lowerSearchTerm = searchTerm.toLowerCase();
     const filteredUsers = authUsers.users
       .filter(user => {
@@ -83,16 +82,15 @@ serve(async (req) => {
     
     console.log(`Found ${filteredUsers.length} users matching "${searchTerm}"`);
 
-    // Performance optimization: Only query profiles if we have matching users
+    // Only query profiles if we have matching users
     if (filteredUsers.length === 0) {
-      console.log("No matching users found");
       return new Response(
         JSON.stringify([]),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
     
-    // Get profile data only for the filtered users
+    // Get profile data for the filtered users
     const userIds = filteredUsers.map(user => user.id);
     const { data: profiles, error: profilesError } = await supabaseAdmin
       .from("profiles")
@@ -113,12 +111,12 @@ serve(async (req) => {
       });
     }
 
-    // Merge profile data with users using the map for better performance
+    // Merge profile data with users
     const usersWithProfiles = filteredUsers.map(user => {
       const profile = profileMap.get(user.id);
       return {
         id: user.id,
-        email: user.email, // Make sure to include the email
+        email: user.email, // Include the email
         name: profile?.name || null
       };
     });
