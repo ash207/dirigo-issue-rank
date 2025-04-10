@@ -38,9 +38,16 @@ export const SearchDialog = ({ open, setOpen }: { open: boolean; setOpen: (open:
     setOpen(false);
   };
 
+  // Use onOpenChange instead of directly setting state to ensure proper event handling
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="sm:max-w-[500px] p-0">
+      <DialogContent 
+        className="sm:max-w-[500px] p-0"
+        // Ensure dialog events are not passive
+        onPointerDownOutside={(e) => {
+          e.preventDefault();
+        }}
+      >
         <DialogHeader className="px-4 pt-4">
           <DialogTitle>Search</DialogTitle>
           <DialogDescription>
