@@ -22,13 +22,10 @@ export const SearchDialog = ({ open, setOpen }: { open: boolean; setOpen: (open:
   const navigate = useNavigate();
   const { searchTerm, setSearchTerm, results, isLoading, performSearch } = useSearch();
 
-  // When dialog opens, trigger search if there's a searchTerm already
+  // Force search when dialog opens if there's a term
   useEffect(() => {
-    if (open) {
-      // Force a search whenever the dialog opens if there's a term
-      if (searchTerm.length >= 2) {
-        performSearch();
-      }
+    if (open && searchTerm.length >= 2) {
+      performSearch();
     }
   }, [open, searchTerm, performSearch]);
 
