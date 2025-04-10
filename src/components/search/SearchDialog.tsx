@@ -62,7 +62,8 @@ export const SearchDialog = ({ open, setOpen }: { open: boolean; setOpen: (open:
           <SearchResults 
             results={results} 
             isLoading={isLoading} 
-            onSelectResult={handleSelect} 
+            onSelectResult={handleSelect}
+            searchTerm={searchTerm}
           />
         </Command>
       </DialogContent>

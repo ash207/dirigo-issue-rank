@@ -9,25 +9,34 @@ interface SearchResultsProps {
   results: SearchResult[];
   isLoading: boolean;
   onSelectResult: (result: SearchResult) => void;
+  searchTerm: string;
 }
 
-export const SearchResults = ({ results, isLoading, onSelectResult }: SearchResultsProps) => {
+export const SearchResults = ({ results, isLoading, onSelectResult, searchTerm }: SearchResultsProps) => {
   const { isAuthenticated } = useAuth();
   
   const issueResults = results.filter(result => result.type === "issue");
   const userResults = results.filter(result => result.type === "user");
   const emailResults = results.filter(result => result.type === "email");
   
-  const hasResults = issueResults.length > 0 || userResults.length > 0 || emailResults.length > 0;
+  const hasResults = results.length > 0;
+  const showEmptyState = !hasResults && searchTerm.length >= 2;
 
   return (
-    <CommandList>
-      {!hasResults && (
+    <CommandList className="max-h-[60vh] overflow-y-auto">
+      {showEmptyState && (
         <CommandEmpty>
           {isLoading ? (
-            <div className="py-6 text-center text-sm">Loading...</div>
+            <div className="py-6 text-center text-sm">
+              <div className="flex justify-center mb-2">
+                <div className="animate-spin h-5 w-5 rounded-full border-2 border-dirigo-blue border-t-transparent"></div>
+              </div>
+              Searching...
+            </div>
           ) : (
-            <div className="py-6 text-center text-sm">No results found.</div>
+            <div className="py-6 text-center text-sm">
+              No results found for "{searchTerm}"
+            </div>
           )}
         </CommandEmpty>
       )}
@@ -44,7 +53,7 @@ export const SearchResults = ({ results, isLoading, onSelectResult }: SearchResu
         </CommandGroup>
       )}
       
-      {isAuthenticated && userResults.length > 0 && (
+      {userResults.length > 0 && (
         <CommandGroup heading="Users">
           {userResults.map((result) => (
             <SearchResultItem 
@@ -56,8 +65,8 @@ export const SearchResults = ({ results, isLoading, onSelectResult }: SearchResu
         </CommandGroup>
       )}
       
-      {isAuthenticated && emailResults.length > 0 && (
-        <CommandGroup heading="Email Search">
+      {emailResults.length > 0 && (
+        <CommandGroup heading="Email Results">
           {emailResults.map((result) => (
             <SearchResultItem 
               key={`${result.type}-${result.id}`} 
@@ -66,6 +75,12 @@ export const SearchResults = ({ results, isLoading, onSelectResult }: SearchResu
             />
           ))}
         </CommandGroup>
+      )}
+
+      {searchTerm.length < 2 && !hasResults && (
+        <div className="py-8 text-center text-sm text-muted-foreground">
+          Type at least 2 characters to search
+        </div>
       )}
     </CommandList>
   );
