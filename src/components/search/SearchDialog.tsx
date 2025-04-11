@@ -134,75 +134,73 @@ export const SearchDialog = ({ open, setOpen }: { open: boolean; setOpen: (open:
           </div>
           
           <CommandList className="max-h-[60vh] overflow-y-auto">
-            {/* Show loading state */}
-            {isLoading && searchTerm.length >= 2 && (
-              <CommandEmpty>
-                <div className="py-6 text-center text-sm">
-                  <div className="flex justify-center mb-2">
-                    <div className="animate-spin h-5 w-5 rounded-full border-2 border-primary border-t-transparent"></div>
-                  </div>
-                  Searching...
+            {/* Always render CommandList content */}
+            {isLoading && searchTerm.length >= 2 ? (
+              <div className="py-6 text-center text-sm">
+                <div className="flex justify-center mb-2">
+                  <div className="animate-spin h-5 w-5 rounded-full border-2 border-primary border-t-transparent"></div>
                 </div>
-              </CommandEmpty>
-            )}
-            
-            {/* Show empty state */}
-            {!isLoading && results.length === 0 && searchTerm.length >= 2 && (
-              <CommandEmpty>
-                <div className="py-6 text-center text-sm">
-                  {error ? (
-                    <div className="text-destructive">{error}</div>
-                  ) : (
-                    <div>No results found for "{searchTerm}"</div>
-                  )}
-                </div>
-              </CommandEmpty>
-            )}
-            
-            {/* Instructions when search term is too short */}
-            {searchTerm.length < 2 && (
-              <div className="py-8 text-center text-sm text-muted-foreground">
-                Type at least 2 characters to search
+                Searching...
               </div>
-            )}
-            
-            {/* Display grouped results */}
-            {Object.entries(groupedResults).map(([type, typeResults]) => (
-              <CommandGroup key={type} heading={type === "issue" ? "Issues" : "Users"}>
-                {typeResults.map((result, index) => (
-                  <CommandItem
-                    key={`${result.type}-${result.id}`}
-                    onSelect={() => handleSelect(result)}
-                    className={`flex items-center gap-2 px-4 py-2 cursor-pointer ${
-                      index === activeItemIndex ? "bg-accent text-accent-foreground" : ""
-                    }`}
-                  >
-                    {result.type === "issue" ? (
-                      <div className="h-4 w-4 text-muted-foreground">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <circle cx="12" cy="12" r="10" />
-                          <line x1="12" y1="8" x2="12" y2="12" />
-                          <line x1="12" y1="16" x2="12.01" y2="16" />
-                        </svg>
-                      </div>
+            ) : (
+              <>
+                {/* Show empty state only when there are actually no results */}
+                {!isLoading && results.length === 0 && searchTerm.length >= 2 && (
+                  <div className="py-6 text-center text-sm">
+                    {error ? (
+                      <div className="text-destructive">{error}</div>
                     ) : (
-                      <div className="h-4 w-4 text-muted-foreground">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <circle cx="12" cy="7" r="4" />
-                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                        </svg>
-                      </div>
+                      <div>No results found for "{searchTerm}"</div>
                     )}
-                    <div className="flex flex-col flex-1 truncate">
-                      <span className="font-medium">{result.title}</span>
-                      {result.subtitle && (
-                        <span className="text-xs text-muted-foreground truncate">{result.subtitle}</span>
-                      )}
-                    </div>
-                  </CommandItem>
+                  </div>
+                )}
+                
+                {/* Instructions when search term is too short */}
+                {searchTerm.length < 2 && (
+                  <div className="py-8 text-center text-sm text-muted-foreground">
+                    Type at least 2 characters to search
+                  </div>
+                )}
+                
+                {/* Always display grouped results section (even if empty) */}
+                {Object.entries(groupedResults).map(([type, typeResults]) => (
+                  <CommandGroup key={type} heading={type === "issue" ? "Issues" : "Users"}>
+                    {typeResults.map((result, index) => (
+                      <CommandItem
+                        key={`${result.type}-${result.id}`}
+                        onSelect={() => handleSelect(result)}
+                        className={`flex items-center gap-2 px-4 py-2 cursor-pointer ${
+                          index === activeItemIndex ? "bg-accent text-accent-foreground" : ""
+                        }`}
+                      >
+                        {result.type === "issue" ? (
+                          <div className="h-4 w-4 text-muted-foreground">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <circle cx="12" cy="12" r="10" />
+                              <line x1="12" y1="8" x2="12" y2="12" />
+                              <line x1="12" y1="16" x2="12.01" y2="16" />
+                            </svg>
+                          </div>
+                        ) : (
+                          <div className="h-4 w-4 text-muted-foreground">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <circle cx="12" cy="7" r="4" />
+                              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                            </svg>
+                          </div>
+                        )}
+                        <div className="flex flex-col flex-1 truncate">
+                          <span className="font-medium">{result.title}</span>
+                          {result.subtitle && (
+                            <span className="text-xs text-muted-foreground truncate">{result.subtitle}</span>
+                          )}
+                        </div>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
                 ))}
-              </CommandGroup>
-            ))}
+              </>
+            )}
           </CommandList>
         </Command>
       </DialogContent>
