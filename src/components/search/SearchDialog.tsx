@@ -57,7 +57,6 @@ export const SearchDialog = ({ open, setOpen }: { open: boolean; setOpen: (open:
     setOpen(false);
   };
 
-  // Use onOpenChange instead of directly setting state to ensure proper event handling
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent 
@@ -80,7 +79,7 @@ export const SearchDialog = ({ open, setOpen }: { open: boolean; setOpen: (open:
           />
           {dialogMounted && (
             <SearchResults 
-              results={results} 
+              results={results || []} // Ensure results is always an array
               isLoading={isLoading} 
               onSelectResult={handleSelect}
               searchTerm={searchTerm}

@@ -85,54 +85,63 @@ export function useSearch(initialSearchTerm = "") {
       }
       
       // Extract results
-      const issuesData = results[0].error ? [] : results[0].data || [];
-      const usersData = isAuthenticated && results[1] && !results[1].error ? results[1].data || [] : [];
+      const issuesData = results[0]?.error ? [] : results[0]?.data || [];
+      const usersData = isAuthenticated && results[1] && !results[1].error ? results[1]?.data || [] : [];
       // Email search results come from the edge function
-      const emailUsers = isAuthenticated && results[2] && !results[2].error ? results[2].data || [] : [];
+      const emailUsers = isAuthenticated && results[2] && !results[2].error ? results[2]?.data || [] : [];
       
       console.log("Issues found:", issuesData?.length || 0);
-      console.log("Users found by name:", usersData.length);
-      console.log("Users found by email:", emailUsers.length);
+      console.log("Users found by name:", usersData?.length || 0);
+      console.log("Users found by email:", emailUsers?.length || 0);
 
-      // Combine results with a more efficient approach
+      // Initialize formattedResults as an empty array to avoid undefined
       const formattedResults: SearchResult[] = [];
       
-      // Add issues to results
-      issuesData.forEach(issue => {
-        formattedResults.push({
-          id: issue.id,
-          type: "issue" as const,
-          title: issue.title,
-          subtitle: `Issue: ${issue.category}`
+      // Add issues to results (with null checks)
+      if (Array.isArray(issuesData)) {
+        issuesData.forEach(issue => {
+          formattedResults.push({
+            id: issue.id,
+            type: "issue" as const,
+            title: issue.title,
+            subtitle: `Issue: ${issue.category}`
+          });
         });
-      });
+      }
       
-      // Add users found by name to results
-      usersData.forEach(user => {
-        formattedResults.push({
-          id: user.id,
-          type: "user" as const,
-          title: user.name || "Unnamed User",
-          subtitle: "User Profile"
+      // Add users found by name to results (with null checks)
+      if (Array.isArray(usersData)) {
+        usersData.forEach(user => {
+          formattedResults.push({
+            id: user.id,
+            type: "user" as const,
+            title: user.name || "Unnamed User",
+            subtitle: "User Profile"
+          });
         });
-      });
+      }
       
-      // Add users found by email to results
-      emailUsers.forEach(user => {
-        formattedResults.push({
-          id: user.id,
-          type: "email" as const,
-          title: user.name || "Unnamed User",
-          subtitle: user.email // Make sure the email is included in the subtitle
+      // Add users found by email to results (with null checks)
+      if (Array.isArray(emailUsers)) {
+        emailUsers.forEach(user => {
+          formattedResults.push({
+            id: user.id,
+            type: "email" as const,
+            title: user.name || "Unnamed User",
+            subtitle: user.email // Make sure the email is included in the subtitle
+          });
         });
-      });
+      }
 
       console.log("Total combined results:", formattedResults.length);
       
+      // Always set results to an array (even if empty)
       setResults(formattedResults);
     } catch (error) {
       console.error("Search error:", error);
       toast.error("An error occurred while searching");
+      // Ensure we set results to an empty array on error
+      setResults([]);
     } finally {
       // Only update loading state if this search request is still relevant
       if (searchRequestRef.current === currentSearchId) {

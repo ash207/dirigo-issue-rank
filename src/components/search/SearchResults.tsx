@@ -17,14 +17,17 @@ export const SearchResults = ({ results, isLoading, onSelectResult, searchTerm }
   
   // Debug when component renders with results
   useEffect(() => {
-    console.log("SearchResults rendered with", results.length, "results, isLoading:", isLoading);
+    console.log("SearchResults rendered with", results?.length || 0, "results, isLoading:", isLoading);
   }, [results, isLoading]);
   
-  const issueResults = results.filter(result => result.type === "issue");
-  const userResults = results.filter(result => result.type === "user");
-  const emailResults = results.filter(result => result.type === "email");
+  // Ensure results is an array
+  const safeResults = Array.isArray(results) ? results : [];
   
-  const hasResults = results.length > 0;
+  const issueResults = safeResults.filter(result => result.type === "issue");
+  const userResults = safeResults.filter(result => result.type === "user");
+  const emailResults = safeResults.filter(result => result.type === "email");
+  
+  const hasResults = safeResults.length > 0;
   const showEmptyState = !hasResults && searchTerm.length >= 2;
 
   return (
