@@ -84,11 +84,11 @@ export function useSearch(initialSearchTerm = "") {
         return;
       }
       
-      // Extract results
-      const issuesData = results[0]?.error ? [] : results[0]?.data || [];
-      const usersData = isAuthenticated && results[1] && !results[1].error ? results[1]?.data || [] : [];
+      // Extract results with better error handling
+      const issuesData = results[0] && !results[0].error ? results[0].data || [] : [];
+      const usersData = isAuthenticated && results[1] && !results[1].error ? results[1].data || [] : [];
       // Email search results come from the edge function
-      const emailUsers = isAuthenticated && results[2] && !results[2].error ? results[2]?.data || [] : [];
+      const emailUsers = isAuthenticated && results[2] && !results[2].error ? results[2].data || [] : [];
       
       console.log("Issues found:", issuesData?.length || 0);
       console.log("Users found by name:", usersData?.length || 0);
@@ -100,36 +100,42 @@ export function useSearch(initialSearchTerm = "") {
       // Add issues to results (with null checks)
       if (Array.isArray(issuesData)) {
         issuesData.forEach(issue => {
-          formattedResults.push({
-            id: issue.id,
-            type: "issue" as const,
-            title: issue.title,
-            subtitle: `Issue: ${issue.category}`
-          });
+          if (issue && issue.id) {
+            formattedResults.push({
+              id: issue.id,
+              type: "issue" as const,
+              title: issue.title || "Untitled Issue",
+              subtitle: `Issue: ${issue.category || "Uncategorized"}`
+            });
+          }
         });
       }
       
       // Add users found by name to results (with null checks)
       if (Array.isArray(usersData)) {
         usersData.forEach(user => {
-          formattedResults.push({
-            id: user.id,
-            type: "user" as const,
-            title: user.name || "Unnamed User",
-            subtitle: "User Profile"
-          });
+          if (user && user.id) {
+            formattedResults.push({
+              id: user.id,
+              type: "user" as const,
+              title: user.name || "Unnamed User",
+              subtitle: "User Profile"
+            });
+          }
         });
       }
       
       // Add users found by email to results (with null checks)
       if (Array.isArray(emailUsers)) {
         emailUsers.forEach(user => {
-          formattedResults.push({
-            id: user.id,
-            type: "email" as const,
-            title: user.name || "Unnamed User",
-            subtitle: user.email // Make sure the email is included in the subtitle
-          });
+          if (user && user.id) {
+            formattedResults.push({
+              id: user.id,
+              type: "email" as const,
+              title: user.name || "Unnamed User",
+              subtitle: user.email || "Email User" // Make sure the email is included in the subtitle
+            });
+          }
         });
       }
 

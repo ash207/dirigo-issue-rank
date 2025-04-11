@@ -22,11 +22,16 @@ export const SearchDialog = ({ open, setOpen }: { open: boolean; setOpen: (open:
   const navigate = useNavigate();
   const { searchTerm, setSearchTerm, results, isLoading, performSearch } = useSearch();
   const [dialogMounted, setDialogMounted] = useState(false);
+  const [renderKey, setRenderKey] = useState(0); // Add key for forced re-rendering
 
   // Track when dialog is fully mounted
   useEffect(() => {
     if (open) {
       setDialogMounted(true);
+      // Force re-render of results after dialog is fully open
+      setTimeout(() => {
+        setRenderKey(prev => prev + 1);
+      }, 50);
     } else {
       // Reset mounting state when dialog closes
       setDialogMounted(false);
@@ -79,6 +84,7 @@ export const SearchDialog = ({ open, setOpen }: { open: boolean; setOpen: (open:
           />
           {dialogMounted && (
             <SearchResults 
+              key={renderKey} // Force re-render when key changes
               results={results || []} // Ensure results is always an array
               isLoading={isLoading} 
               onSelectResult={handleSelect}

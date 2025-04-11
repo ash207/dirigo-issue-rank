@@ -23,12 +23,28 @@ export const SearchResults = ({ results, isLoading, onSelectResult, searchTerm }
   // Ensure results is an array
   const safeResults = Array.isArray(results) ? results : [];
   
-  const issueResults = safeResults.filter(result => result.type === "issue");
-  const userResults = safeResults.filter(result => result.type === "user");
-  const emailResults = safeResults.filter(result => result.type === "email");
+  // Group results by type for rendering
+  const resultsByType = safeResults.reduce((groups, result) => {
+    const type = result.type || 'unknown';
+    if (!groups[type]) {
+      groups[type] = [];
+    }
+    groups[type].push(result);
+    return groups;
+  }, {} as Record<string, SearchResult[]>);
   
   const hasResults = safeResults.length > 0;
   const showEmptyState = !hasResults && searchTerm.length >= 2;
+  
+  // Helper to get human-readable group headings
+  const getGroupHeading = (type: string): string => {
+    switch (type) {
+      case 'issue': return 'Issues';
+      case 'user': return 'Users';
+      case 'email': return 'Email Results';
+      default: return type.charAt(0).toUpperCase() + type.slice(1) + 's';
+    }
+  };
 
   return (
     <CommandList className="max-h-[60vh] overflow-y-auto">
@@ -49,9 +65,10 @@ export const SearchResults = ({ results, isLoading, onSelectResult, searchTerm }
         </CommandEmpty>
       )}
       
-      {issueResults.length > 0 && (
-        <CommandGroup heading="Issues">
-          {issueResults.map((result) => (
+      {/* Render each result group */}
+      {hasResults && Object.entries(resultsByType).map(([type, typeResults]) => (
+        <CommandGroup key={type} heading={getGroupHeading(type)}>
+          {typeResults.map((result) => (
             <SearchResultItem 
               key={`${result.type}-${result.id}`} 
               result={result} 
@@ -59,31 +76,7 @@ export const SearchResults = ({ results, isLoading, onSelectResult, searchTerm }
             />
           ))}
         </CommandGroup>
-      )}
-      
-      {userResults.length > 0 && (
-        <CommandGroup heading="Users">
-          {userResults.map((result) => (
-            <SearchResultItem 
-              key={`${result.type}-${result.id}`} 
-              result={result} 
-              onSelect={onSelectResult} 
-            />
-          ))}
-        </CommandGroup>
-      )}
-      
-      {emailResults.length > 0 && (
-        <CommandGroup heading="Email Results">
-          {emailResults.map((result) => (
-            <SearchResultItem 
-              key={`${result.type}-${result.id}`} 
-              result={result} 
-              onSelect={onSelectResult} 
-            />
-          ))}
-        </CommandGroup>
-      )}
+      ))}
 
       {searchTerm.length < 2 && !hasResults && (
         <div className="py-8 text-center text-sm text-muted-foreground">
