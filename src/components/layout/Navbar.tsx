@@ -162,7 +162,7 @@ const Navbar = () => {
         </div>
       </div>
       
-      {/* Search Dialog */}
+      {/* Universal Search Dialog */}
       <SearchDialog open={isSearchOpen} setOpen={setIsSearchOpen} />
     </nav>
   );

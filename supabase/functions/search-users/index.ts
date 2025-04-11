@@ -42,18 +42,28 @@ serve(async (req) => {
     // Parse request body
     const { searchTerm } = await req.json();
     
-    if (!searchTerm) {
+    if (!searchTerm || typeof searchTerm !== "string") {
       return new Response(
         JSON.stringify({ error: "Search term is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log("Searching for users with term:", searchTerm);
+    // Trim and sanitize search term
+    const sanitizedTerm = searchTerm.trim().toLowerCase();
+    
+    if (sanitizedTerm.length < 2) {
+      return new Response(
+        JSON.stringify({ error: "Search term must be at least 2 characters" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
-    // Get all users admin data - to search by email
+    console.log("Searching for users with term:", sanitizedTerm);
+
+    // Get a subset of auth users using pagination - limit to 100 for performance
     const { data: authUsers, error: usersError } = await supabaseAdmin.auth.admin.listUsers({
-      perPage: 100, // Limit to reasonable amount for performance
+      perPage: 100,
       page: 1,
     });
     
@@ -65,33 +75,25 @@ serve(async (req) => {
       );
     }
     
-    console.log(`Found ${authUsers.users.length} total users to search through`);
-    
-    // Optimize filtering with lowercase comparison
-    const lowerSearchTerm = searchTerm.toLowerCase();
-    const filteredUsers = authUsers.users
-      .filter(user => {
-        if (!user.email) return false;
-        return user.email.toLowerCase().includes(lowerSearchTerm);
-      })
-      .slice(0, 5)  // Limit to 5 results
+    // Filter users by email containing the search term
+    const matchedUsers = authUsers.users
+      .filter(user => user.email && user.email.toLowerCase().includes(sanitizedTerm))
+      .slice(0, 5) // Limit to 5 results for best performance
       .map(user => ({
         id: user.id,
         email: user.email
       }));
     
-    console.log(`Found ${filteredUsers.length} users matching "${searchTerm}"`);
-
-    // Only query profiles if we have matching users
-    if (filteredUsers.length === 0) {
+    // Get profile data for matched users in a single batch query
+    const userIds = matchedUsers.map(user => user.id);
+    
+    if (userIds.length === 0) {
       return new Response(
         JSON.stringify([]),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
     
-    // Get profile data for the filtered users
-    const userIds = filteredUsers.map(user => user.id);
     const { data: profiles, error: profilesError } = await supabaseAdmin
       .from("profiles")
       .select("id, name")
@@ -99,9 +101,11 @@ serve(async (req) => {
       
     if (profilesError) {
       console.error("Error fetching profiles:", profilesError);
+      return new Response(
+        JSON.stringify({ error: profilesError.message }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
-
-    console.log(`Retrieved ${profiles?.length || 0} profile records`);
 
     // Create a map for efficient lookup
     const profileMap = new Map();
@@ -111,12 +115,12 @@ serve(async (req) => {
       });
     }
 
-    // Merge profile data with users
-    const usersWithProfiles = filteredUsers.map(user => {
+    // Merge profile data with user data
+    const usersWithProfiles = matchedUsers.map(user => {
       const profile = profileMap.get(user.id);
       return {
         id: user.id,
-        email: user.email, // Include the email
+        email: user.email,
         name: profile?.name || null
       };
     });
@@ -128,7 +132,7 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error in search-users function:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error.message || "Unknown error occurred" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
