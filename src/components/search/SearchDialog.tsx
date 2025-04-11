@@ -1,7 +1,7 @@
 
 import { useNavigate } from "react-router-dom";
 import { useSearch } from "@/hooks/useSearch";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import {
   Dialog,
@@ -21,13 +21,32 @@ import { SearchResults } from "./SearchResults";
 export const SearchDialog = ({ open, setOpen }: { open: boolean; setOpen: (open: boolean) => void }) => {
   const navigate = useNavigate();
   const { searchTerm, setSearchTerm, results, isLoading, performSearch } = useSearch();
+  const [dialogMounted, setDialogMounted] = useState(false);
+
+  // Track when dialog is fully mounted
+  useEffect(() => {
+    if (open) {
+      setDialogMounted(true);
+    } else {
+      // Reset mounting state when dialog closes
+      setDialogMounted(false);
+    }
+  }, [open]);
 
   // Force search when dialog opens if there's a term
   useEffect(() => {
     if (open && searchTerm.length >= 2) {
+      console.log('Dialog open, running search for:', searchTerm);
       performSearch();
     }
   }, [open, searchTerm, performSearch]);
+
+  // Debug logging for results
+  useEffect(() => {
+    if (open) {
+      console.log('Current search results:', results);
+    }
+  }, [open, results]);
 
   const handleSelect = (result: ReturnType<typeof useSearch>["results"][0]) => {
     if (result.type === "issue") {
@@ -59,12 +78,14 @@ export const SearchDialog = ({ open, setOpen }: { open: boolean; setOpen: (open:
             value={searchTerm} 
             onChange={setSearchTerm} 
           />
-          <SearchResults 
-            results={results} 
-            isLoading={isLoading} 
-            onSelectResult={handleSelect}
-            searchTerm={searchTerm}
-          />
+          {dialogMounted && (
+            <SearchResults 
+              results={results} 
+              isLoading={isLoading} 
+              onSelectResult={handleSelect}
+              searchTerm={searchTerm}
+            />
+          )}
         </Command>
       </DialogContent>
     </Dialog>

@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { CommandEmpty, CommandGroup, CommandList } from "@/components/ui/command";
 import { SearchResultItem } from "./SearchResultItem";
 import { type SearchResult } from "@/hooks/useSearch";
@@ -15,6 +15,11 @@ interface SearchResultsProps {
 export const SearchResults = ({ results, isLoading, onSelectResult, searchTerm }: SearchResultsProps) => {
   const { isAuthenticated } = useAuth();
   
+  // Debug when component renders with results
+  useEffect(() => {
+    console.log("SearchResults rendered with", results.length, "results, isLoading:", isLoading);
+  }, [results, isLoading]);
+  
   const issueResults = results.filter(result => result.type === "issue");
   const userResults = results.filter(result => result.type === "user");
   const emailResults = results.filter(result => result.type === "email");
@@ -29,7 +34,7 @@ export const SearchResults = ({ results, isLoading, onSelectResult, searchTerm }
           {isLoading ? (
             <div className="py-6 text-center text-sm">
               <div className="flex justify-center mb-2">
-                <div className="animate-spin h-5 w-5 rounded-full border-2 border-dirigo-blue border-t-transparent"></div>
+                <div className="animate-spin h-5 w-5 rounded-full border-2 border-primary border-t-transparent"></div>
               </div>
               Searching...
             </div>

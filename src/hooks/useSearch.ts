@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -18,6 +18,7 @@ export function useSearch(initialSearchTerm = "") {
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
+  const searchRequestRef = useRef<number>(0);
 
   const performSearch = useCallback(async () => {
     // Don't search if term is too short
@@ -26,10 +27,14 @@ export function useSearch(initialSearchTerm = "") {
       return;
     }
 
+    // Generate a unique ID for this search request
+    const currentSearchId = Date.now();
+    searchRequestRef.current = currentSearchId;
+
     setIsLoading(true);
     
     try {
-      console.log("Searching for term:", debouncedSearchTerm);
+      console.log("Searching for term:", debouncedSearchTerm, "requestId:", currentSearchId);
       
       // Batch requests in parallel for better performance
       const searchPromises = [];
@@ -72,6 +77,12 @@ export function useSearch(initialSearchTerm = "") {
 
       // Wait for all search requests to complete
       const results = await Promise.all(searchPromises);
+      
+      // Check if this search request is still relevant
+      if (searchRequestRef.current !== currentSearchId) {
+        console.log("Search request", currentSearchId, "abandoned - newer search in progress");
+        return;
+      }
       
       // Extract results
       const issuesData = results[0].error ? [] : results[0].data || [];
@@ -123,7 +134,10 @@ export function useSearch(initialSearchTerm = "") {
       console.error("Search error:", error);
       toast.error("An error occurred while searching");
     } finally {
-      setIsLoading(false);
+      // Only update loading state if this search request is still relevant
+      if (searchRequestRef.current === currentSearchId) {
+        setIsLoading(false);
+      }
     }
   }, [debouncedSearchTerm, isAuthenticated, session]);
 
